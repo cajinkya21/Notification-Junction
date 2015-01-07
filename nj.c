@@ -1,0 +1,684 @@
+#include "nj.h"
+
+// Declare global NP list 
+
+np_dcll npList;//head of npList
+
+//Declare global app List
+app_dcll  appList;//head of appList
+
+
+//Mutexes to be used for synchronizing list
+
+pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex,np_list_count_mutex;
+
+
+int register_app(char *buff)	{
+
+	/* HI KAVERI, THIS FUNCTION DOES NOT RESPOND TO OTHER COMMANDS AFTER THE COMMAND FOR APP_REG APP1::<UNREGISTERED NP> */
+
+
+	int i;
+	char app_name[32], np_name[32];
+	char *s;
+	char delim[3] = "::";
+	int retval;
+
+	strcpy(app_name, strtok(buff, delim));
+	s = strtok(NULL, delim);
+	if(s != NULL)
+		strcpy(np_name, s);
+    	//pthread_mutex_lock(&app_list_mutex);
+    	
+    	//pthread_mutex_lock(&np_list_mutex);
+    	
+    	/*Check if NP provided is registered or not*/
+	
+	if(search_np(&npList, np_name) == NULL && np_name != NULL) {	/* HANDLE IF NP IS NULL, CHECK FOR STRTOK */
+		printf("NJ : Np not registered. Register NP first.\n");
+		printf("AppList:\n");	
+		print_app(&appList);
+		printf("NPList:\n");
+		print_np(&npList);
+		return 1;
+	}
+	
+	//pthread_mutex_unlock(&np_list_mutex);
+	
+	/*Check if that registration already exists*/
+	
+	/*HANDLED IN LIST*/
+	retval = addapp_node(&appList, app_name);
+	
+	if(retval == -1) {
+	
+		printf("NJ : EXISTING REGISTRATION\n");
+	
+	} //need to change this function to return appropriate values
+	
+	//pthread_mutex_unlock(&app_list_mutex);
+	
+	if(retval != -1)	{				//IF APP IS NOT PREVIOUSLY REGISTERED
+	
+		pthread_mutex_lock(&np_list_count_mutex);
+
+		incr_np_app_cnt(&npList, np_name);
+
+		pthread_mutex_unlock(&np_list_count_mutex);
+		if(np_name == NULL){
+			pthread_mutex_lock(&app_list_mutex);
+			add_np_to_app(&appList, app_name, np_name);
+			pthread_mutex_unlock(&app_list_mutex);
+			printf("NJ : Added successfully\n");
+		}
+	}
+	
+	printf("AppList:\n");	
+	print_app(&appList);
+	printf("NPList:\n");
+	print_np(&npList);
+	return 1;
+}
+int unregister_app(char *buff)
+{//if app_unregister ie buff passes app1::np1 it will remove np1 .......else if buff is app1 ie app_unregister app1 then remove app node directly
+	char app_name[32], np_name[32];
+	
+	char *s;
+	char delim[3] = "::";
+	strcpy(app_name, strtok(buff, delim));
+	strcpy(np_name, strtok(NULL, delim));
+	/*while(s != NULL ) 
+	{
+		printf("%s\n", s);
+		s = strtok(NULL, delim);
+	}*/
+//	if(!strcmp(app_name,buff)
+	if (np_name == NULL){
+		printf("np_name == NULL case in unregister app\n");		
+		pthread_mutex_lock(&app_list_mutex);
+		del_app(&appList, app_name);
+		pthread_mutex_unlock(&app_list_mutex);
+	}
+	else {
+		pthread_mutex_lock(&app_list_mutex);
+		del_np_from_app(&appList, app_name, np_name);
+		pthread_mutex_unlock(&app_list_mutex);
+	}
+	print_app(&appList);
+	return 1;
+}
+
+int register_np(char *buff)
+{
+	char np_name[32];
+	char delim[3] = "::";
+	strcpy(np_name, strtok(buff, delim));
+	/*while(s != NULL ) 
+	{
+		printf("%s\n", s);
+		s = strtok(NULL, delim);
+	}*/
+	
+	pthread_mutex_lock(&np_list_mutex);
+	add_np(&npList, np_name);
+	pthread_mutex_unlock(&np_list_mutex);
+
+	print_np(&npList);
+	return 1;
+}
+int unregister_np(char *buff)
+{
+	char np_name[32];
+	char delim[3] = "::";
+	strcpy(np_name, strtok(buff, delim));
+	/*while(s != NULL ) 
+	{
+		printf("%s\n", s);
+		s = strtok(NULL, delim);
+	}*/
+	
+	pthread_mutex_lock(&np_list_mutex);
+	del_np(&npList, np_name);
+	pthread_mutex_unlock(&np_list_mutex);
+
+	print_np(&npList);
+	return 1;
+}
+char* getnotify_app(char *buff)
+{	char *notification ;
+	notification = (char *) malloc (1024 * sizeof(char));
+	struct getnotify_threadArgs arguments;
+	strcpy(arguments.argssend, buff);
+	pthread_t tid_app_np_gn;
+	
+	/* Fork thread to invoke the NP's code with the arguments given in the structure 'arguments', which contains argssend and argsrecv*/
+	if(pthread_create(&tid_app_np_gn, NULL, &NpGetNotifyMethod , (void *)&arguments) == 0) {
+                printf("Pthread_Creation successful for getnotify\n");
+        }
+	pthread_join(tid_app_np_gn, NULL);
+	strcpy(notification,arguments.argsrecv);
+	return notification ; /*it will be callers responsibility to free the malloced notification string*/
+}
+
+int main(int argc, char *argv[]) {
+
+	unlink(AppReg);
+	unlink(AppUnReg);
+	unlink(NpReg);
+	unlink(NpUnReg);
+	unlink(AppGetnotify);
+	
+	printf("In main\n");
+
+	//Initialization of all mutexes
+	
+	if (pthread_mutex_init(&app_list_mutex, NULL) != 0) {
+        	printf("\n mutex init failed\n");
+        	return 1;
+    	}
+	if (pthread_mutex_init(&np_list_mutex, NULL) != 0) {
+        	printf("\n mutex init failed\n");
+        	return 1;
+    	}
+	if (pthread_mutex_init(&app_list_count_mutex, NULL) != 0) {
+        	printf("\n mutex init failed\n");
+        	return 1;
+    	}
+	if (pthread_mutex_init(&np_list_count_mutex, NULL) != 0) {
+        	printf("\n mutex init failed\n");
+        	return 1;
+    	}	
+	
+	//Initialize NP List 
+	init_np(&npList);
+	printf("Initialization of NPlist\n");
+	//Initialize APP List
+	init_app(&appList);
+	printf("initialization of app lsit \n");
+	/* CREATE SOCKET FOR APPLICATION REGISTRATION */
+
+	
+
+	struct threadArgs app_reg;
+
+	app_reg.sock = socket(AF_UNIX, SOCK_STREAM, 0); 
+	 printf("Socket app_reg created\n");
+
+	if(app_reg.sock < 0) { 
+		perror("opening stream socket"); 
+		exit(1); 
+	}
+	  
+	app_reg.server.sun_family = AF_UNIX; 
+	strcpy(app_reg.server.sun_path, AppReg); 
+	 
+	if(bind(app_reg.sock, (struct sockaddr *) &app_reg.server, sizeof(struct sockaddr_un))) {  
+		perror("binding stream socket"); 
+		exit(1);
+	} 
+	 
+	printf("Socket has name %s\n", app_reg.server.sun_path); 
+	  
+	/* CREATE SOCKET FOR APPLICATION UNREGISTRATION */
+	
+	struct threadArgs app_unreg;
+
+	app_unreg.sock = socket(AF_UNIX, SOCK_STREAM, 0); 
+	 
+	if(app_unreg.sock < 0) { 
+		perror("opening stream socket"); 
+		exit(1); 
+	}
+	  
+	app_unreg.server.sun_family = AF_UNIX; 
+	strcpy(app_unreg.server.sun_path, AppUnReg); 
+	 
+	if(bind(app_unreg.sock, (struct sockaddr *) &app_unreg.server, sizeof(struct sockaddr_un))) {  
+		perror("binding stream socket"); 
+		exit(1);
+	} 
+	 
+	printf("Socket has name %s\n", app_unreg.server.sun_path); 
+	
+	/* SOCKET FOR NP REGISTRATION */
+	
+	
+	struct threadArgs np_reg;
+
+	np_reg.sock = socket(AF_UNIX, SOCK_STREAM, 0); 
+	printf("Socket np_reg created\n");
+
+	if(np_reg.sock < 0) { 
+		perror("opening stream socket"); 
+		exit(1); 
+	}
+	  
+	np_reg.server.sun_family = AF_UNIX; 
+	strcpy(np_reg.server.sun_path, NpReg); 
+	 
+	if(bind(np_reg.sock, (struct sockaddr *) &np_reg.server, sizeof(struct sockaddr_un))) {  
+		perror("binding stream socket"); 
+		exit(1);
+	} 
+	 
+	printf("Socket has name %s\n", np_reg.server.sun_path); 
+
+	/* SOCKET FOR NP UNREGISTRATION */
+	
+	
+	struct threadArgs np_unreg;
+
+	np_unreg.sock = socket(AF_UNIX, SOCK_STREAM, 0); 
+	 printf("Socket np_unreg created\n");
+
+	if(np_unreg.sock < 0) { 
+		perror("opening stream socket"); 
+		exit(1); 
+	}
+	  
+	np_unreg.server.sun_family = AF_UNIX; 
+	strcpy(np_unreg.server.sun_path, NpUnReg); 
+	 
+	if(bind(np_unreg.sock, (struct sockaddr *) &np_unreg.server, sizeof(struct sockaddr_un))) {  
+		perror("binding stream socket"); 
+		exit(1);
+	} 
+	 
+	printf("Socket has name %s\n", np_unreg.server.sun_path); 
+ 	/* CREATE SOCKET for APP SIDE GETNOTIFY*/
+
+	 struct threadArgs app_getnotify;
+
+        app_getnotify.sock = socket(AF_UNIX, SOCK_STREAM, 0);
+
+        if(app_getnotify.sock < 0) { 
+                perror("opening stream socket for getnotify");
+                exit(1);
+        }
+
+        app_getnotify.server.sun_family = AF_UNIX;
+        strcpy(app_getnotify.server.sun_path, AppGetnotify);
+
+        if(bind(app_getnotify.sock, (struct sockaddr *) &app_getnotify.server, sizeof(struct sockaddr_un))) {
+                perror("binding stream socket");
+                exit(1);
+        }
+
+        printf("Socket has name %s\n", app_getnotify.server.sun_path);
+
+	 
+	 
+	 
+	/* FORK THREADS TO LISTEN  AND ACCEPT */
+	
+	pthread_t tid_app_reg;
+	 
+	if(pthread_create(&tid_app_reg, NULL, &AppRegMethod, (void *)&app_reg) == 0) {
+		printf("Pthread_Creation successful\n");
+	}
+	
+	pthread_t tid_app_unreg;
+	 
+	if(pthread_create(&tid_app_unreg, NULL, &AppUnRegMethod, (void *)&app_unreg) == 0) {
+		printf("Pthread_Creation successful\n");
+	}
+	
+		pthread_t tid_np_reg;
+	 
+	if(pthread_create(&tid_np_reg, NULL, &NpRegMethod, (void *)&np_reg) == 0) {
+		printf("Pthread_Creation successful\n");
+	}
+	
+	pthread_t tid_np_unreg;
+	 
+	if(pthread_create(&tid_np_unreg, NULL, &NpUnRegMethod, (void *)&np_unreg) == 0) {
+		printf("Pthread_Creation successful\n");
+	}
+
+
+	pthread_t tid_app_getnotify;
+	if(pthread_create(&tid_app_getnotify, NULL , &AppGetNotifyMethod,(void *)&app_getnotify) == 0) {
+		printf("Pthread_creation of getnotify thread successful\n");
+	}
+
+
+	pthread_join(tid_np_reg, NULL);
+	pthread_join(tid_np_unreg, NULL);
+	pthread_join(tid_app_reg, NULL);
+	pthread_join(tid_app_unreg, NULL);
+	pthread_join(tid_app_getnotify, NULL);
+
+	pthread_mutex_destroy(&app_list_mutex);
+	pthread_mutex_destroy(&np_list_mutex);
+	pthread_mutex_destroy(&app_list_count_mutex);
+	pthread_mutex_destroy(&np_list_count_mutex);
+	return 0;
+
+}
+
+void *AppRegMethod(void *arguments)
+{
+	struct threadArgs *args = arguments;
+	printf("In Reg\n");
+    	printf("args -> msgsock - %d\n", args -> msgsock);
+    
+       	listen(args->sock,QLEN ); 
+	int i = 0;
+	for(;;) { 
+		args->msgsock = accept(args->sock, 0, 0); 
+		if(args->msgsock == -1) 
+			perror("accept"); 
+		else do {  
+				bzero(args->buf, sizeof(args->buf));
+				if((args->rval = read(args->msgsock, args->buf, 1024)) < 0) 
+					perror("reading stream message"); 
+				else if(args->rval == 0) 
+					printf("Ending connection\n"); 
+				else {/*code to register application ie add entry in list*/
+					printf("-->%s\n", args->buf); 
+					i = register_app(args->buf);
+					if(i < 0)	{ 
+						printf("Error in registering, try again\n");
+					}
+					break;
+				}
+		}while(args->rval > 0); 
+	
+		close(args->msgsock);  
+	} 
+	
+	close(args->sock);  
+	unlink(AppReg);
+    
+	pthread_exit(NULL);
+    	return NULL;
+}
+
+void *AppUnRegMethod(void *arguments)
+{
+    	struct threadArgs *args = arguments;
+   	printf("In UnReg\n");
+   	printf("args -> msgsock - %d\n", args -> msgsock);
+    
+    	listen(args->sock, QLEN); 
+	int i = 0;
+	for(;;) { 
+		args->msgsock = accept(args->sock, 0, 0); 
+		if(args->msgsock == -1) 
+			perror("accept"); 
+		else do {  
+				bzero(args->buf, sizeof(args->buf));
+				if((args->rval = read(args->msgsock, args->buf, 1024)) < 0) 
+					perror("reading stream message"); 
+				else if(args->rval == 0) 
+					printf("Ending connection\n"); 
+				else {
+					i = unregister_app(args->buf);
+					 printf("-->%s\n", args->buf); 
+
+					if( i < 0) 
+						printf("Error in registering\n");
+
+					break;
+				}
+		}while(args->rval > 0); 
+	
+		close(args->msgsock);  
+	} 
+	
+	close(args->sock);  
+	unlink(AppUnReg);
+    
+    	pthread_exit(NULL);
+    	return NULL;
+}
+
+void *NpRegMethod(void *arguments)
+{
+	struct threadArgs *args = arguments;
+	printf("In NpReg\n");
+    	printf("args -> msgsock - %d\n", args -> msgsock);
+    
+       	listen(args->sock,QLEN ); 
+	int i = 0;
+	for(;;) { 
+		args->msgsock = accept(args->sock, 0, 0); 
+		if(args->msgsock == -1) 
+			perror("accept"); 
+		else do {  
+				bzero(args->buf, sizeof(args->buf));
+				if((args->rval = read(args->msgsock, args->buf, 1024)) < 0) 
+					perror("reading stream message"); 
+				else if(args->rval == 0) 
+					printf("Ending connection\n"); 
+				else {/*code to register application ie add entry in list*/
+					printf("-->%s\n", args->buf); 
+					i = register_np(args->buf);
+					if( i < 0) 
+						printf("Error in registering\n");
+					break;
+				}
+		}while(args->rval > 0); 
+	
+		close(args->msgsock);  
+	} 
+	
+	close(args->sock);  
+	unlink(NpReg);
+    
+	pthread_exit(NULL);
+    	return NULL;
+}
+
+void *NpUnRegMethod(void *arguments)
+{
+    	struct threadArgs *args = arguments;
+   	printf("In NpUnReg\n");
+   	printf("args -> msgsock - %d\n", args -> msgsock);
+    
+    	listen(args->sock, QLEN); 
+	int i = 0;
+	for(;;) { 
+		args->msgsock = accept(args->sock, 0, 0); 
+		if(args->msgsock == -1) 
+			perror("accept"); 
+		else do {  
+				bzero(args->buf, sizeof(args->buf));
+				if((args->rval = read(args->msgsock, args->buf, 1024)) < 0) 
+					perror("reading stream message"); 
+				else if(args->rval == 0) 
+					printf("Ending connection\n"); 
+				else {
+					i = unregister_np(args->buf);
+					 printf("-->%s\n", args->buf); 
+
+					if( i < 0) 
+						printf("Error in registering\n");
+
+					break;
+				}
+		}while(args->rval > 0); 
+	
+		close(args->msgsock);  
+	} 
+	
+	close(args->sock);  
+	unlink(NpUnReg);
+    
+    	pthread_exit(NULL);
+    	return NULL;
+}
+void * AppGetNotifyMethod(void *arguments)
+{
+        struct threadArgs *args = arguments;
+        printf("In AppGetNotify\n");
+        printf("args -> msgsock - %d\n", args -> msgsock);
+	int i = 0;
+	char * received;
+        listen(args->sock, QLEN);
+       	char * argstring;
+	FILE *fp;
+	struct sockaddr_un server; 
+        server.sun_family = AF_UNIX; 
+	strcpy(server.sun_path, AppGetnotify);
+
+		
+	argstring = (char * ) malloc(sizeof(char) * 1024);
+        for(;;) {
+                args->msgsock = accept(args->sock, 0, 0);
+                if(args->msgsock == -1)
+                        perror("accept");
+                else do {
+                                bzero(args->buf, sizeof(args->buf));
+                                if((args->rval = read(args->msgsock, args->buf, 1024)) < 0)
+                                        perror("reading stream message");
+                                else if(args->rval == 0)
+                                        printf("Ending connection\n");
+                                else {	
+					int pid;
+					char rough[1024];
+					char choice ;
+					int j;
+					char *ptr;
+				        strcpy(rough, args->buf);
+					printf(" %s  args-.buf received from library call\n",args->buf);
+					
+					int len = strlen(rough);
+					choice = rough[len - 1];
+					char spid[32];
+					strcpy(spid, strtok(rough,"##"));
+					pid = atoi(spid);
+					/*for(j = 0; j < len ; j++) {
+						if(rough[j] == '#')
+							if(rough[j+1] == '#')
+								break;
+					}*/
+					//ptr = &(rough[j + 2]);
+					j = strlen(rough);
+					strcpy(rough, args->buf);
+					strcpy(rough , &(rough[j+2]));
+
+					strcpy(args->buf, rough);
+					printf("Received args->buf is %s\n",args->buf);				
+                                        received = getnotify_app(args->buf);
+					int fd;
+					char filename[64];
+					strcpy(filename,"./");
+					strcat(filename, spid);
+					if(choice == 'N') {
+						if(!(fd = open(filename , O_CREAT | O_APPEND,0777))) {
+							perror("not able to open file\n");
+							break;
+						}
+						printf("%s \n", received);
+						strcat(received,"\n");
+						if( !write( fd,received,strlen(received)))
+							printf("Fwrite failed \n");
+						printf("Before Sig \n");
+						kill(pid, SIGUSR1);
+						printf("After Sig \n");
+					}
+                                         printf("-->%s\n", args->buf);
+					 printf("received notification is %s \n",received);
+				//send the socket to get_notify client
+					 /*if (connect(args->msgsock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+                				close(args->msgsock);
+                				perror("connecting stream socket");
+                				exit(1);
+        				}*/
+					printf("REPORTING TO CLIENT EVENT : %s\n",received); 
+					if(choice == 'B') {        				
+						if (write(args->msgsock, received, 1024) < 0)
+               						 perror("writing on stream socket");
+					}
+					
+					printf(" Before freeing \n");
+					free(received);
+	 
+                                        break;
+                                }
+                }while(args->rval > 0);
+		printf(" after exit ing args->rval is %d\n",args->rval);
+                close(args->msgsock);
+        }
+
+        close(args->sock);
+        unlink(AppUnReg);
+
+        pthread_exit(NULL);
+        return NULL;
+}
+void * NpGetNotifyMethod(void *arguments)
+{//here we need to call Np_specific getnotify to get the notificationstring..
+//this notificationstring is then copied to arguments->argsrecv
+//for now I am sending the received strig directly as notificationstring
+	//for now I have simply returned the string receive1::value1	
+	struct getnotify_threadArgs *args = arguments;
+	//strcpy(args->argsrecv, "receive1::value1");
+	
+	
+	void *handle;
+        void (*getnotify)(struct getnotify_threadArgs *);
+        char *error;
+        char rough[1024];
+        strcpy(rough, args->argssend);
+
+	// INOTIFY needs npname::<npname>##pathname::<pathname>##flags::<flags>
+	
+		
+	printf("Args received by getnotify - %s\n", args->argssend);
+	int i, count;
+	char np_name[64], dir_name[256], flag_set[512], one[512], two[512], three[512];
+	char delimattr[3] = "##";
+	char delimval[3] = "::";
+	
+	strcpy(one, strtok(rough, delimattr));
+	strtok(one, delimval);	/* HERE */
+	strcpy(np_name, strtok(NULL, delimval));
+
+	/* HANDLE NO NAME AND STUFF*/
+	
+	printf("App Count = %d for NP = %s\n", get_np_app_cnt(&npList, np_name), np_name);
+
+	/* App count will be 0 initially. App can call getnotify only after NP has registered, and doing App_getnotify for the first time increments the count to 1. Therefore compare count with 1 to do dlopen() for the first time*/
+	if(get_np_app_cnt(&npList, np_name) == 1)	{
+		// Do dlopen()
+		printf("Opening\n....\n");
+		handle = dlopen ("./libinotify.so", RTLD_LAZY);
+        	if (!handle) {
+            		perror("Problem with dlopen :");
+            		exit(1);
+        	}
+        
+       		printf("dlopen successful\n");
+		
+		
+	}
+	// Do dlsym() for getnotify()
+
+	getnotify = dlsym(handle, "getnotify");
+        if ((error = dlerror()) != NULL)  {
+            perror("chukla");
+            exit(1);
+        }
+        
+        printf("Handle Successful\n");
+
+	(*getnotify)(args);
+	
+	printf("In NPMethod, Recd = %s\n", args->argsrecv);
+	
+	//Dlclose	
+	// dlclose(handle);
+	/*HANDLE CLOSING PROPERLY. WHEN TO CLOSE*/
+
+	printf("ARGSRECV IN THREAD HANDLER = %s\n", args->argsrecv);
+		
+	pthread_exit(NULL);
+	return NULL;
+	
+	
+	
+	/* Functions have to be written such that the argument will be the address of struct args */
+}
+
