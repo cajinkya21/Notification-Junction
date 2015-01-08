@@ -15,7 +15,6 @@ pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex,np_list_coun
 
 int register_app(char *buff)	{
 
-	/* HI KAVERI, THIS FUNCTION DOES NOT RESPOND TO OTHER COMMANDS AFTER THE COMMAND FOR APP_REG APP1::<UNREGISTERED NP> */
 
 
 	int i;
@@ -561,19 +560,30 @@ void * AppGetNotifyMethod(void *arguments)
 					strcpy(args->buf, rough);
 					printf("Received args->buf is %s\n",args->buf);				
                                         received = getnotify_app(args->buf);
-					int fd;
+					int fd, al;
 					char filename[64];
 					strcpy(filename,"./");
 					strcat(filename, spid);
+                    strcat(filename, ".txt");
+					printf("Filename:%s\n\n", filename);
 					if(choice == 'N') {
-						if(!(fd = open(filename , O_CREAT | O_APPEND,0777))) {
+						if(!(fd = open(filename , O_CREAT | O_APPEND | O_RDWR,0777))) {
 							perror("not able to open file\n");
 							break;
 						}
+                        printf("OPEN::%d is FD for %s file\n\n", fd, filename);
+                        
+                        
+
 						printf("%s \n", received);
 						strcat(received,"\n");
-						if( !write( fd,received,strlen(received)))
-							printf("Fwrite failed \n");
+
+                        al = write((int)fd, received, strlen(received));
+						if(al < 0)
+							perror("Fwrite failed");
+                        else    						
+                            printf("%s madhe %d bytes WRITTEN\n", filename, al);
+
 						printf("Before Sig \n");
 						kill(pid, SIGUSR1);
 						printf("After Sig \n");
