@@ -21,7 +21,7 @@ int main() {
 
 	i = app_register("app1::inotify");
 	printf("Dummy app app register done\n");
-	i = app_getnotify(pid,"npname::inotify##dir::/home/chitra/Desktop/##flags::IN_CREATE*IN_DELETE*IN_MODIFY", 'N' );
+	i = app_getnotify(pid,"npname::inotify##dir::/home/student/Desktop/##flags::IN_CREATE*IN_DELETE*IN_MODIFY", 'N' );
 	printf("Dummy app getnotify done \n");
 	//sigsuspend(&mask);
 	while(1) ;
