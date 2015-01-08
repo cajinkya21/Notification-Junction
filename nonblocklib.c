@@ -106,12 +106,12 @@ int app_getnotify(int pid, char *key_val_string, char choice) {/*choice is B for
 	printf(" DATA SEND by nonblock library %s \n", data);
 	if (write(sock, data, sizeof(data)) < 0) 
 		perror("APP_GETNOTIFY : ERROR WRITING COMMAND ON STREAM SOCKET :"); 
-	
-	if( (rval =  read(sock, buf, 1024)) < 0 )
-		perror("APP_GETNOTIFY : ERROR READING STREAM SOCKET IN CLIENT \n");
-	else 
-		printf("APP_GETNOTIFY : NOTIFICATION RECEIVED BY GETNOTIFY : %s\n",buf);
-	
+	if(choice == 'B') {
+		if( (rval =  read(sock, buf, 1024)) < 0 )
+			perror("APP_GETNOTIFY : ERROR READING STREAM SOCKET IN CLIENT \n");
+		else 
+			printf("APP_GETNOTIFY : NOTIFICATION RECEIVED BY GETNOTIFY : %s\n",buf);
+	}
 	close(sock); 
   	return 1;
 }

@@ -34,9 +34,16 @@
 #include<unistd.h>
 #endif
 
+#ifndef SIGNAL_H
+#define SIGNAL_H
+#include<signal.h>
+#endif
+
 #define AppGetnotify "app_getnotify"
 #define AppReg "app_reg"
 #define AppUnReg "app_unreg"
+
+
 
 int app_register(char *key_val_string);
 int app_unregister(char *key_val_string);
