@@ -1,11 +1,14 @@
+/* The file contains code for requesting the specific NP for specific notification by sending parameters in the form of key-value pair. */
+
 #include <sys/types.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdio.h>
 
+#define NAME "./app_getnotify"						/* Socket name for sending parametes */
+									/* and for getting notifications in case of BLOCKED getnotify */
 
-#define NAME "./app_getnotify"
 
 main(int argc, char *argv[]) 
 {	int sock,msgsock,rval; 

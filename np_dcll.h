@@ -1,3 +1,5 @@
+/* This file contains code for the dcll of np(s) */
+
 #ifndef STDIO_H
 #define STDIO_H
 #include<stdio.h>
@@ -26,6 +28,7 @@
 #define NOTFND -2
 #endif
 
+/* The node for np(s) */
 
 typedef struct main_np_node {
 	char* data;
@@ -33,6 +36,8 @@ typedef struct main_np_node {
 	struct main_np_node *next;
 	int app_count;
 }main_np_node;
+
+/* The node for the dcll */
 
 typedef struct np_dcll {
 	main_np_node *head;

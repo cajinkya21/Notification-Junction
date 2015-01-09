@@ -1,7 +1,16 @@
+/*
+*	This file is for the library that provides the option for non_block,
+*	and also provides for the app to call nj internally, i.e. through the application's code
+*
+*/
+
 #include "lib.h"
 
-int app_register(char *key_val_string) 
-{	int sock; 
+/* Register the application by writing the key-value string to the NJ using socket  */
+
+int app_register(char *key_val_string) {
+
+	int sock; 
  	struct sockaddr_un server; 
 	char buf[1024];
 	char data[1024];
@@ -12,8 +21,6 @@ int app_register(char *key_val_string)
 	}
 	strcpy(data, key_val_string);
 	
-	
-
 	sock = socket(AF_UNIX, SOCK_STREAM, 0); 
 	if (sock < 0) { 
 		perror("APP_REG : Opening Stream Socket"); 
@@ -32,6 +39,10 @@ int app_register(char *key_val_string)
 	close(sock); 
 	return 1;
  } 
+
+
+
+/* UnRegister the application by writing the key-value string to the NJ using socket  */
 
 int app_unregister(char *key_val_string) {
 	int sock; 
@@ -64,7 +75,9 @@ int app_unregister(char *key_val_string) {
 	close(sock); 
 }
 
-int app_getnotify(int pid, char *key_val_string, char choice) {/*choice is B for blocking and N for non-blocking.*/
+/* Request for notifications from an np, the choice field is B for blocking and N for non-blocking */
+
+int app_getnotify(int pid, char *key_val_string, char choice) {
 	int sock,msgsock,rval;
  	struct sockaddr_un server; 
 	char buf[1024];
@@ -90,8 +103,6 @@ int app_getnotify(int pid, char *key_val_string, char choice) {/*choice is B for
 		strcat(data,"##TYPE::N");
 	}
 	
-	
-	//call socket with socket(AF_UNIX, SOCK_STREAM | O_NONBLOCK ,0)
 	if (sock < 0) { 
 		perror("APP_GETNOTIFY : ERROR OPENING STREAM SOCKET :"); 
 		exit(1); 

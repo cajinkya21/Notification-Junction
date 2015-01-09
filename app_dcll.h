@@ -1,3 +1,5 @@
+/* The file contains code for doubly linked list for applications */
+
 #ifndef STDIO_H
 #define STDIO_H
 #include<stdio.h>
@@ -26,12 +28,13 @@
 #define NOTFND -2
 #endif
 
-
+/* NP NODE STRUCTURE */
 typedef struct np_node {
 	char *name;
 	struct np_node *next;
 }np_node;
 
+/* APPLICATION NODE STRUCTURE */
 typedef struct app_node {
 	char *data;
 	struct app_node *prev;
@@ -40,6 +43,7 @@ typedef struct app_node {
 	int np_count;
 }app_node;
 
+/* APPLICATION LIST STRUCTURE */
 typedef struct app_dcll {
 	app_node *head;
 	int count;

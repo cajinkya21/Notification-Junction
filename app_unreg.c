@@ -1,12 +1,16 @@
+/* 
+*	The file contains code for unregistering the application with NJ 
+*/
+
 #include <sys/types.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdio.h>
 
-#define NAME "./app_unreg"
-
-main(int argc, char *argv[]) 
+#define NAME "./app_unreg"						
+						
+int main(int argc, char *argv[]) 
 {	int sock; 
  	struct sockaddr_un server; 
 	char buf[1024];
@@ -34,4 +38,6 @@ main(int argc, char *argv[])
 	if (write(sock, data, sizeof(data)) < 0) 
 		perror("APP_UNREG : Writing On Stream Socket"); 
 	close(sock); 
+	return 0; 
+
  } 

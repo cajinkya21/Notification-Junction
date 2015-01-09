@@ -1,73 +1,32 @@
-#include "app_dcll.h"
-
-
-/*int main() {
-
-	app_dcll l;
-	char val[25], aval[25], nval[25];
-	init_app(&l);
-	
-	int ch;
-	while(1) {
-		//printf("APP_DCLL : Enter Choice :\n0 - print_app\n1 - Add App\n2 - search_app App\n3 - Delete App\n4 - Add NP to App\n5 - Delete NP from App\n");
-		scanf("%d", &ch);
-		switch(ch) {
-	
-			case 0 :	print_app(&l);
-					break;
-			case 1 :	//printf("APP_DCLL : Enter Val :\n");
-					scanf(" %s", val);
-					addapp_node(&l, val);
-					print_app(&l);
-					break;
-			case 2 : 	//printf("APP_DCLL : Enter Val :\n");
-					scanf(" %s", val);
-					search_app(&l, val);
-					break;
-			case 3 :	//printf("APP_DCLL : Enter Val :\n");
-					scanf(" %s", val);
-					del_app(&l, val);
-					print_app(&l);
-					break;
-			case 4 :	//printf("APP_DCLL : Enter Val for App and NP:\n");
-					scanf(" %s %s", aval, nval);
-					//printf("APP_DCLL : Aval - %s| and nval - %s|\n", aval, nval);
-					add_np_to_app(&l, aval, nval);
-					print_app(&l);
-					break;
-			case 5 :	//printf("APP_DCLL : Enter Val for App and NP:\n");
-					scanf(" %s %s", aval, nval);
-					del_np_from_app(&l, aval, nval);
-					print_app(&l);
-					break;
-		}
-	}
-	return 0;
-
-}
-
+/* 
+*	The file contains the code for the dcll implementation with trailing singly linked lists for
+*	Initializing app_list, 
+*	Adding a node to app_list, 
+*	Printing app_list, 
+*	Searching app_node in app_list, 
+*	Deleting a node from app_list, 
+*	Adding a np to app_node, 
+*	Deleting a np from app_node
+*
+*
+*	At the end of this file is the commented code to test the linked list
 */
+
+#include "app_dcll.h"
 
 /* INITIALISE APPLICATION LIST */
 
-void init_app(app_dcll *l) {
-	
+void init_app(app_dcll *l) {	
 	l->head = NULL;
 	l->count = 0;
-	//printf("APP_DCLL : LIST INITIALISED\n");
-
 }
-
 
 /* APPEND NEW APPLICATION-NODE TO THE LIST */
 
 int addapp_node(app_dcll *l, char *val) {
-	
 	app_node *new, *tmp;
-	tmp = search_app(l, val);
-	
-	if(tmp != NULL) return ALREXST;
-	
+	tmp = search_app(l, val);					/* Search a app_node in app_list if it already exists */
+	if(tmp != NULL) return ALREXST;					/* If node already exists, it returns ALREXST error */
 	new = (app_node *)malloc(sizeof(app_node));
 	
 	if(new == NULL){
@@ -82,25 +41,22 @@ int addapp_node(app_dcll *l, char *val) {
 		exit(1);
 	}
 	
-	////printf("APP_DCLL :  COUNT IN ADD-APP-NODE : %d\n", l->count);
+	//printf("APP_DCLL :  COUNT IN ADD-APP-NODE : %d\n", l->count);
 	
 	new->np_count = 0;
 	
 	if(l->count == 0) {
-	
 		l->head = new;
 		new->prev = new;
 		new->next = new;
 		strcpy(new->data, val);
 		new->np_list_head = NULL;
 		l->count++;
-
 		//printf("APP_DCLL : COUNT AFTER APPEND : %d\n", l->count);
 		return 0;
 	}
 	
 	else if(l->count == 1) {
-	
 		//printf("APP_DCLL : DATA IN LIST HEAD : %s\n", l->head->data);
 		l->head->prev = new;
 		l->head->next = new;
@@ -126,11 +82,11 @@ int addapp_node(app_dcll *l, char *val) {
 		//printf("APP_DCLL : COUNT AFTER APPEND : %d\n", l->count);
 		return 0;
 	}
-	
 }
 
 
 /* PRINT LIST */
+
 void print_app(app_dcll *l) {
 
 	int i = l->count;
@@ -141,7 +97,7 @@ void print_app(app_dcll *l) {
 	app_node *ptr;
 	np_node *np;
 	ptr = l->head;
-	while(i) {
+	while(i) {							/* Printing list in forward direction */
 		printf("APP_DCLL : NODE :");
 		printf("APP_DCLL : %s ", ptr->data);
 		printf("APP_DCLL : NP_CNT: %d\n", ptr->np_count);
@@ -154,27 +110,36 @@ void print_app(app_dcll *l) {
 		printf("APP_DCLL :  ---------- \n");
 		i--;
 	}
-//	//printf("APP_DCLL : \n\n");
-	/*ptr = (l->head)->prev;
+	
+	/* Printing list in backward direction */
+	
+	/*
+	printf("APP_DCLL : \n\n");
+	
+	ptr = (l->head)->prev;
 	i = l->count;
 	while(i) {
-		//printf("APP_DCLL : NODE :");
-		//printf("APP_DCLL : %s ", ptr->data);
-		np = ptr->np_list_head;
-		//printf("APP_DCLL : NP's data is %s\n", np->name);
-		while(np != NULL) {
-			//printf("APP_DCLL : NP - %s", np->name);	
-			np = np->next;		
-		}
-		ptr = ptr->prev;
-		//printf("APP_DCLL :  <==> \n");
-		i--;
-	}
-	//printf("APP_DCLL : \n");*/
+	*/					
+	//	printf("APP_DCLL : NODE :");
+	//	printf("APP_DCLL : %s ", ptr->data);
+	//	np = ptr->np_list_head;
+	//	printf("APP_DCLL : NP's data is %s\n", np->name);
+	//	while(np != NULL) {
+	//		printf("APP_DCLL : NP - %s", np->name);	
+	//		np = np->next;		
+	//	}
+	//	ptr = ptr->prev;
+	//	printf("APP_DCLL :  <==> \n");
+	//	i--;
+	
+	
+	//}
+	//printf("APP_DCLL : \n");
+	
 }
 
 
-/* SEARCH APP, RETURN POINTERTO NODE */
+/* SEARCH APP, RETURN POINTER TO NODE */
 
 app_node* search_app(app_dcll *l, char *val) {
 
@@ -208,7 +173,7 @@ app_node* search_app(app_dcll *l, char *val) {
 int del_app(app_dcll *l, char *val)	{
 	
 	app_node *p, *temp, *q;
-	temp = search_app(l, val);
+	temp = search_app(l, val);					/* Search a list to check if it exists for deletion */
 	//printf("APP_DCLL : DELETING VALUE : %s\n", temp->data);
 	
 	if(temp == NULL)	{
@@ -239,9 +204,9 @@ int del_app(app_dcll *l, char *val)	{
 	else
 	{
 		p = temp->prev;
-		////printf("APP_DCLL : p:%s\n", p->data);
+		//printf("APP_DCLL : p:%s\n", p->data);
 		q = temp->next;
-		////printf("APP_DCLL : q:%s\n", q->data);
+		//printf("APP_DCLL : q:%s\n", q->data);
 		p->next = q;
 		q->prev = p;
 		free(temp);
@@ -254,8 +219,6 @@ int del_app(app_dcll *l, char *val)	{
 
 int add_np_to_app(app_dcll *l, char *aval, char *nval)	{
 
-
-
 	//printf("APP_DCLL : ADDING TO APPLICATION %s, NP %s\n", aval, nval);
 	app_node *temp = search_app(l, aval);	
 	np_node *n, *m, *b;
@@ -263,8 +226,7 @@ int add_np_to_app(app_dcll *l, char *aval, char *nval)	{
 		//printf("APP_DCLL : NOT FOUND %s\n", aval);
 		return NOTFND;
 	}
-	
-	
+		
 	np_node *np_ptr;
 	np_ptr = temp->np_list_head;
 	while(np_ptr != NULL) {
@@ -273,10 +235,7 @@ int add_np_to_app(app_dcll *l, char *aval, char *nval)	{
 		}
 		np_ptr = np_ptr->next;
 	}
-	
 		
-	//}
-	
 	n = malloc(sizeof(np_node));
 	
 	if(n == NULL){
@@ -319,6 +278,9 @@ int add_np_to_app(app_dcll *l, char *aval, char *nval)	{
 	}
 	return 0;
 }
+
+/* DELETE NP TO APPLICATION */
+
 int del_np_from_app(app_dcll *l, char *aval, char *nval)
 {
 	app_node *temp = search_app(l, aval);	
@@ -376,3 +338,53 @@ int del_np_from_app(app_dcll *l, char *aval, char *nval)
 		}
 	}
 }
+
+/* Below is the code to test the list */
+
+/*int main() {
+
+	app_dcll l;
+	char val[25], aval[25], nval[25];
+	init_app(&l);
+	
+	int ch;
+	while(1) {
+		//printf("APP_DCLL : Enter Choice :\n0 - print_app\n1 - Add App\n2 - search_app App\n3 - Delete App\n4 - Add NP to App\n5 - Delete NP from App\n");
+		scanf("%d", &ch);
+		switch(ch) {
+	
+			case 0 :	print_app(&l);
+					break;
+			case 1 :	//printf("APP_DCLL : Enter Val :\n");
+					scanf(" %s", val);
+					addapp_node(&l, val);
+					print_app(&l);
+					break;
+			case 2 : 	//printf("APP_DCLL : Enter Val :\n");
+					scanf(" %s", val);
+					search_app(&l, val);
+					break;
+			case 3 :	//printf("APP_DCLL : Enter Val :\n");
+					scanf(" %s", val);
+					del_app(&l, val);
+					print_app(&l);
+					break;
+			case 4 :	//printf("APP_DCLL : Enter Val for App and NP:\n");
+					scanf(" %s %s", aval, nval);
+					//printf("APP_DCLL : Aval - %s| and nval - %s|\n", aval, nval);
+					add_np_to_app(&l, aval, nval);
+					print_app(&l);
+					break;
+			case 5 :	//printf("APP_DCLL : Enter Val for App and NP:\n");
+					scanf(" %s %s", aval, nval);
+					del_np_from_app(&l, aval, nval);
+					print_app(&l);
+					break;
+		}
+	}
+	return 0;
+
+}
+
+*/
+

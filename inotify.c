@@ -1,19 +1,25 @@
+/* The file contains for inotify library functions to work with inotify */
+
 #include"inotify.h"
 
+/* flags for inotify in string format to match with requested paramaters */
 char *flags[] = {"IN_ACCESS", "IN_ATTRIB", "IN_CLOSE_WRITE", "IN_CLOSE_NOWRITE", "IN_CREATE", "IN_DELETE", "IN_MODIFY", "IN_DELETE_SELF", "IN_MOVED_FROM", "IN_MOVED_TO", "IN_OPEN", "IN_DONT_FOLLOW", "IN_EXCL_UNLINK", "IN_MASK_ADD", "IN_ONESHOT", "IN_ONLYDIR"};
 
+/* flags for intotify in integer format */
 long long unsigned int values[] = {IN_ACCESS, IN_ATTRIB, IN_CLOSE_WRITE, IN_CLOSE_NOWRITE, IN_CREATE, IN_DELETE, IN_MODIFY, IN_DELETE_SELF, IN_MOVED_FROM, IN_MOVED_TO, IN_OPEN, IN_DONT_FOLLOW, IN_EXCL_UNLINK, IN_MASK_ADD, IN_ONESHOT, IN_ONLYDIR};
 
+
+/* FUNCTION TO GET NOTIFICATION */
 void getnotify(struct getnotify_threadArgs* args) {
 	
 	printf("Args received in getnotify - %s\n", args->argssend);
-	
+	 
 	int length, i = 0;
 	int fd;
 	int wd;
 	char buffer[EVENT_BUF_LEN];
 	char pathname[256];
-//	strcpy(pathname, "/home/shivsam/Desktop/");
+
 	char mask[512];
 //	strcpy(mask, "IN_CREATE|IN_DELETE|IN_MODIFY");
 	
@@ -23,9 +29,7 @@ void getnotify(struct getnotify_threadArgs* args) {
 	char delimattr[3] = "##";
 	char delimval[3] = "::";
 	char retStr[1024];
-	
-	/*IF WE FIX THE ORDER OF PASSING OF ARGUMENTS, WE DO NOT NEED TO SPECIFY THE "KEY". IF WE SPECIFY THE KEY, IT MEANS THAT THE ORDER OF PASSING ARGUMENTS IS FLEXIBLE, THEN DO strtok(string, KEY::). FOR NOW, I HAVE FIXED THE ORDER, BUT KEPT THE KEY FOR CLARITY*/
-	
+		
 	strcpy(one, strtok(args->argssend, delimattr));
 	strcpy(two, strtok(NULL, delimattr));
 	strcpy(three, strtok(NULL, delimattr));
@@ -310,6 +314,8 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 */
+
+/* FUNCTION TO CONVERT STRING MASK TO INTEGER */
 void getmask(long long unsigned int *maskval, char *mask) {
 
 	char copy[512];

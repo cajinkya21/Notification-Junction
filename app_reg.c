@@ -1,13 +1,18 @@
+/* 
+*	The file contains code for registering the application with NJ. 
+*/
+
 #include <sys/types.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdio.h>
 
-#define NAME "./app_reg"
+#define NAME "./app_reg"						
 
-main(int argc, char *argv[]) 
-{	int sock; 
+int main(int argc, char *argv[]) {
+
+	int sock; 
  	struct sockaddr_un server; 
 	char buf[1024];
 	char data[1024];
@@ -34,4 +39,6 @@ main(int argc, char *argv[])
 	if (write(sock, data, sizeof(data)) < 0) 
 		perror("APP_REG : Writing On Stream Socket"); 
 	close(sock); 
- } 
+	return 0; 
+
+} 

@@ -1,3 +1,9 @@
+/*
+*	This file contains code for unregistering the np with the NJ using sockets
+*/
+
+
+
 #include <sys/types.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -6,7 +12,7 @@
 
 #define NAME "./np_unreg"
 
-main(int argc, char *argv[]) 
+int main(int argc, char *argv[]) 
 {	int sock; 
  	struct sockaddr_un server; 
 	char buf[1024];
@@ -33,5 +39,6 @@ main(int argc, char *argv[])
 	} 
 	if (write(sock, data, sizeof(data)) < 0) 
 		perror("APP_GETNOTIFY : Writing On Stream Socket"); 
-	close(sock); 
+	close(sock);
+	return 0; 
  } 
