@@ -85,14 +85,18 @@
 #define AppUnReg "app_unreg"
 #define NpReg "np_reg"
 #define NpUnReg "np_unreg"
+#define StatSocket "statsock"
 
 #define QLEN 32
-/*FUNCTION DECLARATIONA*/
+/*FUNCTION DECLARATIONS*/
+
+void print_stat();
 int register_app(char *);
 int unregister_app(char *);
 int register_np(char *);
 int unregister_np(char *);
 
+void *PrintStat(void *);
 void *AppRegMethod(void *);
 void *AppUnRegMethod(void *);
 void *NpRegMethod(void *);

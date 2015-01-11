@@ -29,6 +29,17 @@ app_dcll  appList;/*head of appList*/
 /*Mutexes to be used for synchronizing list*/
 
 pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex,np_list_count_mutex;
+void print_stat() {
+	
+	//printf("NP\t\t\t\t\tCOUNT OF REGISTERED APPs");
+	//printf("---------------------------------------------------------------------------------------------------------");
+	print_np(&npList);
+	//printf("---------------------------------------------------------------------------------------------------------");
+	print_app(&appList);
+	//printf("---------------------------------------------------------------------------------------------------------");
+
+}
+
 
 /*TO REGISTER APP with NJ*/
 int register_app(char *buff) {
@@ -60,8 +71,18 @@ int register_app(char *buff) {
 	
 	/*Check if that registration already exists*/
 	
+	if(search_app(&appList, app_name) == NULL) {
+	
+		addapp_node(&appList, app_name);
+		printf("Added for the first time\n");
+	
+	}
+	
+	
+	
+	
 	/*HANDLED IN LIST*/
-	retval = addapp_node(&appList, app_name);
+	retval = searchReg(&appList, app_name, np_name);
 	
 	if(retval == -1) {
 	
@@ -74,10 +95,12 @@ int register_app(char *buff) {
 	if(retval != -1) {				/*IF APP IS NOT PREVIOUSLY REGISTERED*/
 		pthread_mutex_lock(&np_list_count_mutex);
 		incr_np_app_cnt(&npList, np_name);
+		add_np_to_app(&appList, app_name, np_name);
+
 		pthread_mutex_unlock(&np_list_count_mutex);
 		if(np_name == NULL) {
 			pthread_mutex_lock(&app_list_mutex);
-			add_np_to_app(&appList, app_name, np_name);
+			//add_np_to_app(&appList, app_name, np_name);
 			pthread_mutex_unlock(&app_list_mutex);
 			printf("NJ.C   : NJ : Added successfully\n");
 		}
@@ -166,6 +189,8 @@ char* getnotify_app(char *buff) {
 /* MAIN CODE */
 int main(int argc, char *argv[]) {
 	/* first remove(unlink) the sockets if they already exist */
+
+	unlink(StatSocket);
 	unlink(AppReg);
 	unlink(AppUnReg);
 	unlink(NpReg);
@@ -199,6 +224,33 @@ int main(int argc, char *argv[]) {
 	/*Initialize APP List*/
 	init_app(&appList);
 	printf("NJ.C   : initialization of app lsit \n");
+	printf("initialization of app lsit \n");
+	
+	/* CREATE SOCKET FOR STAT */
+
+	
+
+	struct threadArgs stat;
+
+	stat.sock = socket(AF_UNIX, SOCK_STREAM, 0); 
+	 printf("Socket stat created\n");
+
+	if(stat.sock < 0) { 
+		perror("opening stream socket"); 
+		exit(1); 
+	}
+	  
+	stat.server.sun_family = AF_UNIX; 
+	strcpy(stat.server.sun_path, StatSocket); 
+	 
+	if(bind(stat.sock, (struct sockaddr *) &stat.server, sizeof(struct sockaddr_un))) {  
+		perror("binding stream socket"); 
+		exit(1);
+	} 
+	 
+	printf("Socket has name %s\n", stat.server.sun_path); 
+	
+	
 	/* CREATE SOCKET FOR APPLICATION REGISTRATION */
 
 	
@@ -315,6 +367,13 @@ int main(int argc, char *argv[]) {
 	 
 	/* FORK THREADS TO LISTEN  AND ACCEPT */
 	
+	
+	pthread_t tid_stat;
+	 
+	if(pthread_create(&tid_stat, NULL, &PrintStat, (void *)&stat) == 0) {
+		printf("Pthread_Creation successful for stat\n");
+	}
+	
 	pthread_t tid_app_reg;
 	 
 	if(pthread_create(&tid_app_reg, NULL, &AppRegMethod, (void *)&app_reg) == 0) {
@@ -360,7 +419,40 @@ int main(int argc, char *argv[]) {
 
 }
 /* APP REGISTER METHOD THAT WILL RUN IN THREAD FORKED FOR APP REGISTRATION*/
-void *AppRegMethod(void *arguments) {
+
+void *PrintStat(void *arguments) {
+	struct threadArgs *args = arguments;
+	printf("In STAT\n");
+    	printf("args -> msgsock - %d\n", args -> msgsock);
+
+       	listen(args->sock,QLEN ); 
+	int i = 0;
+	for(;;) { 
+		args->msgsock = accept(args->sock, 0, 0); 
+		if(args->msgsock == -1) 
+			perror("accept"); 
+		else do {  
+				bzero(args->buf, sizeof(args->buf));
+				if((args->rval = read(args->msgsock, args->buf, 1024)) < 0) 
+					perror("reading stream message"); 
+				else if(args->rval == 0) {
+					printf("\nPrinting Statistics :\n"); 
+					print_stat();
+				}
+		}while(args->rval > 0); 
+	
+		close(args->msgsock);  
+	} 
+	
+	close(args->sock);  
+	unlink(StatSocket);
+    
+	pthread_exit(NULL);
+    	return NULL;    	
+}
+
+void *AppRegMethod(void *arguments)
+{
 	struct threadArgs *args = arguments;
 	printf("NJ.C   : In Reg\n");
     	printf("NJ.C   : args -> msgsock - %d\n", args -> msgsock);

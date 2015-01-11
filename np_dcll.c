@@ -6,7 +6,7 @@
 *	Searching an np, 
 *	Deleting an np,
 *	Getting the count of tha applications registered with this particular np, and
-*	Incrementing the count of tha applications registered with this particular np
+*	Incrementing the count of the applications registered with this particular np
 *
 *	At the end of this file is the commented code to test the linked list
 *
@@ -102,16 +102,17 @@ void print_np(np_dcll *l) {
 		return ;
 	}	
 
-	printf("NP_DCLL  : COUNT : %d\n", l->count);
+	printf("\nTotal number of NPs : %d\n", l->count);
 	main_np_node *ptr;
 	ptr = l->head;
 
+	printf("\nNP\t\t\tApp_Count");
+	printf("\n===================================\n");
+
 	while(i) {
-		printf("NP_DCLL  : NODE :");
-		printf("NP_DCLL  : %s   ", ptr->data);
-		printf("NP_DCLL  : APP_CNT:%d\n", ptr->app_count);
+		printf("%s   ", ptr->data);
+		printf("\t\t\t%d\n", ptr->app_count);
 		ptr = ptr->next;
-		printf("NP_DCLL  :  <==> \n");
 		i--;
 	}
 	//printf("NP_DCLL  : \n");
