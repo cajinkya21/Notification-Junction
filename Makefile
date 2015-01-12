@@ -1,8 +1,8 @@
-# CC variable contains the compiler that we want to use
+#CC variable contains the compiler that we want to use
 CC=gcc
 
 
-all: nj libinotify np_register dummyapp stat
+all: nj libinotify np_register dummyapp stat app_register app_unregister np_unregister app_getnotify
  
 
 nj:	nj.o app_dcll.o np_dcll.o 
@@ -24,7 +24,11 @@ clean:
 	rm dummyapp
 	rm np_register
 	rm stat
-	
+	rm app_getnotify
+	rm app_register
+	rm app_unregister
+	rm np_unregister
+
 
  #Target 3
 libinotify: inotify.o
@@ -48,6 +52,7 @@ dummyapp.o: dummyapp.c
 nonblocklib.o: nonblocklib.c lib.h
 	$(CC) -c nonblocklib.c -o nonblocklib.o 
 
+#Target 5
 stat: stat.o
 	$(CC)  stat.o -o stat
 
@@ -55,4 +60,18 @@ stat.o:
 	$(CC) -c stat.c -o stat.o 
 
 
+#Target 6
+app_register: app_reg.c 
+	$(CC) app_reg.c -o app_register
 
+#Target 7
+app_unregister: app_unreg.c
+	$(CC) app_unreg.c -o app_unregister
+
+#Target 8
+np_unregister: np_unreg.c
+	$(CC) np_unreg.c -o np_unregister
+
+#Target 9
+app_getnotify: app_getnotify.c
+	$(CC) app_getnotify.c -o app_getnotify
