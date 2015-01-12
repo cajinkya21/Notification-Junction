@@ -1,77 +1,22 @@
 /*This is header file for nj.c (notification juncitoncode)*/
+#ifndef _NJ_H
+#define _NJ_H	1	
 
 
-#ifndef SYSTYPES_H
-#define SYSTYPES_H
 #include<sys/types.h>
-#endif
-
-#ifndef SIGNAL_H
-#define SIGNAL_H
 #include<signal.h>
-#endif
-
-#ifndef SYSSOCKET_H
-#define SYSSOCKET_H
 #include<sys/socket.h>
-#endif
-
-#ifndef SYSUN_H
-#define SYUN_H
 #include<sys/un.h>
-#endif
-
-
-#ifndef PTHREAD_H
-#define PTHREAD_H
 #include<pthread.h>
-#endif
-
-#ifndef SYSTYPES_H
-#define SYSTYPES_H
 #include<sys/types.h>
-#endif
-
-#ifndef SYSSTAT_H
-#define SYSSTAT_H
 #include<sys/stat.h>
-#endif
-
-#ifndef FCNTL_H
-#define FCNTL_H
 #include <fcntl.h>
-#endif
-
-
-#ifndef STDIO_H
-#define STDIO_H
 #include<stdio.h>
-#endif
-
-#ifndef STDLIB_H
-#define STDLIB_H
 #include<stdlib.h>
-#endif
-
-#ifndef UNISTD_H
-#define UNISTD_H
 #include<unistd.h>
-#endif
-
-#ifndef DLFCN_H
-#define DLFCN_H
 #include <dlfcn.h>
-#endif
-
-#ifndef ALREXST
 #define ALREXST -1
-#endif
-
-#ifndef NOTFND
 #define NOTFND -2
-#endif
-
-
 #define ERROR -1
 #define SUCCESS 1
 
@@ -130,3 +75,5 @@ int unregister_np(char *);
 
 /*function to get notification */
 char* getnotify_app(char *); 
+
+#endif /*nj.h*/

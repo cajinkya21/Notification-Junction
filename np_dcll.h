@@ -1,32 +1,13 @@
 /* This file contains code for the dcll of np(s) */
+#ifndef _NPDCLL_H
+#define _NPDCLL_H	
 
-#ifndef STDIO_H
-#define STDIO_H
 #include<stdio.h>
-#endif
-
-#ifndef STDLIB_H
-#define STDLIB_H
 #include<stdlib.h>
-#endif
-
-#ifndef UNISTD_H
-#define UNISTD_H
 #include<unistd.h>
-#endif
-
-#ifndef STRING_H
-#define STRING_H
 #include <string.h>
-#endif
-
-#ifndef ALREXST
 #define ALREXST -1
-#endif
-
-#ifndef NOTFND
 #define NOTFND -2
-#endif
 
 /* The node for np(s) */
 
@@ -53,4 +34,4 @@ void incr_np_app_cnt(np_dcll *, char *);
 int get_np_app_cnt(np_dcll *, char *);
 
 
-
+#endif  /*np_dcll.h*/
