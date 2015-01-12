@@ -2,8 +2,8 @@
 CC=gcc
 
 
-all: nj libinotify np_register dummyapp
-
+all: nj libinotify np_register dummyapp stat
+ 
 
 nj:	nj.o app_dcll.o np_dcll.o 
 	$(CC) nj.o app_dcll.o np_dcll.o -lpthread -o nj -ldl
@@ -23,7 +23,8 @@ clean:
 	rm libinotify.so
 	rm dummyapp
 	rm np_register
-
+	rm stat
+	
 
  #Target 3
 libinotify: inotify.o
@@ -46,3 +47,12 @@ dummyapp.o: dummyapp.c
 
 nonblocklib.o: nonblocklib.c lib.h
 	$(CC) -c nonblocklib.c -o nonblocklib.o 
+
+stat: stat.o
+	$(CC)  stat.o -o stat
+
+stat.o:
+	$(CC) -c stat.c -o stat.o 
+
+
+
