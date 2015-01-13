@@ -104,6 +104,7 @@ void print_app(app_dcll *l) {
 	int i = l->count;
 	if(l->count == 0) {
 		printf("APP_DCLL : NO APPS TO PRINT\n");
+        return;
 	}	
 	printf("\nTotal number of applications : %d\n", l->count);
 	app_node *ptr;
@@ -118,23 +119,36 @@ void print_app(app_dcll *l) {
 		ptr = ptr->next;
 		i--;
 	}
-	/*
+
+
+// Printing registrations
+   
+
+
+	
 	i = l->count;
 	ptr = l->head;
-	printf("\nApp\t\t\t\t\t\tRegistered with");
+    if(i != 0) {	
+    printf("\nApp\t\t\tRegistered with");
 	printf("\n===================================\n");
-	printf("%s\t\t\t", ptr->data);
+    
+    }
+
 	while(i) {
 		np = ptr->np_list_head;
+        printf("\n%s\t\t\t", ptr->data);
+        //printf("%s\n", np->name);	
 		while(np != NULL) {
 			printf("%s\n", np->name);	
 			np = np->next;	
-			printf("\t\t\t\t\t");	
+			printf("\t\t\t");	
 		}
+    
+    
 		ptr = ptr->next;
 		i--;
 	}
-	*/
+	
 	
 	
 	/* Printing list in backward direction */
@@ -273,17 +287,19 @@ int del_app(app_dcll *l, char *val)	{
 }
 
 /* ADD NP TO APPLICATION */
-
+/*
 int add_np_to_app(app_dcll *l, char *aval, char *nval)	{
 
 	//printf("APP_DCLL : ADDING TO APPLICATION %s, NP %s\n", aval, nval);
 	app_node *temp = search_app(l, aval);	
 	np_node *n, *m, *b;
+    int i;
 	if(temp == NULL)	{	
 		//printf("APP_DCLL : NOT FOUND %s\n", aval);
 		return NOTFND;
 	}
 		
+    printf("You asked to add np %s to app %s\n", nval, aval);
 	np_node *np_ptr;
 	np_ptr = temp->np_list_head;
 	while(np_ptr != NULL) {
@@ -336,8 +352,83 @@ int add_np_to_app(app_dcll *l, char *aval, char *nval)	{
 		printf("temp->np_count = %d\n", temp->np_count);
 
 	}
+
+    printf("Printing from add_np_to_app :\n");
+
+printf("App - %s:\n", temp->data);
+np_ptr = temp->np_list_head;
+i = temp->np_count;
+while(i) {
+    printf("Np is %s\n", np_ptr->name);
+    np_ptr = np_ptr->next;
+    i--;
+
+}
+
 	return 0;
 }
+
+
+*/
+
+int add_np_to_app(app_dcll *l, char *aval, char *nval)	{
+
+	//printf("APP_DCLL : ADDING TO APPLICATION %s, NP %s\n", aval, nval);
+	app_node *temp = search_app(l, aval);	
+	np_node *n, *m, *b;
+	if(temp == NULL)	{	
+		//printf("APP_DCLL : NOT FOUND %s\n", aval);
+		return NOTFND;
+	}
+	
+	else {
+		//printf("APP_DCLL : FOUND AND ADDING TO %s\n", temp->data);	
+	}
+	
+	n = malloc(sizeof(np_node));
+	
+	if(n == NULL){
+		perror("APP_DCLL :  ERROR IN MALLOC");
+		exit(1);
+	}
+
+	n->name = malloc(sizeof(nval) + 1);
+
+	if(n->name == NULL){
+		perror("APP_DCLL :  ERROR IN MALLOC");
+		exit(1);
+	}
+	n->next = NULL;
+	strcpy(n->name, nval);
+	if(temp->np_list_head == NULL)	{
+		temp->np_list_head = n;
+		temp->np_count++;
+		return 0;
+	}
+	else	{
+		m = temp->np_list_head;
+		b = m;
+		if(m->name == nval)	{
+				//printf("APP_DCLL : EXISTING NODE\n");
+				return ALREXST;
+		}
+		b = m;
+		m = m->next;
+		while(m != NULL)	{
+			if(m->name == nval)	{
+				//printf("APP_DCLL : EXISTING NODE\n");
+				return ALREXST;
+			}
+			b = m;
+			m = m->next;
+		}
+		b->next = n;
+		temp->np_count++;
+	}
+	return 0;
+}
+
+
 
 /* DELETE NP FROM APPLICATION */
 

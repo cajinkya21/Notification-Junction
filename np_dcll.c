@@ -18,7 +18,8 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 *	Searching an np, 
 *	Deleting an np,
 *	Getting the count of tha applications registered with this particular np, and
-*	Incrementing the count of the applications registered with this particular np
+*	INcrementing the count of the applications registered with this particular np
+*	DEcrementing the count of the applications registered with this particular np
 *
 *	At the end of this file is the commented code to test the linked list
 *
@@ -229,6 +230,19 @@ void incr_np_app_cnt(np_dcll *l, char *nval) {
 		return;
 
 	temp->app_count++; 	
+	//printf("NP_DCLL  : App_cnt of %s = %d\n",nval, temp->app_count);
+}
+
+void decr_np_app_cnt(np_dcll *l, char *nval) {
+
+	main_np_node *temp;
+	temp = search_np(l, nval);
+
+	if(temp == NULL)
+		return;
+
+	temp->app_count--; 	
+	printf("\t%d\n", temp->app_count);
 	//printf("NP_DCLL  : App_cnt of %s = %d\n",nval, temp->app_count);
 }
 

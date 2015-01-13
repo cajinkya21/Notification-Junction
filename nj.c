@@ -112,7 +112,6 @@ int register_app(char *buff) {
 		pthread_mutex_unlock(&np_list_count_mutex);
 		if(np_name == NULL) {
 			pthread_mutex_lock(&app_list_mutex);
-			//add_np_to_app(&appList, app_name, np_name);
 			pthread_mutex_unlock(&app_list_mutex);
 			printf("NJ.C   : NJ : Added successfully\n");
 		}
@@ -130,23 +129,71 @@ int register_app(char *buff) {
 int unregister_app(char *buff) {
 	/*if app_unregister ie buff passes app1::np1 it will remove np1 .......else if buff is app1 ie app_unregister app1 then remove app node directly*/
 	char app_name[32], np_name[32];
-	
+	int retval;
 	char *s;
 	char delim[3] = "::";
+
+
+
 	strcpy(app_name, strtok(buff, delim));
-	strcpy(np_name, strtok(NULL, delim));
-	if (np_name == NULL) {
+    
+    printf("App name - %s\n", app_name);
+
+    s = strtok(NULL, delim);
+
+    if(s != NULL) {
+    	strcpy(np_name, s);
+        printf("np name - %s\n", np_name);
+
+    }
+
+   
+
+	if (s == NULL) {
 		printf("NJ.C   : np_name == NULL case in unregister app\n");		
 		pthread_mutex_lock(&app_list_mutex);
+//This function decrements counts for all NPs with that app, we have to write this function in the nj because it accesses both lists
+        dec_all_np_counts(&appList, &npList, app_name);
+
+
 		del_app(&appList, app_name);
+
+// DEC HERE FOR ALL NPs with that app.
+        
+            
+
+
+
 		pthread_mutex_unlock(&app_list_mutex);
 	}
 	else {
+
+        retval = searchReg(&appList, app_name, np_name);
+	
+	    if(retval == -1) {
+	
+		printf("NJ.C   : NJ : REGISTRATION FOUND.\n");
+
+
 		pthread_mutex_lock(&app_list_mutex);
+
+// LOCK THE NP LIST
+        decr_np_app_cnt(&npList, np_name);
 		del_np_from_app(&appList, app_name, np_name);
-		pthread_mutex_unlock(&app_list_mutex);
+// DEC HERE for the np given.
+    
+	
+	    pthread_mutex_unlock(&app_list_mutex);
+	
+	    } /*need to change this function to return appropriate values*/
+	
+	    else {
+            printf("NJ : Invalid argument to app_unregister : Registration not found\n");
+        }
+
 	}
 	print_app(&appList);
+    print_np(&npList);
 	return 1;
 }
 /*FUNCTION TO REGISTER AN NP*/
@@ -795,3 +842,36 @@ for now I am sending the received strig directly as notificationstring for now I
 	/* Functions have to be written such that the argument will be the address of struct args */
 }
 
+void dec_all_np_counts(app_dcll * appList, np_dcll* npList, char* app_name) {
+    
+    app_node *ptrapp;
+    np_node *ptrnp;
+    int cnt;
+    // Find the app in the list. If it is found, for every np in its trailing list; visit the np_dcll and decrement its count.
+    printf("All nps deleted, since np_name was passed NULL\n");
+    
+    ptrapp = search_app(appList, app_name);
+    
+    if(ptrapp != NULL) { // App found
+        
+        cnt = ptrapp->np_count;
+        ptrnp = ptrapp->np_list_head;
+        printf("Application %s found\n", ptrapp->data);
+        printf("NPs are \n");
+        while(cnt) {
+                    printf("\t%s\t", ptrnp->name);
+                    decr_np_app_cnt(npList, ptrnp->name);
+                   // printf("\t%d\n", ptrnp->);
+                    ptrnp = ptrnp->next;
+                    cnt--;
+        }
+        
+    }
+    else {
+        
+        printf("Error : NJ : Asked to delete non-existent application\n");
+    
+    }
+
+
+}
