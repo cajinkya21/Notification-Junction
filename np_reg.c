@@ -29,10 +29,11 @@ int main(int argc, char *argv[]) {
 	}
 	else {
 	    m = strtok(NULL, "##");
-	    printf("Error : NP_REG : Enter usage\nExiting\n");
+	    
 	    if(m == NULL) {
+	    printf("Error : NP_REG : Enter usage\nExiting\n");
 	    exit(1);
-	}
+	    }
 	}
 
 	if (argc < 2) { 
