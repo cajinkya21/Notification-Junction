@@ -393,6 +393,7 @@ int add_np_to_app(app_dcll *l, char *aval, char *nval)	{
 	}
 
 	n->name = malloc(sizeof(nval) + 1);
+	n->arguments = NULL;
 
 	if(n->name == NULL){
 		perror("APP_DCLL :  ERROR IN MALLOC");

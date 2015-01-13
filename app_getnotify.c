@@ -18,7 +18,7 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 #include <sys/un.h>
 #include <stdio.h>
 
-#define NAME "./app_getnotify"						/* Socket name for sending parametes */
+#define NAME "./app_getn"						/* Socket name for sending parametes */
 									/* and for getting notifications in case of BLOCKED getnotify */
 
 

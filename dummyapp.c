@@ -13,6 +13,12 @@ int main(int argc, char* argv[]) {
 	int i;
 	int pid;
 	char arr[512];
+	
+	if(argc < 2) {
+	    printf("Kindly enter the directory\n");
+	    exit(0);
+	}
+	
 	strcpy(arr, "npname::inotify##dir::");
 	strcat(arr, argv[1]);   // The directory to be watched.
 	strcat(arr, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY");

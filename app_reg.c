@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 	strcpy(data, argv[1]);
 
 	if (argc < 2) { 
-		printf("APP_REG : Usage : %s <AppName>::<RegisteredNpName>", argv[0]); 
+		printf("APP_REG : Usage : %s <AppName>==<RegisteredNpName>", argv[0]); 
 		exit(1); 
 	}
 
