@@ -10,7 +10,7 @@
 #include<unistd.h>
 #include<signal.h>
 
-#define AppGetnotify "app_getnotify"
+#define AppGetnotify "app_getn"
 #define AppReg "app_reg"
 #define AppUnReg "app_unreg"
 

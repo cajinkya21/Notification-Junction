@@ -84,7 +84,7 @@ void sigintHandler(int signum) {
 int register_app(char *buff) {
 	int i;
 	char app_name[32], np_name[32];
-	char *s;
+	char *s, *n;
 	char delim[3] = "::";
 	int retval;
 
@@ -93,6 +93,9 @@ int register_app(char *buff) {
 	if(s != NULL)
 		strcpy(np_name, s);
     	
+    //strtok(buff, "##");
+    //n = strtok(NULL, "##");
+    //printf("ARGUMENTS LIST _ %s\n", n);
     	
     	
     	
@@ -135,6 +138,8 @@ int register_app(char *buff) {
 		pthread_mutex_lock(&np_list_count_mutex);
 		incr_np_app_cnt(&npList, np_name);
 		add_np_to_app(&appList, app_name, np_name);
+		
+		
 
 		pthread_mutex_unlock(&np_list_count_mutex);
 		if(np_name == NULL) {
@@ -227,7 +232,7 @@ int unregister_app(char *buff) {
 int register_np(char *buff) {
 	char np_name[32];
 	char delimkeyval[3] = "::";
-	char delimusage[3] = "##";
+	char delimusage[3] = "==";
 	char usage[512];
 	char *s;
 	main_np_node *ptr;

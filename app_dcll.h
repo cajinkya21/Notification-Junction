@@ -25,6 +25,7 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 typedef struct np_node {
 	char *name;
 	struct np_node *next;
+	char *arguments;
 }np_node;
 
 /* APPLICATION NODE STRUCTURE */

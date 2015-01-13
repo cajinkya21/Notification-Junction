@@ -37,7 +37,7 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 
 /* Create 2 sockets - app_reg, app_unreg*/
 /* Fork 2 threads - app_reg, app_unreg*/
-#define AppGetnotify "app_getnotify"
+#define AppGetnotify "app_getn"
 #define AppReg "app_reg"
 #define AppUnReg "app_unreg"
 #define NpReg "np_reg"
