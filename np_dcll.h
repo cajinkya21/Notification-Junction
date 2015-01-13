@@ -50,6 +50,7 @@ void print_np(np_dcll *);
 main_np_node* search_np(np_dcll *, char*);
 int del_np(np_dcll *, char*);
 void incr_np_app_cnt(np_dcll *, char *);
+void decr_np_app_cnt(np_dcll *, char *);
 int get_np_app_cnt(np_dcll *, char *);
 
 

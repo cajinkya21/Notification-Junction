@@ -103,6 +103,8 @@ void *NpRegMethod(void *);
 void *NpUnRegMethod(void *);
 void *AppGetNotifyMethod(void *);
 void *NpGetNotifyMethod(void *);
+
+void dec_all_np_counts(app_dcll *, np_dcll*, char*);
 /*STRUCTURE FOR ARGUMENTS TO BE PASSED TO THREAD*/
 typedef struct threadArgs {
                 int sock, msgsock, rval;
