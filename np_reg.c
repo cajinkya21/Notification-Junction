@@ -17,7 +17,23 @@ int main(int argc, char *argv[]) {
  	struct sockaddr_un server; 
 	char buf[1024];
 	char data[1024];
+	char trash[1024];
 	strcpy(data, argv[1]);
+	strcpy(trash, data);
+	
+	char *m;
+	m = strtok(trash, "##");
+	if(m == NULL) {
+	    printf("Error : NP_REG : Enter usage\nExiting\n");
+	    exit(1);
+	}
+	else {
+	    m = strtok(NULL, "##");
+	    printf("Error : NP_REG : Enter usage\nExiting\n");
+	    if(m == NULL) {
+	    exit(1);
+	}
+	}
 
 	if (argc < 2) { 
 		printf("NP_REG : Usage:%s <np_name>", argv[0]); 

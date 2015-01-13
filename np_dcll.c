@@ -68,6 +68,8 @@ int add_np(np_dcll *l, char *val) {
 	new->app_count = 0; 	
 	//printf("NP_DCLL  : COUNT in add_main_np_node: %d\n", l->count);
 	
+	new->usage = NULL;
+	
 	if(l->count == 0) {
 		l->head = new;
 		new->prev = new;

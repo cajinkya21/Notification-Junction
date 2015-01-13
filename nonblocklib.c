@@ -88,10 +88,13 @@ int app_getnotify(int pid, char *key_val_string, char choice) {
 		return -1;
 		
 	}
-	char str[15];
+	
+	printf("Received :\npid = %d, keyvalstr = %s, choice = %c\n", pid, key_val_string, choice);
+	char str[16];
 	sprintf(str, "%d", pid );
+	printf("STRING OF PID IS %s\n", str);
 	//strcpy(data, "pid::");
-	strcat(data, str);
+	strcpy(data, str);
 	strcat(data , "##");	
 	strcat(data, key_val_string);
 	if(choice == 'B') {

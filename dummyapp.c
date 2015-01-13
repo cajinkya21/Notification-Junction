@@ -9,9 +9,14 @@ void sigusrhandler(int signum) {
 		exit(1);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
 	int i;
 	int pid;
+	char arr[512];
+	strcpy(arr, "npname::inotify##dir::");
+	strcat(arr, argv[1]);   // The directory to be watched.
+	strcat(arr, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY");
+	printf("Arr is %s\n", arr);
 	pid = getpid();
 	signal(SIGUSR1, sigusrhandler);
 	sigset_t mask, oldmask;
@@ -23,7 +28,8 @@ int main() {
 
 	i = app_register("app1::inotify");				/* Application registers with inotify */
 	printf("Dummy app app register done\n");
-	i = app_getnotify(pid,"npname::inotify##dir::/home/student/Desktop/##flags::IN_CREATE*IN_DELETE*IN_MODIFY", 'N' );
+	printf("DUMMYAPP : Sending pid = %d\n", pid);
+	i = app_getnotify(pid, arr, 'N' );
 									/* Application request for notification from inotify */
 
 	printf("Dummy app getnotify done \n");

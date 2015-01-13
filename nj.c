@@ -199,12 +199,31 @@ int unregister_app(char *buff) {
 /*FUNCTION TO REGISTER AN NP*/
 int register_np(char *buff) {
 	char np_name[32];
-	char delim[3] = "::";
-	strcpy(np_name, strtok(buff, delim));
+	char delimkeyval[3] = "::";
+	char delimusage[3] = "##";
+	char usage[512];
+	char *s;
+	main_np_node *ptr;
 	
+	strcpy(np_name, strtok(buff, delimusage));
+	s = strtok(NULL, delimusage);
+	
+	if(s == NULL) { 
+	    printf("Enter usage\nExiting\n"); 
+	    return -1;
+	}
+	
+	strcpy(usage, s);
 	pthread_mutex_lock(&np_list_mutex);
 	add_np(&npList, np_name);
 	pthread_mutex_unlock(&np_list_mutex);
+	
+	ptr = search_np(&npList, np_name);
+	printf("Found ptr with name %s\n", ptr->data);
+	ptr->usage = (char*)malloc(sizeof(char) * 512);
+	strcpy(ptr->usage, usage);
+	
+	printf("ptr->usage = %s\n", ptr->usage);
 
 	print_np(&npList);
 	return 1;
@@ -737,8 +756,11 @@ void * AppGetNotifyMethod(void *arguments) {
                         else    						
                             printf("NJ.C   : %s madhe %d bytes WRITTEN\n", filename, al);
 
-						printf("NJ.C   : Before Sig \n");
-						kill(pid, SIGUSR1);
+						printf("NJ.C   : Before Sig, %d sending to pid = %d \n", getpid(), pid);
+						if(kill(pid, SIGUSR1) == -1) {
+						    perror("Error in kill :\n");
+						// CHANGE TO PRINTF LATER
+						}
 						printf("NJ.C   : After Sig \n");
 					}
                                          printf("NJ.C   : -->%s\n", args->buf);
