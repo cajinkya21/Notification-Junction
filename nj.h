@@ -90,4 +90,6 @@ int unregister_np(char *);
 /*function to get notification */
 char* getnotify_app(char *); 
 
+void sigintHandler(int signum);
+
 #endif /*nj.h*/
