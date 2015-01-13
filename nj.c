@@ -36,7 +36,7 @@ np_dcll npList;/*head of npList*/
 
 /*Declare global app List*/
 app_dcll  appList;/*head of appList*/
-
+int fd_pidnames;
 
 /*Mutexes to be used for synchronizing list*/
 
@@ -53,11 +53,38 @@ void print_stat() {
 }
 
 
+//To be called while NJ is exiting to remove all pid files
+void sigintHandler(int signum) {
+	printf("In sigIntHandlere\n");
+	if(signum == SIGINT){
+		close(fd_pidnames);
+		
+		fd_pidnames = open("File_PIDS.txt", O_CREAT | O_RDWR, 0777);
+		int r_cnt, sys_r;
+		char buf1[64], buf2[64];
+		FILE *pidnames = fdopen(fd_pidnames, "r");
+		//printf("Removing pid files\n");
+		while(fgets(buf2, sizeof(buf2), pidnames)) {
+			//printf("I am in sighandler loop\n");
+			/*strcpy(buf1, "rm ");
+			strcat(buf1, buf2);
+			sys_r = system(buf1);*/
+			unlink(buf2);
+			printf("%s removed\n",buf2);
+		}
+		unlink("File_PIDS.txt");
+		printf("File_PIDS.txt removed\n");
+		//printf("Removed pid files\n\n");
+		exit(0);
+		
+	}
+}
+
 /*TO REGISTER APP with NJ*/
 int register_app(char *buff) {
 	int i;
 	char app_name[32], np_name[32];
-	char *s, *n;
+	char *s;
 	char delim[3] = "::";
 	int retval;
 
@@ -66,9 +93,6 @@ int register_app(char *buff) {
 	if(s != NULL)
 		strcpy(np_name, s);
     	
-    //strtok(buff, "##");
-    //n = strtok(NULL, "##");
-    //printf("ARGUMENTS LIST _ %s\n", n);
     	
     	
     	
@@ -111,8 +135,6 @@ int register_app(char *buff) {
 		pthread_mutex_lock(&np_list_count_mutex);
 		incr_np_app_cnt(&npList, np_name);
 		add_np_to_app(&appList, app_name, np_name);
-		
-		
 
 		pthread_mutex_unlock(&np_list_count_mutex);
 		if(np_name == NULL) {
@@ -205,7 +227,7 @@ int unregister_app(char *buff) {
 int register_np(char *buff) {
 	char np_name[32];
 	char delimkeyval[3] = "::";
-	char delimusage[3] = "==";
+	char delimusage[3] = "##";
 	char usage[512];
 	char *s;
 	main_np_node *ptr;
@@ -273,6 +295,11 @@ char* getnotify_app(char *buff) {
 int main(int argc, char *argv[]) {
 	/* first remove(unlink) the sockets if they already exist */
 
+	signal(SIGINT, sigintHandler);
+	sigset_t mask, oldmask;
+	sigemptyset (&mask);
+	sigaddset (&mask, SIGINT);
+
 	unlink(StatSocket);
 	unlink(AppReg);
 	unlink(AppUnReg);
@@ -281,6 +308,10 @@ int main(int argc, char *argv[]) {
 	unlink(AppGetnotify);
 	
 	printf("NJ.C   : In main\n");
+
+	fd_pidnames = open("File_PIDS.txt", O_CREAT | O_RDWR, 0777);
+	printf("NJ.C   : Files_PIDs.txt created.\n");
+	printf("NJ.C   : fd = %d", fd_pidnames);
 
 	/*Initialization of all mutexes*/
 	
@@ -738,10 +769,13 @@ void * AppGetNotifyMethod(void *arguments) {
 					printf("NJ.C   : Received args->buf is %s\n",args->buf);				
                                         received = getnotify_app(args->buf);
 					int fd, al;
-					char filename[64];
+					char filename[64], filename1[64];
 					strcpy(filename,"./");
 					strcat(filename, spid);
-                    strcat(filename, ".txt");
+					strcpy(filename1, spid);
+                    			strcat(filename, ".txt");
+                      			strcat(filename1, ".txt");
+                      			strcat(filename1, "\n");
 					printf("NJ.C   : Filename:%s\n\n", filename);
 					if(choice == 'N') {
 						if(!(fd = open(filename , O_CREAT | O_APPEND | O_RDWR,0777))) {
@@ -754,6 +788,9 @@ void * AppGetNotifyMethod(void *arguments) {
 
 						printf("NJ.C   : %s \n", received);
 						strcat(received,"\n");
+
+						 write((int)fd_pidnames, filename1, strlen(filename1));
+						printf("\n\nPID filename is written successfully.....\n\n");
 
                         al = write((int)fd, received, strlen(received));
 						if(al < 0)
