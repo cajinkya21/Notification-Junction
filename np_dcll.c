@@ -46,6 +46,7 @@ int add_np(np_dcll *l, char *val) {
 	}
 	
 	new->data = malloc(sizeof(val) + 1);
+	new->usage = NULL;
 	
 	if(new->data == NULL)	{
 		perror("NP_DCLL : ERROR IN MALLOC");

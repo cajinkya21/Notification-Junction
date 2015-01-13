@@ -15,6 +15,7 @@ typedef struct main_np_node {
 	char* data;
 	struct main_np_node *prev;
 	struct main_np_node *next;
+	char *usage;
 	int app_count;
 }main_np_node;
 
@@ -33,6 +34,7 @@ int del_np(np_dcll *, char*);
 void incr_np_app_cnt(np_dcll *, char *);
 void decr_np_app_cnt(np_dcll *, char *);
 int get_np_app_cnt(np_dcll *, char *);
+
 
 
 #endif  /*np_dcll.h*/
