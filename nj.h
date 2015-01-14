@@ -14,7 +14,6 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 #ifndef _NJ_H
 #define _NJ_H	1	
 
-
 #include<sys/types.h>
 #include<signal.h>
 #include<sys/socket.h>
