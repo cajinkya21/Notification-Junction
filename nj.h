@@ -43,7 +43,7 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 #define NpReg "np_reg"
 #define NpUnReg "np_unreg"
 #define StatSocket "statsock"
-
+#define APPLIMIT 32
 #define QLEN 32
 /*FUNCTION DECLARATIONS*/
 
@@ -60,7 +60,7 @@ void *NpRegMethod(void *);
 void *NpUnRegMethod(void *);
 void *AppGetNotifyMethod(void *);
 void *NpGetNotifyMethod(void *);
-
+void *ProceedGetnotifyMethod(void * arguments);
 void dec_all_np_counts(app_dcll *, np_dcll*, char*);
 /*STRUCTURE FOR ARGUMENTS TO BE PASSED TO THREAD*/
 typedef struct threadArgs {
