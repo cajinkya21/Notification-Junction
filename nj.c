@@ -771,6 +771,11 @@ void * AppGetNotifyMethod(void *arguments) {
 			printf("NJ.C   :  after exit ing args->rval is %d\n",args->rval);
                		close(args->msgsock);
         	}
+	while(i >= 0) {
+		pthread_join(threadarr[i], NULL);
+		i--;
+	}
+
 
         close(args->sock);
         unlink(AppUnReg);
