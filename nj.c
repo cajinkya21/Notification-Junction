@@ -40,7 +40,7 @@ int fd_pidnames;
 
 /*Mutexes to be used for synchronizing list*/
 
-pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex,np_list_count_mutex;
+pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex,np_list_count_mutex, getnotify_socket_mutex;
 void print_stat() {
 	
 	//printf("NP\t\t\t\t\tCOUNT OF REGISTERED APPs");
@@ -65,7 +65,8 @@ void sigintHandler(int signum) {
 		FILE *pidnames = fdopen(fd_pidnames, "r");
 		//printf("Removing pid files\n");
 		while(fgets(buf2, sizeof(buf2), pidnames)) {
-			//printf("I am in sighandler loop\n");
+			printf("I am in sighandler loop\n");
+			buf2[strlen(buf2) - 1] = '\0';
 			/*strcpy(buf1, "rm ");
 			strcat(buf1, buf2);
 			sys_r = system(buf1);*/
@@ -726,113 +727,44 @@ void * AppGetNotifyMethod(void *arguments) {
         printf("NJ.C   : In AppGetNotify\n");
         printf("NJ.C   : args -> msgsock - %d\n", args -> msgsock);
 	int i = 0;
-	char * received;
+	
         listen(args->sock, QLEN);
        	char * argstring;
 	FILE *fp;
 	struct sockaddr_un server; 
         server.sun_family = AF_UNIX; 
 	strcpy(server.sun_path, AppGetnotify);
-
-		
+	pthread_t threadarr[APPLIMIT];
+	
 	argstring = (char * ) malloc(sizeof(char) * 1024);
-        for(;;) {
+        for(;; ) {
+		
+		pthread_mutex_lock(&getnotify_socket_mutex);
                 args->msgsock = accept(args->sock, 0, 0);
                 if(args->msgsock == -1)
                         perror("NJ.C   : accept");
                 else do {
                                 bzero(args->buf, sizeof(args->buf));
-                                if((args->rval = read(args->msgsock, args->buf, 1024)) < 0)
+				args->rval = read(args->msgsock, args->buf, 1024);
+				pthread_mutex_unlock(&getnotify_socket_mutex);
+                                if(args->rval < 0)
                                         perror("NJ.C   : reading stream message");
-                                else if(args->rval == 0)
-                                        printf("NJ.C   : Ending connection\n");
+                               else if(args->rval == 0)
+       	                               printf("NJ.C   : Ending connection\n");
                                 else {	
-					int pid;
-					char rough[1024];
-					char choice ;
-					int j;
-					char *ptr;
-				        strcpy(rough, args->buf);
-					printf("NJ.C   :  %s  args-.buf received from library call\n",args->buf);
-					
-					int len = strlen(rough);
-					choice = rough[len - 1];
-					char spid[32];
-					strcpy(spid, strtok(rough,"##"));
-					pid = atoi(spid);
-					/*for(j = 0; j < len ; j++) {
-						if(rough[j] == '#')
-							if(rough[j+1] == '#')
-								break;
-					}*/
-					
-					j = strlen(rough);
-					strcpy(rough, args->buf);
-					strcpy(rough , &(rough[j+2]));
 
-					strcpy(args->buf, rough);
-					printf("NJ.C   : Received args->buf is %s\n",args->buf);				
-                                        received = getnotify_app(args->buf);
-					int fd, al;
-					char filename[64], filename1[64];
-					strcpy(filename,"./");
-					strcat(filename, spid);
-					strcpy(filename1, spid);
-                    			strcat(filename, ".txt");
-                      			strcat(filename1, ".txt");
-                      			strcat(filename1, "\n");
-					printf("NJ.C   : Filename:%s\n\n", filename);
-					if(choice == 'N') {
-						if(!(fd = open(filename , O_CREAT | O_APPEND | O_RDWR,0777))) {
-							perror("NJ.C   : not able to open file\n");
-							break;
-						}
-                        printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
-                        
-                        
-
-						printf("NJ.C   : %s \n", received);
-						strcat(received,"\n");
-
-						 write((int)fd_pidnames, filename1, strlen(filename1));
-						printf("\n\nPID filename is written successfully.....\n\n");
-
-                        al = write((int)fd, received, strlen(received));
-						if(al < 0)
-							perror("NJ.C   : Fwrite failed");
-                        else    						
-                            printf("NJ.C   : %s madhe %d bytes WRITTEN\n", filename, al);
-
-						printf("NJ.C   : Before Sig, %d sending to pid = %d \n", getpid(), pid);
-						if(kill(pid, SIGUSR1) == -1) {
-						    perror("Error in kill :\n");
-						// CHANGE TO PRINTF LATER
-						}
-						printf("NJ.C   : After Sig \n");
+					printf("%d is i in ProcerdGetnotify \n",i);	
+	 				if(pthread_create(&threadarr[i++], NULL, &ProceedGetnotifyMethod, (void *)&arguments) == 0) {
+						perror("NJ.C   : Pthread_Creations for ProceedgetnotifyMethod\n");
 					}
-                                         printf("NJ.C   : -->%s\n", args->buf);
-					 printf("NJ.C   : received notification is %s \n",received);
-				/*send the socket to get_notify client*/
-					 /*if (connect(args->msgsock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
-                				close(args->msgsock);
-                				perror("NJ.C   : connecting stream socket");
-                				exit(1);
-        				}*/
-					printf("NJ.C   : REPORTING TO CLIENT EVENT : %s\n",received); 
-					if(choice == 'B') {        				
-						if (write(args->msgsock, received, 1024) < 0)
-               						 perror("NJ.C   : writing on stream socket");
-					}
+					//ProceedGetnotifyMethod(arguments);
+					break;
+				}
 					
-					printf("NJ.C   :  Before freeing \n");
-					free(received);
-	 
-                                        break;
-                                }
-                }while(args->rval > 0);
-		printf("NJ.C   :  after exit ing args->rval is %d\n",args->rval);
-                close(args->msgsock);
-        }
+               		 }while(args->rval > 0);
+			printf("NJ.C   :  after exit ing args->rval is %d\n",args->rval);
+               		close(args->msgsock);
+        	}
 
         close(args->sock);
         unlink(AppUnReg);
@@ -944,3 +876,84 @@ void dec_all_np_counts(app_dcll * appList, np_dcll* npList, char* app_name) {
 
 
 }
+
+void *ProceedGetnotifyMethod(void * arguments) {
+	char * received;
+	struct threadArgs *args = arguments;
+	int pid;
+	char rough[1024];
+	char choice ;
+	int j;
+	char *ptr;
+        strcpy(rough, args->buf);
+	printf("NJ.C   :  %s  args-.buf received from library call\n",args->buf);
+	int len = strlen(rough);
+	choice = rough[len - 1];
+	char spid[32];
+	strcpy(spid, strtok(rough,"##"));
+	pid = atoi(spid);
+/*for(j = 0; j < len ; j++) {
+			if(rough[j] == '#')
+			if(rough[j+1] == '#')
+					break;
+		}*/
+				
+	j = strlen(rough);
+	strcpy(rough, args->buf);
+	strcpy(rough , &(rough[j+2]));
+	strcpy(args->buf, rough);
+	printf("NJ.C   : Received args->buf is %s\n",args->buf);				
+        received = getnotify_app(args->buf);
+	int fd, al;
+	char filename[64], filename1[64];
+	strcpy(filename,"./");
+	strcat(filename, spid);
+	strcpy(filename1, spid);
+	strcat(filename, ".txt");
+        strcat(filename1, ".txt");
+        strcat(filename1, "\n");
+	printf("NJ.C   : Filename:%s\n\n", filename);
+	if(choice == 'N') {
+		if(!(fd = open(filename , O_CREAT | O_APPEND | O_RDWR,0777))) {
+			perror("NJ.C   : not able to open file\n");
+			return;
+		}
+                printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
+                     
+                        
+		printf("NJ.C   : %s \n", received);
+		strcat(received,"\n");
+		write((int)fd_pidnames, filename1, strlen(filename1));
+		printf("\n\nPID filename is written successfully.....\n\n");
+                al = write((int)fd, received, strlen(received));
+		if(al < 0)
+			perror("NJ.C   : Fwrite failed");
+                else    						
+                        printf("NJ.C   : %s madhe %d bytes WRITTEN\n", filename, al);
+
+		printf("NJ.C   : Before Sig, %d sending to pid = %d \n", getpid(), pid);
+		if(kill(pid, SIGUSR1) == -1) {
+		    perror("Error in kill :\n");
+						// CHANGE TO PRINTF LATER
+		}
+		printf("NJ.C   : After Sig \n");
+	}
+        printf("NJ.C   : -->%s\n", args->buf);
+	printf("NJ.C   : received notification is %s \n",received);
+	/*send the socket to get_notify client*/
+	/*if (connect(args->msgsock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+         				close(args->msgsock);
+             				perror("NJ.C   : connecting stream socket");
+               				exit(1);
+        		}*/
+	printf("NJ.C   : REPORTING TO CLIENT EVENT : %s\n",received); 
+	if(choice == 'B') {        				
+		if (write(args->msgsock, received, 1024) < 0)
+           		perror("NJ.C   : writing on stream socket");
+	}
+					
+		printf("NJ.C   :  Before freeing \n");
+		free(received);
+		return;	        
+}
+
