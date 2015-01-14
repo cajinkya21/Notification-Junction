@@ -727,6 +727,10 @@ void * AppGetNotifyMethod(void *arguments) {
         printf("NJ.C   : In AppGetNotify\n");
         printf("NJ.C   : args -> msgsock - %d\n", args -> msgsock);
 	int i = 0;
+	struct proceedGetnThreadArgs *sendargs;
+	sendargs = (struct proceedGetnThreadArgs *)malloc(sizeof(struct proceedGetnThreadArgs));
+	
+	
 	
         listen(args->sock, QLEN);
        	char * argstring;
@@ -746,15 +750,17 @@ void * AppGetNotifyMethod(void *arguments) {
                 else do {
                                 bzero(args->buf, sizeof(args->buf));
 				args->rval = read(args->msgsock, args->buf, 1024);
+				strcpy(sendargs->buf, args->buf);
+				printf("\n\n\nsendargs has buf = %s\n", sendargs->buf);
 				pthread_mutex_unlock(&getnotify_socket_mutex);
                                 if(args->rval < 0)
                                         perror("NJ.C   : reading stream message");
                                else if(args->rval == 0)
        	                               printf("NJ.C   : Ending connection\n");
                                 else {	
-
+					printf("ARGS SENDING TO PROCEEDGETN are %s\n\n\n", args->buf);
 					printf("%d is i in ProcerdGetnotify \n",i);	
-	 				if(pthread_create(&threadarr[i++], NULL, &ProceedGetnotifyMethod, (void *)&arguments) == 0) {
+	 				if(pthread_create(&threadarr[i++], NULL, &ProceedGetnotifyMethod, (void *)sendargs) == 0) {
 						perror("NJ.C   : Pthread_Creations for ProceedgetnotifyMethod\n");
 					}
 					//ProceedGetnotifyMethod(arguments);
@@ -879,7 +885,8 @@ void dec_all_np_counts(app_dcll * appList, np_dcll* npList, char* app_name) {
 
 void *ProceedGetnotifyMethod(void * arguments) {
 	char * received;
-	struct threadArgs *args = arguments;
+	struct proceedGetnThreadArgs *args = arguments;
+	printf("ARGS SENDING TO PROCEEDGETN are %s\n\n\n", args->buf);
 	int pid;
 	char rough[1024];
 	char choice ;
@@ -948,8 +955,12 @@ void *ProceedGetnotifyMethod(void * arguments) {
         		}*/
 	printf("NJ.C   : REPORTING TO CLIENT EVENT : %s\n",received); 
 	if(choice == 'B') {        				
-		if (write(args->msgsock, received, 1024) < 0)
+		/*if (write(args->msgsock, received, 1024) < 0)
            		perror("NJ.C   : writing on stream socket");
+           		*/ 
+           		
+           		
+           		// WRITE TO FILE HERE
 	}
 					
 		printf("NJ.C   :  Before freeing \n");

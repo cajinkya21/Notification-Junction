@@ -68,6 +68,11 @@ typedef struct threadArgs {
                 char buf[1024];
 
 }threadArgs;
+
+typedef struct proceedGetnThreadArgs {
+		char buf[1024];
+}proceedGetnThreadArgs;
+
 /*STRUCTURE FOR ARGUMENTS TO BE PASSED TO GETNOTIFY THREAD*/
 typedef struct getnotify_threadArgs {
 		char argssend[1024];/*getnotify thread will receive string of required notification request from this field */
