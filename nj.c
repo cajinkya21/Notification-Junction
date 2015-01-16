@@ -236,6 +236,7 @@ int register_np(char *buff) {
 	char delimusage[3] = "==";
 	char usage[512];
 	char *s;
+	char **keyVal;
 	main_np_node *ptr;
 	
 	strcpy(np_name, strtok(buff, delimusage));
@@ -247,20 +248,87 @@ int register_np(char *buff) {
 	}
 	
 	strcpy(usage, s);
+	
+	extractKeyVal(usage, &keyVal);
+	
+	
 	pthread_mutex_lock(&np_list_mutex);
-	add_np(&npList, np_name);
+	add_np(&npList, np_name, usage, &keyVal);
 	pthread_mutex_unlock(&np_list_mutex);
 	
+	/*
 	ptr = search_np(&npList, np_name);
 	printf("Found ptr with name %s\n", ptr->data);
 	ptr->usage = (char*)malloc(sizeof(char) * 512);
 	strcpy(ptr->usage, usage);
-	
 	printf("ptr->usage = %s\n", ptr->usage);
+*/
+
+    
 
 	print_np(&npList);
 	return 1;
 }
+
+void extractKeyVal(char *usage, char *** keyVal) {
+    
+    printf("NJ : EXTRACTVAL : usage is %s\n", usage);
+    //keyVal = (char ***)malloc(sizeof(char **));
+    int cnt = 0, i = 0;
+    char copyusage[512];
+    char *ptr;
+    strcpy(copyusage, usage);
+    cnt = countArgs(copyusage, "::");
+    printf("EXTRACT KEYVAL : NJ : The count is %d\n", cnt);
+    
+    *keyVal = (char **)malloc((cnt + 1) * sizeof(char*));
+    
+    ptr = strtok(copyusage, "##");
+    
+     printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
+     
+    (*keyVal)[i] = (char *)malloc(sizeof(char) * strlen(ptr));
+     printf("Before strcpy\n");
+     strcpy((*keyVal)[i], ptr);
+     printf("After strcpy\n");
+    
+    for(i = 1; i < cnt; i++) {
+    
+        ptr = strtok(NULL, "##");    
+        if(!ptr) {
+            
+            break;
+        
+        }
+    
+        printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
+        if(!((*keyVal)[i] = (char *)malloc(sizeof(char) * 128)))
+            perror("MALLOC IS THE CULPRIT");
+        printf("Before strcpy\n");
+        strcpy((*keyVal)[i], ptr);
+       printf("After strcpy\n");
+            
+        
+    }
+    
+    (*keyVal)[i] = NULL; 
+    
+    return;
+
+}
+
+
+int countArgs(char *myString, char *delim) {
+
+    int count = 0;
+    const char *tmp = myString;
+    while(tmp = strstr(tmp, delim)) {
+        count++;
+        tmp++;
+    }
+    return count;
+}
+
 
 /*FUNCTION TO UNREGISTER AN NP*/
 int unregister_np(char *buff) {

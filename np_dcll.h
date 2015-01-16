@@ -29,6 +29,7 @@ typedef struct main_np_node {
 	struct main_np_node *next;
 	char *usage;
 	int app_count;
+	char **key_val_arr;
 }main_np_node;
 
 /* The node for the dcll */
@@ -39,7 +40,7 @@ typedef struct np_dcll {
 }np_dcll;
 
 void init_np(np_dcll *);
-int add_np(np_dcll *, char*);
+int add_np(np_dcll *, char* np_name, char* usage, char ***key_val_arr);   
 void print_np(np_dcll *);
 main_np_node* search_np(np_dcll *, char*);
 int del_np(np_dcll *, char*);

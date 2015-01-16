@@ -96,4 +96,6 @@ char* getnotify_app(char *);
 
 void sigintHandler(int signum);
 
+void extractKeyVal(char *, char ***);
+
 #endif /*nj.h*/
