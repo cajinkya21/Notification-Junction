@@ -14,7 +14,6 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 #ifndef _NJ_H
 #define _NJ_H	1	
 
-
 #include<sys/types.h>
 #include<signal.h>
 #include<sys/socket.h>
@@ -37,13 +36,13 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 
 /* Create 2 sockets - app_reg, app_unreg*/
 /* Fork 2 threads - app_reg, app_unreg*/
-#define AppGetnotify "app_getnotify"
+#define AppGetnotify "app_getn"
 #define AppReg "app_reg"
 #define AppUnReg "app_unreg"
 #define NpReg "np_reg"
 #define NpUnReg "np_unreg"
 #define StatSocket "statsock"
-
+#define APPLIMIT 32
 #define QLEN 32
 /*FUNCTION DECLARATIONS*/
 
@@ -60,7 +59,7 @@ void *NpRegMethod(void *);
 void *NpUnRegMethod(void *);
 void *AppGetNotifyMethod(void *);
 void *NpGetNotifyMethod(void *);
-
+void *ProceedGetnotifyMethod(void * arguments);
 void dec_all_np_counts(app_dcll *, np_dcll*, char*);
 /*STRUCTURE FOR ARGUMENTS TO BE PASSED TO THREAD*/
 typedef struct threadArgs {
@@ -69,6 +68,11 @@ typedef struct threadArgs {
                 char buf[1024];
 
 }threadArgs;
+
+typedef struct proceedGetnThreadArgs {
+		char buf[1024];
+}proceedGetnThreadArgs;
+
 /*STRUCTURE FOR ARGUMENTS TO BE PASSED TO GETNOTIFY THREAD*/
 typedef struct getnotify_threadArgs {
 		char argssend[1024];/*getnotify thread will receive string of required notification request from this field */
@@ -91,5 +95,7 @@ int unregister_np(char *);
 char* getnotify_app(char *); 
 
 void sigintHandler(int signum);
+
+void extractKeyVal(char *, char ***);
 
 #endif /*nj.h*/

@@ -40,7 +40,7 @@ int fd_pidnames;
 
 /*Mutexes to be used for synchronizing list*/
 
-pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex,np_list_count_mutex;
+pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex,np_list_count_mutex, getnotify_socket_mutex;
 void print_stat() {
 	
 	//printf("NP\t\t\t\t\tCOUNT OF REGISTERED APPs");
@@ -65,7 +65,8 @@ void sigintHandler(int signum) {
 		FILE *pidnames = fdopen(fd_pidnames, "r");
 		//printf("Removing pid files\n");
 		while(fgets(buf2, sizeof(buf2), pidnames)) {
-			//printf("I am in sighandler loop\n");
+			printf("I am in sighandler loop\n");
+			buf2[strlen(buf2) - 1] = '\0';
 			/*strcpy(buf1, "rm ");
 			strcat(buf1, buf2);
 			sys_r = system(buf1);*/
@@ -84,7 +85,7 @@ void sigintHandler(int signum) {
 int register_app(char *buff) {
 	int i;
 	char app_name[32], np_name[32];
-	char *s;
+	char *s, *n;
 	char delim[3] = "::";
 	int retval;
 
@@ -93,6 +94,9 @@ int register_app(char *buff) {
 	if(s != NULL)
 		strcpy(np_name, s);
     	
+    //strtok(buff, "##");
+    //n = strtok(NULL, "##");
+    //printf("ARGUMENTS LIST _ %s\n", n);
     	
     	
     	
@@ -135,6 +139,8 @@ int register_app(char *buff) {
 		pthread_mutex_lock(&np_list_count_mutex);
 		incr_np_app_cnt(&npList, np_name);
 		add_np_to_app(&appList, app_name, np_name);
+		
+		
 
 		pthread_mutex_unlock(&np_list_count_mutex);
 		if(np_name == NULL) {
@@ -227,9 +233,10 @@ int unregister_app(char *buff) {
 int register_np(char *buff) {
 	char np_name[32];
 	char delimkeyval[3] = "::";
-	char delimusage[3] = "##";
+	char delimusage[3] = "==";
 	char usage[512];
 	char *s;
+	char **keyVal;
 	main_np_node *ptr;
 	
 	strcpy(np_name, strtok(buff, delimusage));
@@ -241,20 +248,87 @@ int register_np(char *buff) {
 	}
 	
 	strcpy(usage, s);
+	
+	extractKeyVal(usage, &keyVal);
+	
+	
 	pthread_mutex_lock(&np_list_mutex);
-	add_np(&npList, np_name);
+	add_np(&npList, np_name, usage, &keyVal);
 	pthread_mutex_unlock(&np_list_mutex);
 	
+	/*
 	ptr = search_np(&npList, np_name);
 	printf("Found ptr with name %s\n", ptr->data);
 	ptr->usage = (char*)malloc(sizeof(char) * 512);
 	strcpy(ptr->usage, usage);
-	
 	printf("ptr->usage = %s\n", ptr->usage);
+*/
+
+    
 
 	print_np(&npList);
 	return 1;
 }
+
+void extractKeyVal(char *usage, char *** keyVal) {
+    
+    printf("NJ : EXTRACTVAL : usage is %s\n", usage);
+    //keyVal = (char ***)malloc(sizeof(char **));
+    int cnt = 0, i = 0;
+    char copyusage[512];
+    char *ptr;
+    strcpy(copyusage, usage);
+    cnt = countArgs(copyusage, "::");
+    printf("EXTRACT KEYVAL : NJ : The count is %d\n", cnt);
+    
+    *keyVal = (char **)malloc((cnt + 1) * sizeof(char*));
+    
+    ptr = strtok(copyusage, "##");
+    
+     printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
+     
+    (*keyVal)[i] = (char *)malloc(sizeof(char) * strlen(ptr));
+     printf("Before strcpy\n");
+     strcpy((*keyVal)[i], ptr);
+     printf("After strcpy\n");
+    
+    for(i = 1; i < cnt; i++) {
+    
+        ptr = strtok(NULL, "##");    
+        if(!ptr) {
+            
+            break;
+        
+        }
+    
+        printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
+        if(!((*keyVal)[i] = (char *)malloc(sizeof(char) * 128)))
+            perror("MALLOC IS THE CULPRIT");
+        printf("Before strcpy\n");
+        strcpy((*keyVal)[i], ptr);
+       printf("After strcpy\n");
+            
+        
+    }
+    
+    (*keyVal)[i] = NULL; 
+    
+    return;
+
+}
+
+
+int countArgs(char *myString, char *delim) {
+
+    int count = 0;
+    const char *tmp = myString;
+    while(tmp = strstr(tmp, delim)) {
+        count++;
+        tmp++;
+    }
+    return count;
+}
+
 
 /*FUNCTION TO UNREGISTER AN NP*/
 int unregister_np(char *buff) {
@@ -721,113 +795,55 @@ void * AppGetNotifyMethod(void *arguments) {
         printf("NJ.C   : In AppGetNotify\n");
         printf("NJ.C   : args -> msgsock - %d\n", args -> msgsock);
 	int i = 0;
-	char * received;
+	struct proceedGetnThreadArgs *sendargs;
+	sendargs = (struct proceedGetnThreadArgs *)malloc(sizeof(struct proceedGetnThreadArgs));
+	
+	
+	
         listen(args->sock, QLEN);
        	char * argstring;
 	FILE *fp;
 	struct sockaddr_un server; 
         server.sun_family = AF_UNIX; 
 	strcpy(server.sun_path, AppGetnotify);
-
-		
+	pthread_t threadarr[APPLIMIT];
+	
 	argstring = (char * ) malloc(sizeof(char) * 1024);
-        for(;;) {
+        for(;; ) {
+		
+		pthread_mutex_lock(&getnotify_socket_mutex);
                 args->msgsock = accept(args->sock, 0, 0);
                 if(args->msgsock == -1)
                         perror("NJ.C   : accept");
                 else do {
                                 bzero(args->buf, sizeof(args->buf));
-                                if((args->rval = read(args->msgsock, args->buf, 1024)) < 0)
+				args->rval = read(args->msgsock, args->buf, 1024);
+				strcpy(sendargs->buf, args->buf);
+				printf("\n\n\nsendargs has buf = %s\n", sendargs->buf);
+				pthread_mutex_unlock(&getnotify_socket_mutex);
+                                if(args->rval < 0)
                                         perror("NJ.C   : reading stream message");
-                                else if(args->rval == 0)
-                                        printf("NJ.C   : Ending connection\n");
+                               else if(args->rval == 0)
+       	                               printf("NJ.C   : Ending connection\n");
                                 else {	
-					int pid;
-					char rough[1024];
-					char choice ;
-					int j;
-					char *ptr;
-				        strcpy(rough, args->buf);
-					printf("NJ.C   :  %s  args-.buf received from library call\n",args->buf);
-					
-					int len = strlen(rough);
-					choice = rough[len - 1];
-					char spid[32];
-					strcpy(spid, strtok(rough,"##"));
-					pid = atoi(spid);
-					/*for(j = 0; j < len ; j++) {
-						if(rough[j] == '#')
-							if(rough[j+1] == '#')
-								break;
-					}*/
-					
-					j = strlen(rough);
-					strcpy(rough, args->buf);
-					strcpy(rough , &(rough[j+2]));
-
-					strcpy(args->buf, rough);
-					printf("NJ.C   : Received args->buf is %s\n",args->buf);				
-                                        received = getnotify_app(args->buf);
-					int fd, al;
-					char filename[64], filename1[64];
-					strcpy(filename,"./");
-					strcat(filename, spid);
-					strcpy(filename1, spid);
-                    			strcat(filename, ".txt");
-                      			strcat(filename1, ".txt");
-                      			strcat(filename1, "\n");
-					printf("NJ.C   : Filename:%s\n\n", filename);
-					if(choice == 'N') {
-						if(!(fd = open(filename , O_CREAT | O_APPEND | O_RDWR,0777))) {
-							perror("NJ.C   : not able to open file\n");
-							break;
-						}
-                        printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
-                        
-                        
-
-						printf("NJ.C   : %s \n", received);
-						strcat(received,"\n");
-
-						 write((int)fd_pidnames, filename1, strlen(filename1));
-						printf("\n\nPID filename is written successfully.....\n\n");
-
-                        al = write((int)fd, received, strlen(received));
-						if(al < 0)
-							perror("NJ.C   : Fwrite failed");
-                        else    						
-                            printf("NJ.C   : %s madhe %d bytes WRITTEN\n", filename, al);
-
-						printf("NJ.C   : Before Sig, %d sending to pid = %d \n", getpid(), pid);
-						if(kill(pid, SIGUSR1) == -1) {
-						    perror("Error in kill :\n");
-						// CHANGE TO PRINTF LATER
-						}
-						printf("NJ.C   : After Sig \n");
+					printf("ARGS SENDING TO PROCEEDGETN are %s\n\n\n", args->buf);
+					printf("%d is i in ProcerdGetnotify \n",i);	
+	 				if(pthread_create(&threadarr[i++], NULL, &ProceedGetnotifyMethod, (void *)sendargs) == 0) {
+						perror("NJ.C   : Pthread_Creations for ProceedgetnotifyMethod\n");
 					}
-                                         printf("NJ.C   : -->%s\n", args->buf);
-					 printf("NJ.C   : received notification is %s \n",received);
-				/*send the socket to get_notify client*/
-					 /*if (connect(args->msgsock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
-                				close(args->msgsock);
-                				perror("NJ.C   : connecting stream socket");
-                				exit(1);
-        				}*/
-					printf("NJ.C   : REPORTING TO CLIENT EVENT : %s\n",received); 
-					if(choice == 'B') {        				
-						if (write(args->msgsock, received, 1024) < 0)
-               						 perror("NJ.C   : writing on stream socket");
-					}
+					//ProceedGetnotifyMethod(arguments);
+					break;
+				}
 					
-					printf("NJ.C   :  Before freeing \n");
-					free(received);
-	 
-                                        break;
-                                }
-                }while(args->rval > 0);
-		printf("NJ.C   :  after exit ing args->rval is %d\n",args->rval);
-                close(args->msgsock);
-        }
+               		 }while(args->rval > 0);
+			printf("NJ.C   :  after exit ing args->rval is %d\n",args->rval);
+               		close(args->msgsock);
+        	}
+	while(i >= 0) {
+		pthread_join(threadarr[i], NULL);
+		i--;
+	}
+
 
         close(args->sock);
         unlink(AppUnReg);
@@ -939,3 +955,89 @@ void dec_all_np_counts(app_dcll * appList, np_dcll* npList, char* app_name) {
 
 
 }
+
+void *ProceedGetnotifyMethod(void * arguments) {
+	char * received;
+	struct proceedGetnThreadArgs *args = arguments;
+	printf("ARGS SENDING TO PROCEEDGETN are %s\n\n\n", args->buf);
+	int pid;
+	char rough[1024];
+	char choice ;
+	int j;
+	char *ptr;
+        strcpy(rough, args->buf);
+	printf("NJ.C   :  %s  args-.buf received from library call\n",args->buf);
+	int len = strlen(rough);
+	choice = rough[len - 1];
+	char spid[32];
+	strcpy(spid, strtok(rough,"##"));
+	pid = atoi(spid);
+/*for(j = 0; j < len ; j++) {
+			if(rough[j] == '#')
+			if(rough[j+1] == '#')
+					break;
+		}*/
+				
+	j = strlen(rough);
+	strcpy(rough, args->buf);
+	strcpy(rough , &(rough[j+2]));
+	strcpy(args->buf, rough);
+	printf("NJ.C   : Received args->buf is %s\n",args->buf);				
+        received = getnotify_app(args->buf);
+	int fd, al;
+	char filename[64], filename1[64];
+	strcpy(filename,"./");
+	strcat(filename, spid);
+	strcpy(filename1, spid);
+	strcat(filename, ".txt");
+        strcat(filename1, ".txt");
+        strcat(filename1, "\n");
+	printf("NJ.C   : Filename:%s\n\n", filename);
+	if(choice == 'N') {
+		if(!(fd = open(filename , O_CREAT | O_APPEND | O_RDWR,0777))) {
+			perror("NJ.C   : not able to open file\n");
+			return;
+		}
+                printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
+                     
+                        
+		printf("NJ.C   : %s \n", received);
+		strcat(received,"\n");
+		write((int)fd_pidnames, filename1, strlen(filename1));
+		printf("\n\nPID filename is written successfully.....\n\n");
+                al = write((int)fd, received, strlen(received));
+		if(al < 0)
+			perror("NJ.C   : Fwrite failed");
+                else    						
+                        printf("NJ.C   : %s madhe %d bytes WRITTEN\n", filename, al);
+
+		printf("NJ.C   : Before Sig, %d sending to pid = %d \n", getpid(), pid);
+		if(kill(pid, SIGUSR1) == -1) {
+		    perror("Error in kill :\n");
+						// CHANGE TO PRINTF LATER
+		}
+		printf("NJ.C   : After Sig \n");
+	}
+        printf("NJ.C   : -->%s\n", args->buf);
+	printf("NJ.C   : received notification is %s \n",received);
+	/*send the socket to get_notify client*/
+	/*if (connect(args->msgsock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+         				close(args->msgsock);
+             				perror("NJ.C   : connecting stream socket");
+               				exit(1);
+        		}*/
+	printf("NJ.C   : REPORTING TO CLIENT EVENT : %s\n",received); 
+	if(choice == 'B') {        				
+		/*if (write(args->msgsock, received, 1024) < 0)
+           		perror("NJ.C   : writing on stream socket");
+           		*/ 
+           		
+           		
+           		// WRITE TO FILE HERE
+	}
+					
+		printf("NJ.C   :  Before freeing \n");
+		free(received);
+		return;	        
+}
+

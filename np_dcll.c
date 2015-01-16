@@ -40,7 +40,7 @@ void init_np(np_dcll *l) {
 
 /* Add an np with the given name*/
 
-int add_np(np_dcll *l, char *val) {
+int add_np(np_dcll *l, char *val, char *usage, char ***key_val_arr) {
 	
 	main_np_node *new;
 	new = search_np(l, val);
@@ -57,8 +57,11 @@ int add_np(np_dcll *l, char *val) {
 		exit(1);
 	}
 	
+	// WRITE AN INIT FUNCTION FOR A NODE
+	
 	new->data = malloc(sizeof(val) + 1);
-	new->usage = NULL;
+	new->usage = usage;
+	new->key_val_arr = *key_val_arr;
 	
 	if(new->data == NULL)	{
 		perror("NP_DCLL : ERROR IN MALLOC");
@@ -68,7 +71,6 @@ int add_np(np_dcll *l, char *val) {
 	new->app_count = 0; 	
 	//printf("NP_DCLL  : COUNT in add_main_np_node: %d\n", l->count);
 	
-	new->usage = NULL;
 	
 	if(l->count == 0) {
 		l->head = new;
@@ -120,17 +122,28 @@ void print_np(np_dcll *l) {
 
 	printf("\nTotal number of NPs : %d\n", l->count);
 	main_np_node *ptr;
+	char ** kptr;
 	ptr = l->head;
+	kptr = ptr->key_val_arr;
+	
 
-	printf("\nNP\t\t\tApp_Count");
-	printf("\n===================================\n");
+	printf("\nNP\t\t\tApp_Count\t\t\tKeyValue");
+	printf("\n==================================================\n");
 
 	while(i) {
 		printf("%s   ", ptr->data);
 		printf("\t\t\t%d\n", ptr->app_count);
+		while(*kptr) {
+		        printf("\t\t\t\t%s\n", *kptr);
+		        kptr++;
+		}
+		printf("\n");
 		ptr = ptr->next;
 		i--;
 	}
+	
+	printf("\nKey-Value ");
+	
 	//printf("NP_DCLL  : \n");
 }
 
