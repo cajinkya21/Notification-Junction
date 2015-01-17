@@ -239,6 +239,40 @@ int searchReg(app_dcll *l, char* appname, char*npname) {
 	return 0;
 }
 
+np_node* getReg(app_dcll *l, char* appname, char* npname) {
+
+	app_node *ptr;
+	np_node *nptr;
+	int k;
+	ptr = search_app(l, appname);
+
+	//printf("Searching Registration\n");
+	
+	if(ptr == NULL) return 0;
+	
+	if(ptr != NULL) {
+	
+		printf("App %s has been found. Checking np %s in app's list\n", appname, npname);
+		nptr = ptr->np_list_head;
+		k = ptr->np_count;	
+	
+	/* CODE FOR CHECKING NP EXISTANCE */
+		while(nptr != NULL) {
+				if(!strcmp(npname, nptr->name)) {
+					//printf("Duplicate Registration Detected");
+					return nptr;
+				}	
+				nptr = nptr->next;		
+		}
+
+	}
+	
+	return NULL;
+
+
+}
+
+
 /* DELETE APP */
 
 int del_app(app_dcll *l, char *val)	{
@@ -394,6 +428,7 @@ int add_np_to_app(app_dcll *l, char *aval, char *nval)	{
 
 	n->name = malloc(sizeof(nval) + 1);
 	n->arguments = NULL;
+	n->key_val_ptr = NULL;
 
 	if(n->name == NULL){
 		perror("APP_DCLL :  ERROR IN MALLOC");

@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
 	int i;
 	int pid;
 	char arr[512];
-	
+	char str[512];
 	if(argc < 2) {
 	    printf("Kindly enter the directory\n");
 	    exit(0);
@@ -29,10 +29,14 @@ int main(int argc, char* argv[]) {
 	sigemptyset (&mask);
 	sigaddset (&mask, SIGUSR1);
 	
+
 	printf(" Dummy app  signal handler set\n");
 	//sigprocmask (SIG_UNBLOCK, &mask, NULL);
 
-	i = app_register("app1::inotify");				/* Application registers with inotify */
+	sprintf(str, "%d", pid );
+	strcat(str, "::inotify");
+
+	i = app_register(str);				/* Application registers with inotify */
 	printf("Dummy app app register done\n");
 	printf("DUMMYAPP : Sending pid = %d\n", pid);
 	i = app_getnotify(pid, arr, 'N' );
