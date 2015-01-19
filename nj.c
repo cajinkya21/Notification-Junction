@@ -94,6 +94,7 @@ int register_app(char *buff) {
 	if(s != NULL)
 		strcpy(np_name, s);
     	
+    
     //strtok(buff, "##");
     //n = strtok(NULL, "##");
     //printf("ARGUMENTS LIST _ %s\n", n);
@@ -856,12 +857,15 @@ void * AppGetNotifyMethod(void *arguments) {
 void * NpGetNotifyMethod(void *arguments) {/*here we need to call Np_specific getnotify to get the notificationstring..this notificationstring is then copied to arguments->argsrecv
 for now I am sending the received strig directly as notificationstring for now I have simply returned the string receive1::value1	*/
 	struct getnotify_threadArgs *args = arguments;
-	
+	int j;
 	void *handle;
         void (*getnotify)(struct getnotify_threadArgs *);
         char *error;
-        char rough[1024];
+        char rough[1024], r[1024];
         strcpy(rough, args->argssend);
+        strcpy(r, rough);
+        np_node *nptr;
+        char appname[64];
 
 	/* INOTIFY needs npname::<npname>##pathname::<pathname>##flags::<flags>*/
 	
@@ -871,11 +875,47 @@ for now I am sending the received strig directly as notificationstring for now I
 	char np_name[64], dir_name[256], flag_set[512], one[512], two[512], three[512];
 	char delimattr[3] = "##";
 	char delimval[3] = "::";
+	struct extr_key_val *temp, *m;
 	
-	strcpy(one, strtok(rough, delimattr));
+	strtok(r, delimattr);
+	j = strlen(r);
+	strcpy(r, args->argssend);
+	strcpy(r , &(r[j+2]));
+	strcpy(args->argssend, r);
+	
+	strcpy(appname, strtok(rough, delimattr));
+	printf("N.C : appname = %s\n", appname);
+	
+	strcpy(one, strtok(NULL, delimattr));
 	strtok(one, delimval);	/* HERE */
 	strcpy(np_name, strtok(NULL, delimval));
 
+	printf("N.C : npname = %s\n", np_name);
+	/* Get the reg, Malloc space for a getn registration key_val  */
+	
+	nptr = getReg(&appList, appname, np_name);
+	if(nptr) {
+		printf("\nRETURNED nptr->name = %s\n", nptr->name);
+	}
+
+	temp = (struct extr_key_val *)malloc(sizeof(struct extr_key_val));
+	// Save the keyvalarr
+	//
+	//
+	//
+	//
+	//
+	//
+	m = nptr->key_val_ptr;
+	if(m == NULL) {
+		nptr->key_val_ptr = m;
+	}
+	else {
+		while(!m->next) {
+			m = m->next;
+		}
+		m->next = temp;
+	}
 	/* HANDLE NO NAME AND STUFF*/
 	
 	printf("NJ.C   : App Count = %d for NP = %s\n", get_np_app_cnt(&npList, np_name), np_name);
@@ -979,9 +1019,9 @@ void *ProceedGetnotifyMethod(void * arguments) {
 		}*/
 				
 	j = strlen(rough);
-	strcpy(rough, args->buf);
-	strcpy(rough , &(rough[j+2]));
-	strcpy(args->buf, rough);
+	//strcpy(rough, args->buf);
+	//strcpy(rough , &(rough[j+2]));
+	//strcpy(args->buf, rough);
 	printf("NJ.C   : Received args->buf is %s\n",args->buf);				
         received = getnotify_app(args->buf);
 	int fd, al;
@@ -1028,16 +1068,35 @@ void *ProceedGetnotifyMethod(void * arguments) {
         		}*/
 	printf("NJ.C   : REPORTING TO CLIENT EVENT : %s\n",received); 
 	if(choice == 'B') {        				
-		/*if (write(args->msgsock, received, 1024) < 0)
+		/*if (write(args->msgsock, received, 1024) < 0)	{
            		perror("NJ.C   : writing on stream socket");
-           		*/ 
+           	}*/	 
            		
            		
            		// WRITE TO FILE HERE
-	}
-					
+           		
+           		
+          	if(!(fd = open(filename , O_CREAT | O_APPEND | O_RDWR,0777))) {
+			perror("NJ.C   : not able to open file\n");
+			return;
+		}
+                printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
+                     
+                        
+		printf("NJ.C   : %s \n", received);
+		strcat(received,"\n");
+		write((int)fd_pidnames, filename1, strlen(filename1));
+		printf("\n\nPID filename is written successfully.....\n\n");
+                al = write((int)fd, received, strlen(received));
+		if(al < 0)
+			perror("NJ.C   : Fwrite failed");
+                else    						
+                        printf("NJ.C   : %s madhe %d bytes WRITTEN\n", filename, al);
+
 		printf("NJ.C   :  Before freeing \n");
 		free(received);
-		return;	        
+		return;
+		
+	}	        
 }
 

@@ -31,8 +31,8 @@ int main(int argc, char *argv[]) {
 	    m = strtok(NULL, "##");
 	    
 	    if(m == NULL) {
-	    printf("Error : NP_REG : Enter usage\nExiting\n");
-	    exit(1);
+	    	printf("Error : NP_REG : Enter usage\nExiting\n");
+	    	exit(1);
 	    }
 	}
 

@@ -21,14 +21,25 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 #define ALREXST -1
 #define NOTFND -2
 
+/* GETNOTIFY ARGUMENT STRUCTURE */
+
+typedef struct extr_key_val {
+	char **key_val_arr;
+	struct extr_key_val *next;
+}extr_key_val;
+
+
 /* NP NODE STRUCTURE */
+
 typedef struct np_node {
 	char *name;
 	struct np_node *next;
 	char *arguments;
+	struct extr_key_val *key_val_ptr; /* The pointer to the list of structures containing pointers to the key-values */
 }np_node;
 
 /* APPLICATION NODE STRUCTURE */
+
 typedef struct app_node {
 	char *data;
 	struct app_node *prev;
@@ -38,6 +49,7 @@ typedef struct app_node {
 }app_node;
 
 /* APPLICATION LIST STRUCTURE */
+
 typedef struct app_dcll {
 	app_node *head;
 	int count;
@@ -48,6 +60,7 @@ int addapp_node(app_dcll *, char*);
 void print_app(app_dcll *);
 app_node* search_app(app_dcll *, char*);
 int searchReg(app_dcll *, char*, char*);
+np_node* getReg(app_dcll *, char*, char*);
 int del_app(app_dcll *, char*);
 int add_np_to_app(app_dcll *, char*, char*);
 int del_np_from_app(app_dcll *, char*, char*);
