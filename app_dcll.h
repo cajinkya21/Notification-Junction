@@ -64,5 +64,6 @@ np_node* getReg(app_dcll *, char*, char*);
 int del_app(app_dcll *, char*);
 int add_np_to_app(app_dcll *, char*, char*);
 int del_np_from_app(app_dcll *, char*, char*);
+void printNpKeyVal(app_node *temp);
 
 #endif /*app_dcll.h*/

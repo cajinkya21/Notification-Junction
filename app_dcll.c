@@ -116,6 +116,8 @@ void print_app(app_dcll *l) {
 		
 		printf("%s\t\t\t", ptr->data);
 		printf("%d\n", ptr->np_count);
+		printNpKeyVal(ptr);
+		printf("\n\n\n");
 		ptr = ptr->next;
 		i--;
 	}
@@ -178,6 +180,50 @@ void print_app(app_dcll *l) {
 	
 }
 
+void printNpKeyVal(app_node *temp) {
+    printf("INSIDE PRINTNPKEYVAL temp->data = %s \n", temp->data);
+    np_node *head = temp->np_list_head;
+    
+    if(!head) {
+        printf("HEADLESS NICK\n\n");
+        return;
+    }
+    
+    printf("HEAD DATA = %s\n", head->name);
+    extr_key_val *vptr;
+    while(head) {
+        vptr  = head->key_val_ptr;
+        if(vptr == NULL) {
+             printf("VPTR IS NULL\n");
+             head = head->next;
+             continue;
+        }
+        printf("%s IS head_name \n", head->name);
+        while(vptr) {
+           // For every np_node
+	        char ** kptr;
+	        kptr = vptr->key_val_arr;
+	if(kptr == NULL) {printf("HERE LIES THE PROBLEM\n\n");}
+	      printf("VPTR->KEYVALARR is %s\n", *(vptr->key_val_arr));
+	
+	        printf("\n==================================================\n");
+         
+            printf("*KPTR is %s\n", *kptr);
+           
+         
+		        while(*kptr) {
+		                printf("IN THE WHILE OF KPTR\n\n");
+		                printf("\t\t\t\t%s\n", *kptr);
+		                kptr++;
+		        }
+		         printf("OUT OF THE WHILE OF KPTR\n\n");
+		    vptr = vptr->next;
+		    printf("VPTR PROGRESSED\n\n");
+		    
+        }
+          head = head->next;
+     }
+}
 
 /* SEARCH APP, RETURN POINTER TO NODE */
 

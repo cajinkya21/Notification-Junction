@@ -37,6 +37,7 @@ np_dcll npList;/*head of npList*/
 /*Declare global app List*/
 app_dcll  appList;/*head of appList*/
 int fd_pidnames;
+void *handle;
 
 /*Mutexes to be used for synchronizing list*/
 
@@ -65,7 +66,6 @@ void sigintHandler(int signum) {
 		FILE *pidnames = fdopen(fd_pidnames, "r");
 		//printf("Removing pid files\n");
 		while(fgets(buf2, sizeof(buf2), pidnames)) {
-			printf("I am in sighandler loop\n");
 			buf2[strlen(buf2) - 1] = '\0';
 			/*strcpy(buf1, "rm ");
 			strcat(buf1, buf2);
@@ -249,8 +249,11 @@ int register_np(char *buff) {
 	}
 	
 	strcpy(usage, s);
-	
+
+    
 	extractKeyVal(usage, &keyVal);
+	
+
 	
 	
 	pthread_mutex_lock(&np_list_mutex);
@@ -313,7 +316,7 @@ void extractKeyVal(char *usage, char *** keyVal) {
     }
     
     (*keyVal)[i] = NULL; 
-    
+ 
     return;
 
 }
@@ -858,7 +861,7 @@ void * NpGetNotifyMethod(void *arguments) {/*here we need to call Np_specific ge
 for now I am sending the received strig directly as notificationstring for now I have simply returned the string receive1::value1	*/
 	struct getnotify_threadArgs *args = arguments;
 	int j;
-	void *handle;
+
         void (*getnotify)(struct getnotify_threadArgs *);
         char *error;
         char rough[1024], r[1024];
@@ -876,6 +879,7 @@ for now I am sending the received strig directly as notificationstring for now I
 	char delimattr[3] = "##";
 	char delimval[3] = "::";
 	struct extr_key_val *temp, *m;
+	char **pointer;
 	
 	strtok(r, delimattr);
 	j = strlen(r);
@@ -898,24 +902,41 @@ for now I am sending the received strig directly as notificationstring for now I
 		printf("\nRETURNED nptr->name = %s\n", nptr->name);
 	}
 
+    printf("NJ : ARGSSEND BEFORE EXTRACT : %s\n", args->argssend);
+
 	temp = (struct extr_key_val *)malloc(sizeof(struct extr_key_val));
-	// Save the keyvalarr
-	//
-	//
-	//
-	//
-	//
-	//
+	temp->next == NULL;
 	m = nptr->key_val_ptr;
+
 	if(m == NULL) {
-		nptr->key_val_ptr = m;
+		nptr->key_val_ptr = temp;
 	}
-	else {
+	else { 
+	    printf("EXTRAct : Next case else \n");
 		while(!m->next) {
+		    
 			m = m->next;
 		}
 		m->next = temp;
 	}
+	// Save the keyvalarr
+	//
+	//
+	//
+		   
+    printf("PRINTING BEFORE EXTRACT\n");
+    
+	extractKeyVal(args->argssend, &pointer);
+	temp->key_val_arr = pointer;
+	print_app(&appList);	   
+    printf("PRINTING AFTER EXTRACT\n");
+//    print_app(&appList);
+	
+	//
+	//
+	//
+
+	
 	/* HANDLE NO NAME AND STUFF*/
 	
 	printf("NJ.C   : App Count = %d for NP = %s\n", get_np_app_cnt(&npList, np_name), np_name);
