@@ -9,10 +9,9 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
  You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA 
 */
 
-
 /* The file contains code for doubly linked list for applications */
 #ifndef _APPDCLL_H
-#define _APPDCLL_H	1	
+#define _APPDCLL_H	1
 
 #include<stdio.h>
 #include<stdlib.h>
@@ -26,8 +25,7 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 typedef struct extr_key_val {
 	char **key_val_arr;
 	struct extr_key_val *next;
-}extr_key_val;
-
+} extr_key_val;
 
 /* NP NODE STRUCTURE */
 
@@ -35,8 +33,8 @@ typedef struct np_node {
 	char *name;
 	struct np_node *next;
 	char *arguments;
-	struct extr_key_val *key_val_ptr; /* The pointer to the list of structures containing pointers to the key-values */
-}np_node;
+	struct extr_key_val *key_val_ptr;	/* The pointer to the list of structures containing pointers to the key-values */
+} np_node;
 
 /* APPLICATION NODE STRUCTURE */
 
@@ -46,24 +44,24 @@ typedef struct app_node {
 	struct app_node *next;
 	np_node *np_list_head;
 	int np_count;
-}app_node;
+} app_node;
 
 /* APPLICATION LIST STRUCTURE */
 
 typedef struct app_dcll {
 	app_node *head;
 	int count;
-}app_dcll;
+} app_dcll;
 
 void init_app(app_dcll *);
-int addapp_node(app_dcll *, char*);
+int addapp_node(app_dcll *, char *);
 void print_app(app_dcll *);
-app_node* search_app(app_dcll *, char*);
-int searchReg(app_dcll *, char*, char*);
-np_node* getReg(app_dcll *, char*, char*);
-int del_app(app_dcll *, char*);
-int add_np_to_app(app_dcll *, char*, char*);
-int del_np_from_app(app_dcll *, char*, char*);
-void printNpKeyVal(app_node *temp);
+app_node *search_app(app_dcll *, char *);
+int searchReg(app_dcll *, char *, char *);
+np_node *getReg(app_dcll *, char *, char *);
+int del_app(app_dcll *, char *);
+int add_np_to_app(app_dcll *, char *, char *);
+int del_np_from_app(app_dcll *, char *, char *);
+void printNpKeyVal(app_node * temp);
 
-#endif /*app_dcll.h*/
+#endif				/*app_dcll.h */

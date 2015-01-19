@@ -11,34 +11,33 @@
 #include <dlfcn.h>
 
 struct getnotify_threadArgs args;
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	strcpy(args.argssend, argv[1]);
 	printf("CALLING :\n");
 
+	void *handle;
+	void (*getnotify) (struct getnotify_threadArgs *);
+	char *error;
 
- 	void *handle;
-        void (*getnotify)(struct getnotify_threadArgs *);
-        char *error;
+	handle = dlopen("./libinotify.so", RTLD_LAZY);
+	if (!handle) {
+		perror("chukla");
+		exit(1);
+	}
 
-        handle = dlopen ("./libinotify.so", RTLD_LAZY);
-        if (!handle) {
-            perror("chukla");
-            exit(1);
-        }
-        
-        printf("dlopen successful\n");
+	printf("dlopen successful\n");
 
-        getnotify = dlsym(handle, "getnotify");
-        if ((error = dlerror()) != NULL)  {
-            perror("chukla");
-            exit(1);
-        }
+	getnotify = dlsym(handle, "getnotify");
+	if ((error = dlerror()) != NULL) {
+		perror("chukla");
+		exit(1);
+	}
 
-	(*getnotify)(&args);
+	(*getnotify) (&args);
 
-       // printf ("%f\n", (*cosine)(2.0));
-        dlclose(handle);
-
+	// printf ("%f\n", (*cosine)(2.0));
+	dlclose(handle);
 
 	//getnotify(&args);
 	printf("CALLED :\n");

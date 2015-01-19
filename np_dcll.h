@@ -9,10 +9,9 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
  You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA 
 */
 
-
 /* This file contains code for the dcll of np(s) */
 #ifndef _NPDCLL_H
-#define _NPDCLL_H	
+#define _NPDCLL_H
 
 #include<stdio.h>
 #include<stdlib.h>
@@ -24,30 +23,28 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 /* The node for np(s) */
 
 typedef struct main_np_node {
-	char* data;
+	char *data;
 	struct main_np_node *prev;
 	struct main_np_node *next;
 	char *usage;
 	int app_count;
 	char **key_val_arr;
-}main_np_node;
+} main_np_node;
 
 /* The node for the dcll */
 
 typedef struct np_dcll {
 	main_np_node *head;
 	int count;
-}np_dcll;
+} np_dcll;
 
 void init_np(np_dcll *);
-int add_np(np_dcll *, char* np_name, char* usage, char ***key_val_arr);   
+int add_np(np_dcll *, char *np_name, char *usage, char ***key_val_arr);
 void print_np(np_dcll *);
-main_np_node* search_np(np_dcll *, char*);
-int del_np(np_dcll *, char*);
+main_np_node *search_np(np_dcll *, char *);
+int del_np(np_dcll *, char *);
 void incr_np_app_cnt(np_dcll *, char *);
 void decr_np_app_cnt(np_dcll *, char *);
 int get_np_app_cnt(np_dcll *, char *);
 
-
-
-#endif  /*np_dcll.h*/
+#endif				/*np_dcll.h */
