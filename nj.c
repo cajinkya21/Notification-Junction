@@ -100,9 +100,10 @@ int register_app(char *buff)
 	//printf("ARGUMENTS LIST _ %s\n", n);
 
 	/*Check if NP provided is registered or not */
-    
+
 	if (search_np(&npList, np_name) == NULL && np_name != NULL) {	/* HANDLE IF NP IS NULL, CHECK FOR STRTOK */
-		printf("NJ.C   :  NJ : Np not registered. Register NP first.\n");
+		printf
+		    ("NJ.C   :  NJ : Np not registered. Register NP first.\n");
 		printf("NJ.C   : AppList:\n");
 		print_app(&appList);
 		printf("NJ.C   : NPList:\n");
@@ -111,17 +112,17 @@ int register_app(char *buff)
 	}
 
 	/*Check if that registration already exists */
-    	if (search_app(&appList, app_name) == NULL) {
-        
-	    	addapp_node(&appList, app_name);
-	    	printf("Added for the first time\n");
+
+	if (search_app(&appList, app_name) == NULL) {
+
+		addapp_node(&appList, app_name);
+		printf("Added for the first time\n");
 
 	}
 
 	/*HANDLED IN LIST */
-	
 	retval = searchReg(&appList, app_name, np_name);
-    
+
 	if (retval == -1) {
 
 		printf("NJ.C   : NJ : EXISTING REGISTRATION\n");
@@ -130,11 +131,15 @@ int register_app(char *buff)
 
 	/*need to change this function to return appropriate values */
 	if (retval != -1) {	/*IF APP IS NOT PREVIOUSLY REGISTERED */
+		pthread_mutex_lock(&np_list_count_mutex);
 		incr_np_app_cnt(&npList, np_name);
 		add_np_to_app(&appList, app_name, np_name);
 
-			if (np_name == NULL) {
-				printf("NJ.C   : NJ : Added successfully\n");
+		pthread_mutex_unlock(&np_list_count_mutex);
+		if (np_name == NULL) {
+			pthread_mutex_lock(&app_list_mutex);
+			pthread_mutex_unlock(&app_list_mutex);
+			printf("NJ.C   : NJ : Added successfully\n");
 		}
 	}
 
@@ -169,6 +174,7 @@ int unregister_app(char *buff)
 
 	if (s == NULL) {
 		printf("NJ.C   : np_name == NULL case in unregister app\n");
+		pthread_mutex_lock(&app_list_mutex);
 //This function decrements counts for all NPs with that app, we have to write this function in the nj because it accesses both lists
 		dec_all_np_counts(&appList, &npList, app_name);
 
@@ -176,6 +182,7 @@ int unregister_app(char *buff)
 
 // DEC HERE FOR ALL NPs with that app.
 
+		pthread_mutex_unlock(&app_list_mutex);
 	} else {
 
 		retval = searchReg(&appList, app_name, np_name);
@@ -184,12 +191,14 @@ int unregister_app(char *buff)
 
 			printf("NJ.C   : NJ : REGISTRATION FOUND.\n");
 
+			pthread_mutex_lock(&app_list_mutex);
 
 // LOCK THE NP LIST
 			decr_np_app_cnt(&npList, np_name);
 			del_np_from_app(&appList, app_name, np_name);
 // DEC HERE for the np given.
 
+			pthread_mutex_unlock(&app_list_mutex);
 
 		}
 		/*need to change this function to return appropriate values */
@@ -368,7 +377,10 @@ int main(int argc, char *argv[])
 
 	/*Initialization of all mutexes */
 
-	
+	if (pthread_mutex_init(&app_list_mutex, NULL) != 0) {
+		printf("NJ.C   : \n mutex init failed\n");
+		return 1;
+	}
 	if (pthread_mutex_init(&np_list_mutex, NULL) != 0) {
 		printf("NJ.C   : \n mutex init failed\n");
 		return 1;
@@ -582,6 +594,7 @@ int main(int argc, char *argv[])
 	pthread_join(tid_app_unreg, NULL);
 	pthread_join(tid_app_getnotify, NULL);
 
+	pthread_mutex_destroy(&app_list_mutex);
 	pthread_mutex_destroy(&np_list_mutex);
 	pthread_mutex_destroy(&app_list_count_mutex);
 	pthread_mutex_destroy(&np_list_count_mutex);

@@ -16,7 +16,6 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 #include<stdio.h>
 #include<stdlib.h>
 #include<unistd.h>
-#include<pthread.h>
 #include <string.h>
 #define ALREXST -1
 #define NOTFND -2
@@ -52,7 +51,6 @@ typedef struct app_node {
 typedef struct app_dcll {
 	app_node *head;
 	int count;
-	pthread_mutex_t list_mutex;
 } app_dcll;
 
 void init_app(app_dcll *);

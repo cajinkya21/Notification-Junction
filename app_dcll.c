@@ -28,29 +28,19 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 /* INITIALISE APPLICATION LIST */
 
 void init_app(app_dcll * l)
-
-{   if (pthread_mutex_init(&(l->list_mutex), NULL) != 0) {
-		printf("APPDCLL   : \n mutex init failed\n");
-		return ;
-	}
-    pthread_mutex_lock(&(l->list_mutex));
+{
 	l->head = NULL;
 	l->count = 0;
-	pthread_mutex_unlock(&(l->list_mutex));
 }
 
 /* APPEND NEW APPLICATION-NODE TO THE LIST */
 
 int addapp_node(app_dcll * l, char *val)
-{   pthread_mutex_lock(&(l->list_mutex));
-
+{
 	app_node *new, *tmp;
 	tmp = search_app(l, val);	/* Search a app_node in app_list if it already exists */
-	if (tmp != NULL) {
-	    pthread_mutex_unlock(&(l->list_mutex));
-
-		return ALREXST;
-	}	/* If node already exists, it returns ALREXST error */
+	if (tmp != NULL)
+		return ALREXST;	/* If node already exists, it returns ALREXST error */
 	new = (app_node *) malloc(sizeof(app_node));
 
 	if (new == NULL) {
@@ -76,8 +66,6 @@ int addapp_node(app_dcll * l, char *val)
 		new->np_list_head = NULL;
 		l->count++;
 		//printf("APP_DCLL : COUNT AFTER APPEND : %d\n", l->count);
-		pthread_mutex_unlock(&(l->list_mutex));
-
 		return 0;
 	}
 
@@ -92,8 +80,6 @@ int addapp_node(app_dcll * l, char *val)
 		//printf("APP_DCLL : DATA IN NEW NODE : %s\n", l->head->next->data);
 		l->count++;
 		//printf("APP_DCLL : COUNT AFTER APPEND : %d\n", l->count);
-		pthread_mutex_unlock(&(l->list_mutex));
-
 		return 0;
 	}
 
@@ -107,19 +93,15 @@ int addapp_node(app_dcll * l, char *val)
 		//printf("APP_DCLL : DATA IN NEW NODE : %s\n", l->head->next->data);
 		l->count++;
 		//printf("APP_DCLL : COUNT AFTER APPEND : %d\n", l->count);
-		pthread_mutex_unlock(&(l->list_mutex));
-
 		return 0;
 	}
-	pthread_mutex_unlock(&(l->list_mutex));
-
 }
 
 /* PRINT LIST */
 
 void print_app(app_dcll * l)
 {
-    
+
 	int i = l->count;
 	if (l->count == 0) {
 		printf("APP_DCLL : NO APPS TO PRINT\n");
@@ -243,16 +225,13 @@ void printNpKeyVal(app_node * temp)
 
 app_node *search_app(app_dcll * l, char *val)
 {
-    pthread_mutex_lock(&(l->list_mutex));
 
 	int i = l->count;
 	int found = 0;
 	app_node *ptr;
 
-	if (l->count == 0) {
-    	pthread_mutex_unlock(&(l->list_mutex));
+	if (l->count == 0)
 		return;
-	}
 
 	ptr = l->head;
 
@@ -267,20 +246,15 @@ app_node *search_app(app_dcll * l, char *val)
 
 	if (found == 0) {
 		//printf("APP_DCLL : NOT FOUND : %s\n", val);
-		pthread_mutex_unlock(&(l->list_mutex));
 		return NULL;
 	}
 
-	else {
-	    pthread_mutex_unlock(&(l->list_mutex));
+	else
 		return ptr;
-	}
-		
 }
 
 int searchReg(app_dcll * l, char *appname, char *npname)
 {
-    pthread_mutex_lock(&(l->list_mutex));
 
 	app_node *ptr;
 	np_node *nptr;
@@ -289,10 +263,8 @@ int searchReg(app_dcll * l, char *appname, char *npname)
 
 	printf("Searching Registration\n");
 
-	if (ptr == NULL) {
-	    pthread_mutex_unlock(&(l->list_mutex));
-    	return 0;
-    }
+	if (ptr == NULL)
+		return 0;
 
 	if (ptr != NULL) {
 
@@ -305,20 +277,18 @@ int searchReg(app_dcll * l, char *appname, char *npname)
 		while (nptr != NULL) {
 			if (!strcmp(npname, nptr->name)) {
 				printf("Duplicate Registration Detected");
-				pthread_mutex_unlock(&(l->list_mutex));
 				return -1;
 			}
 			nptr = nptr->next;
 		}
 
 	}
-    pthread_mutex_unlock(&(l->list_mutex));
+
 	return 0;
 }
 
 np_node *getReg(app_dcll * l, char *appname, char *npname)
 {
-    pthread_mutex_lock(&(l->list_mutex));
 
 	app_node *ptr;
 	np_node *nptr;
@@ -327,10 +297,8 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 
 	//printf("Searching Registration\n");
 
-	if (ptr == NULL) {
-    	pthread_mutex_unlock(&(l->list_mutex));
-        return 0;
-    }
+	if (ptr == NULL)
+		return 0;
 
 	if (ptr != NULL) {
 
@@ -343,14 +311,13 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 		while (nptr != NULL) {
 			if (!strcmp(npname, nptr->name)) {
 				//printf("Duplicate Registration Detected");
-				pthread_mutex_unlock(&(l->list_mutex));
 				return nptr;
 			}
 			nptr = nptr->next;
 		}
 
 	}
-    pthread_mutex_unlock(&(l->list_mutex));
+
 	return NULL;
 
 }
@@ -359,7 +326,6 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 
 int del_app(app_dcll * l, char *val)
 {
-    pthread_mutex_lock(&(l->list_mutex));
 
 	app_node *p, *temp, *q;
 	temp = search_app(l, val);	/* Search a list to check if it exists for deletion */
@@ -367,7 +333,6 @@ int del_app(app_dcll * l, char *val)
 
 	if (temp == NULL) {
 		//printf("APP_DCLL : NOT FOUND : %s\n", val);
-		pthread_mutex_unlock(&(l->list_mutex));
 		return NOTFND;
 	}
 
@@ -377,7 +342,6 @@ int del_app(app_dcll * l, char *val)
 		l->head = NULL;
 		free(temp);
 		l->count--;
-		pthread_mutex_unlock(&(l->list_mutex));
 		return 0;
 	}
 
@@ -390,7 +354,6 @@ int del_app(app_dcll * l, char *val)
 		p->next = temp->next;
 		free(temp);
 		l->count--;
-		pthread_mutex_unlock(&(l->list_mutex));
 		return 0;
 	} else {
 		p = temp->prev;
@@ -401,7 +364,6 @@ int del_app(app_dcll * l, char *val)
 		q->prev = p;
 		free(temp);
 		l->count--;
-		pthread_mutex_unlock(&(l->list_mutex));
 		return 0;
 	}
 }
@@ -493,13 +455,12 @@ while(i) {
 
 int add_np_to_app(app_dcll * l, char *aval, char *nval)
 {
-    pthread_mutex_lock(&(l->list_mutex));
+
 	//printf("APP_DCLL : ADDING TO APPLICATION %s, NP %s\n", aval, nval);
 	app_node *temp = search_app(l, aval);
 	np_node *n, *m, *b;
 	if (temp == NULL) {
 		//printf("APP_DCLL : NOT FOUND %s\n", aval);
-		pthread_mutex_unlock(&(l->list_mutex));
 		return NOTFND;
 	}
 
@@ -527,14 +488,12 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 	if (temp->np_list_head == NULL) {
 		temp->np_list_head = n;
 		temp->np_count++;
-		pthread_mutex_unlock(&(l->list_mutex));
 		return 0;
 	} else {
 		m = temp->np_list_head;
 		b = m;
 		if (m->name == nval) {
 			//printf("APP_DCLL : EXISTING NODE\n");
-			pthread_mutex_unlock(&(l->list_mutex));
 			return ALREXST;
 		}
 		b = m;
@@ -542,7 +501,6 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 		while (m != NULL) {
 			if (m->name == nval) {
 				//printf("APP_DCLL : EXISTING NODE\n");
-				pthread_mutex_unlock(&(l->list_mutex));
 				return ALREXST;
 			}
 			b = m;
@@ -551,7 +509,6 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 		b->next = n;
 		temp->np_count++;
 	}
-	pthread_mutex_unlock(&(l->list_mutex));
 	return 0;
 }
 
@@ -559,24 +516,16 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 
 int del_np_from_app(app_dcll * l, char *aval, char *nval)
 {
-    pthread_mutex_lock(&(l->list_mutex));
-
 	app_node *temp = search_app(l, aval);
 	np_node *n, *m, *b;
-	if (l->count == 0) {
-	    pthread_mutex_unlock(&(l->list_mutex));
+	if (l->count == 0)
 		return NOTFND;
-	}
 	if (temp == NULL) {
 		//printf("APP_DCLL : NOT FOUND %s\n", aval);
-		pthread_mutex_unlock(&(l->list_mutex));
-
 		return NOTFND;
 	}
 	if (temp->np_list_head == NULL) {
 		//printf("APP_DCLL : NOT FOUND %s\n", nval);
-		pthread_mutex_unlock(&(l->list_mutex));
-
 		return 0;
 	}
 	if (temp->np_list_head->next == NULL) {
@@ -586,8 +535,6 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		printf("temp->np_count = %d\n", temp->np_count);
 
 		free(m);
-		pthread_mutex_unlock(&(l->list_mutex));
-
 		return 0;
 	} else if (!strcmp(temp->np_list_head->name, nval)) {
 		m = temp->np_list_head;
@@ -597,8 +544,6 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		printf("temp->np_count = %d\n", temp->np_count);
 
 		free(m);
-		pthread_mutex_unlock(&(l->list_mutex));
-
 		return 0;
 	} else {
 		m = temp->np_list_head;
@@ -609,8 +554,6 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 			printf("temp->np_count = %d\n", temp->np_count);
 
 			free(m);
-			pthread_mutex_unlock(&(l->list_mutex));
-
 			return 0;
 		}
 		m = m->next;
@@ -622,16 +565,12 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 				printf("temp->np_count = %d\n", temp->np_count);
 
 				free(m);
-				pthread_mutex_unlock(&(l->list_mutex));
-
 				return 0;
 			}
 			b = m;
 			m = m->next;
 		}
 	}
-	pthread_mutex_unlock(&(l->list_mutex));
-
 }
 
 /* Below is the code to test the list */
