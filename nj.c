@@ -907,7 +907,7 @@ void *NpGetNotifyMethod(void *arguments)
 	    three[512];
 	char delimattr[3] = "##";
 	char delimval[3] = "::";
-	struct extr_key_val *temp, *m;
+	struct extr_key_val *temp, *m, *p;
 	char **pointer;
 
 	strtok(r, delimattr);
@@ -936,16 +936,21 @@ void *NpGetNotifyMethod(void *arguments)
 	temp = (struct extr_key_val *)malloc(sizeof(struct extr_key_val));
 	temp->next = NULL;
 	m = nptr->key_val_ptr;
+	p = m;
+
+pthread_mutex_lock(&app_list_mutex);
 
 	if (m == NULL) {
 		nptr->key_val_ptr = temp;
 	} else {
 		printf("EXTRAct : Next case else \n");
-		while (!(m->next)) {
-
+		while (m != NULL) {
+            p = m; 
 			m = m->next;
 		}
-		m->next = temp;
+		p->next = temp;
+		//m->next = temp;
+		temp->next = NULL; // 
 	}
 	// Save the keyvalarr
 	//
@@ -953,6 +958,9 @@ void *NpGetNotifyMethod(void *arguments)
 	//
 
 	printf("PRINTING BEFORE EXTRACT\n");
+
+pthread_mutex_unlock(&app_list_mutex);
+
 
 	extractKeyVal(args->argssend, &pointer);
 	temp->key_val_arr = pointer;
@@ -965,6 +973,7 @@ void *NpGetNotifyMethod(void *arguments)
 	//
 
 	/* HANDLE NO NAME AND STUFF */
+	
 
 	printf("NJ.C   : App Count = %d for NP = %s\n",
 	       get_np_app_cnt(&npList, np_name), np_name);
