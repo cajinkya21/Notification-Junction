@@ -39,8 +39,11 @@ void *handle;
 
 /*Mutexes to be used for synchronizing list*/
 
-pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex,
-    np_list_count_mutex, getnotify_socket_mutex;
+pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex, np_list_count_mutex, getnotify_socket_mutex;
+    
+
+    
+    
 void print_stat()
 {
 
@@ -268,6 +271,10 @@ void extractKeyVal(char *usage, char ***keyVal)
 
 	ptr = strtok(copyusage, "##");
 
+
+
+
+
 	printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
 
 	(*keyVal)[i] = (char *)malloc(sizeof(char) * strlen(ptr));
@@ -277,7 +284,13 @@ void extractKeyVal(char *usage, char ***keyVal)
 
 	for (i = 1; i < cnt; i++) {
 
+
+
 		ptr = strtok(NULL, "##");
+
+
+
+        
 		if (!ptr) {
 
 			break;
@@ -898,11 +911,12 @@ void *NpGetNotifyMethod(void *arguments)
 	strcpy(r, rough);
 	np_node *nptr;
 	char appname[64];
+	main_np_node *np_node;
 
 	/* INOTIFY needs npname::<npname>##pathname::<pathname>##flags::<flags> */
 
 	printf("NJ.C   : Args received by getnotify - %s\n", args->argssend);
-	int i, count;
+	int i, count, k;
 	char np_name[64], dir_name[256], flag_set[512], one[512], two[512],
 	    three[512];
 	char delimattr[3] = "##";
@@ -963,6 +977,17 @@ pthread_mutex_unlock(&app_list_mutex);
 
 
 	extractKeyVal(args->argssend, &pointer);
+	
+	np_node = search_np(&npList, np_name);
+	
+	k = compare_array(&(np_node->key_val_arr), &pointer);
+	
+    if(k == 0)
+        printf("Array matched..\n");
+    else {
+        printf("Array not matched..\n");	
+        return;
+	}
 	temp->key_val_arr = pointer;
 	print_app(&appList);
 	printf("PRINTING AFTER EXTRACT\n");
@@ -972,11 +997,15 @@ pthread_mutex_unlock(&app_list_mutex);
 	//
 	//
 
+    forward_convert(&(np_node->key_val_arr),&pointer, args-argssend);
 	/* HANDLE NO NAME AND STUFF */
 	
 
 	printf("NJ.C   : App Count = %d for NP = %s\n",
 	       get_np_app_cnt(&npList, np_name), np_name);
+
+
+
 
 	/* App count will be 0 initially. App can call getnotify only after NP has registered, and doing App_getnotify for the first time increments the count to 1. Therefore compare count with 1 to do dlopen() for the first time */
 	if (get_np_app_cnt(&npList, np_name) == 1) {
@@ -1154,4 +1183,93 @@ void *ProceedGetnotifyMethod(void *arguments)
 		return;
 
 	}
+}
+
+
+char* extract_key(char *key_val) {
+    
+     char *key, *ptr;
+    char temp[128] ;
+    strcpy(temp, key_val);
+    ptr = strtok(temp, "::");
+    
+    key = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+    strcpy(key, ptr);
+    return key;
+}
+
+char* extract_val(char *key_val) {
+    
+    char *key, *ptr, *val;
+    char temp[128] ;
+    strcpy(temp, key_val);
+    ptr = strtok(temp, "::");
+    //key = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+    //strcpy(key, ptr);
+    //ptr = strtok(NULL, "::");
+    ptr = (key_val + strlen(ptr) + 2);
+    if(!ptr) printf("RETURNED NULL");
+    val = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+    strcpy(val, ptr);
+    return val;
+}
+
+int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr) {
+    
+      char **one, **two, *key_one, *key_two;
+        int found = 0;
+        one = *getn_key_val_arr;
+        while(*one != NULL) {
+            found = 0;
+            key_one = extract_key(*one);
+            two = *np_key_val_arr;
+            while(*two != NULL) {
+                key_two = extract_key(*two);
+                if(!(strcmp(key_one, key_two))) {
+                    found = 1;
+                    break;
+                }
+                two++;
+            }
+            if(found == 0) {
+                printf("ERROR : NJ : NP cannot process key %s\n", key_one);
+                return -1;
+            }
+        
+            one++;
+        }
+        return 0;
+}
+
+void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr , char * fillit) {
+    char **one, **two, *key_one, *key_two;
+    int found = 0;
+    char ret_string[512];
+    strcpy(ret_string,"\0");
+    two = *np_key_val_arr;
+    while(*two != NULL) {
+        printf("In loop of forward conbert \n");
+        found = 0;
+        key_two = extract_key(*two);
+        one = *getn_key_val_arr;
+        while(*one != NULL) {
+            key_one = extract_key(*one);
+            printf("%s is in one\n", *one);
+            if(!(strcmp(key_one, key_two))) {
+                    strcat(ret_string, *one);
+                    strcat(ret_string, "##");
+                    found = 1;
+                    break;
+                }
+            one++;
+        }
+        if(found == 0) {
+            strcat(ret_string, *two);
+            strcat(ret_string, "##");
+        }
+      two++;
+    }
+    strcpy(fillit, ret_string);
+    fillit[(strlen(fillit)) - 2] = '\0';
+    return;
 }

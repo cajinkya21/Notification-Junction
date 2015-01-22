@@ -2,3 +2,9 @@ gcc -c -fPIC inotify.c -o inotify.o
  
 
 gcc  inotify.o -shared -o libinotify.so
+
+ ./np_register inotify==TYPE::N##flags::IN_CREATE##dir::~/Desktop##npname::inotify          //add npname
+
+
+//Restriction -  Give arguments in NNP_REGISTER IN THE SAME ORDER as the NP Library needs them/
+

@@ -97,4 +97,12 @@ void sigintHandler(int signum);
 
 void extractKeyVal(char *, char ***);
 
+char* extract_key(char *key_val);
+
+char* extract_val(char *key_val);
+
+int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr);
+
+void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr, char * fillit);
+
 #endif				/*nj.h */

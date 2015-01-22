@@ -46,5 +46,6 @@ int del_np(np_dcll *, char *);
 void incr_np_app_cnt(np_dcll *, char *);
 void decr_np_app_cnt(np_dcll *, char *);
 int get_np_app_cnt(np_dcll *, char *);
+int check_key_validity(np_dcll * npList, char * key_to_check);
 
 #endif				/*np_dcll.h */
