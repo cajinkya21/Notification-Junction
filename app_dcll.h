@@ -58,7 +58,7 @@ int addapp_node(app_dcll *, char *);
 void print_app(app_dcll *);
 app_node *search_app(app_dcll *, char *);
 int searchReg(app_dcll *, char *, char *);
-np_node *getReg(app_dcll *, char *, char *);
+np_node *getReg(app_dcll *, char *appname, char *npname);
 int del_app(app_dcll *, char *);
 int add_np_to_app(app_dcll *, char *, char *);
 int del_np_from_app(app_dcll *, char *, char *);

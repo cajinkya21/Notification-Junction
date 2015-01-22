@@ -832,12 +832,12 @@ void *AppGetNotifyMethod(void *arguments)
 	argstring = (char *)malloc(sizeof(char) * 1024);
 	for (;;) {
 
-		pthread_mutex_lock(&getnotify_socket_mutex);
+		
 		args->msgsock = accept(args->sock, 0, 0);
 		if (args->msgsock == -1)
 			perror("NJ.C   : accept");
 		else
-			do {
+			do {	pthread_mutex_lock(&getnotify_socket_mutex);
 				bzero(args->buf, sizeof(args->buf));
 				args->rval =
 				    read(args->msgsock, args->buf, 1024);
@@ -934,14 +934,14 @@ void *NpGetNotifyMethod(void *arguments)
 	printf("NJ : ARGSSEND BEFORE EXTRACT : %s\n", args->argssend);
 
 	temp = (struct extr_key_val *)malloc(sizeof(struct extr_key_val));
-	temp->next == NULL;
+	temp->next = NULL;
 	m = nptr->key_val_ptr;
 
 	if (m == NULL) {
 		nptr->key_val_ptr = temp;
 	} else {
 		printf("EXTRAct : Next case else \n");
-		while (!m->next) {
+		while (!(m->next)) {
 
 			m = m->next;
 		}

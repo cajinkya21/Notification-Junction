@@ -48,7 +48,7 @@ int addapp_node(app_dcll * l, char *val)
 		exit(1);
 	}
 
-	new->data = malloc(sizeof(val) + 1);
+	new->data =(char *)malloc(sizeof(val) + 1);
 
 	if (new->data == NULL) {
 		perror("APP_DCLL : ERROR IN MALLOC");
@@ -302,8 +302,7 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 
 	if (ptr != NULL) {
 
-		printf("App %s has been found. Checking np %s in app's list\n",
-		       appname, npname);
+		printf("App %s has been found. Checking np %s in app's list\n",appname, npname);
 		nptr = ptr->np_list_head;
 		k = ptr->np_count;
 
