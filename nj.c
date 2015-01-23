@@ -240,7 +240,8 @@ int register_np(char *buff)
 	char *s;
 	char **keyVal;
 	main_np_node *ptr;
-
+	main_np_node *new;
+	int i;
 	strcpy(np_name, strtok(buff, delimusage));
 	s = strtok(NULL, delimusage);
 	if (s == NULL) {
@@ -250,10 +251,19 @@ int register_np(char *buff)
 	strcpy(usage, s);
 	extractKeyVal(usage, &keyVal);
 	
+	pthread_mutex_lock(&np_list_mutex);	
+	new = search_np(&npList, np_name);
+    
+	
+	if(new != NULL) {
+		i = del_np(&npList, np_name);
+	}
+	pthread_mutex_unlock(&np_list_mutex);
+	
     pthread_mutex_lock(&np_list_mutex);	
 	add_np(&npList, np_name, usage, &keyVal);
     pthread_mutex_unlock(&np_list_mutex);
-
+	
     pthread_mutex_lock(&np_list_mutex);
 	print_np(&npList);
     pthread_mutex_unlock(&np_list_mutex);
@@ -875,12 +885,13 @@ void *NpGetNotifyMethod(void *arguments)
 	strcpy(r, rough);
 	np_node *nptr;
 	char appname[64];
+	//int count = 2;
 	main_np_node *np_node;
 
 	/* INOTIFY needs npname::<npname>##pathname::<pathname>##flags::<flags> */
 
 	printf("NJ.C   : Args received by getnotify - %s\n", args->argssend);
-	int i, count, k;
+	int i, count = 2, k;
 	char np_name[64], dir_name[256], flag_set[512], one[512], two[512],
 	    three[512];
 	char delimattr[3] = "##";
@@ -989,19 +1000,20 @@ void *NpGetNotifyMethod(void *arguments)
 
 	}
 	/* Do dlsym() for getnotify() */
+	for(;count != 0; count--) {
+		printf("count = %d \n",count);
+		getnotify = dlsym(handle, "getnotify");
+		if ((error = dlerror()) != NULL) {
+			perror("NJ.C   : chukla");
+			exit(1);
+		}
 
-	getnotify = dlsym(handle, "getnotify");
-	if ((error = dlerror()) != NULL) {
-		perror("NJ.C   : chukla");
-		exit(1);
+		printf("NJ.C   : Handle Successful\n");
+
+		(*getnotify) (args);
+
+		printf("NJ.C   : In NPMethod, Recd = %s\n", args->argsrecv);
 	}
-
-	printf("NJ.C   : Handle Successful\n");
-
-	(*getnotify) (args);
-
-	printf("NJ.C   : In NPMethod, Recd = %s\n", args->argsrecv);
-
 	/*Dlclose       */
 	/* dlclose(handle); */
 	/*HANDLE CLOSING PROPERLY. WHEN TO CLOSE */
@@ -1056,7 +1068,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 	int pid;
 	char rough[1024];
 	char choice;
-	int j, count = 2;
+	int j;
 	char *ptr;
 	strcpy(rough, args->buf);
 	printf("NJ.C   :  %s  args-.buf received from library call\n",
@@ -1089,9 +1101,8 @@ void *ProceedGetnotifyMethod(void *arguments)
 	
 	
 	
-	//start of for
-	for(;count != 0; count--) {
-	    printf("NJ : FOR : Proceedgetnotify count : %d\n\n", count);
+	
+	   // printf("NJ : FOR : Proceedgetnotify count : %d\n\n", count);
 	    received = getnotify_app(args->buf);
 	    if (choice == 'N') {
 		    if (!(fd = open(filename, O_CREAT | O_APPEND | O_RDWR, 0777))) {
@@ -1147,8 +1158,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 			           al);
 
 		    printf("NJ.C   :  Before freeing \n");
-		    // end for
-		}
+		
 	}
 		free(received);
 		return;

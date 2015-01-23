@@ -36,6 +36,7 @@ clean:
 	rm File_PIDS.txt
 	rm dummyapp2
 	rm app_unreg
+	rm *.txt
     
  #Target 3
 libinotify: inotify.o

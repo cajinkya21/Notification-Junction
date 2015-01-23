@@ -46,7 +46,13 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 	new = search_np(l, val);
 
 	if (new != NULL) {
-		//printf("NP_DCLL : Existing NP\n");
+		printf("NP_DCLL : Existing NP\n");
+		//free(new->data);
+		//free(new->usage);
+		//add code to free next->key_val_arr
+		new->data = (char *)malloc(sizeof(val) + 1);
+		new->usage = usage;
+		new->key_val_arr = *key_val_arr;
 		return ALREXST;
 	}
 
