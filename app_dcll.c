@@ -199,6 +199,7 @@ void printNpKeyVal(app_node * temp)
 			kptr = vptr->key_val_arr;
 			if (kptr == NULL) {
 				printf("HERE LIES THE PROBLEM\n\n");
+				return;
 			}
 			printf("VPTR->KEYVALARR is %s\n", *(vptr->key_val_arr));
 
@@ -219,6 +220,7 @@ void printNpKeyVal(app_node * temp)
 		}
 		head = head->next;
 	}
+	return;
 }
 
 /* SEARCH APP, RETURN POINTER TO NODE */
