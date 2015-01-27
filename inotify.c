@@ -19,7 +19,7 @@ IN_EXCL_UNLINK, IN_MASK_ADD, IN_ONESHOT, IN_ONLYDIR };
 void getnotify(struct getnotify_threadArgs *args)
 {
 
-	printf("Args received in getnotify - %s\n", args->argssend);
+	printf("Args received in getnotify - %s!!!!\n", args->argssend);
 
 	int length, i = 0;
 	int fd;

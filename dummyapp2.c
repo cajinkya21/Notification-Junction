@@ -21,11 +21,11 @@ int main(int argc, char* argv[]) {
 	
 	strcpy(arr, "npname::inotify##dir::");
 	strcat(arr, argv[1]);   // The directory to be watched.
-	strcat(arr, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY");
+	strcat(arr, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY##count::2");
 	printf("Arr is %s\n", arr);
 	strcpy(arr2, "npname::inotify##dir::");
 	strcat(arr2, argv[2]);   // The directory to be watched.
-	strcat(arr2, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY");
+	strcat(arr2, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY##count::2");
 	printf("Arr2 is %s\n", arr2);
 
 	pid = getpid();

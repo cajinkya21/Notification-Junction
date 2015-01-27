@@ -876,11 +876,17 @@ void *NpGetNotifyMethod(void *arguments)
 {				/*here we need to call Np_specific getnotify to get the notificationstring..this notificationstring is then copied to arguments->argsrecv
 				   for now I am sending the received strig directly as notificationstring for now I have simply returned the string receive1::value1 */
 	struct getnotify_threadArgs *args = arguments;
+	char args_send_copy[1024];
+
+	
 	int j;
 
 	void (*getnotify) (struct getnotify_threadArgs *);
 	char *error;
 	char rough[1024], r[1024];
+	
+	printf("1. args->argssend is %s\n", args->argssend);
+	
 	strcpy(rough, args->argssend);
 	strcpy(r, rough);
 	np_node *nptr;
@@ -1000,8 +1006,7 @@ void *NpGetNotifyMethod(void *arguments)
 
 	}
 	/* Do dlsym() for getnotify() */
-	for(;count != 0; count--) {
-		printf("count = %d \n",count);
+
 		getnotify = dlsym(handle, "getnotify");
 		if ((error = dlerror()) != NULL) {
 			perror("NJ.C   : chukla");
@@ -1009,10 +1014,14 @@ void *NpGetNotifyMethod(void *arguments)
 		}
 
 		printf("NJ.C   : Handle Successful\n");
-
+		
+		strcpy(args_send_copy, args->argssend);	
+	for(;count != 0; count--) {
+	
+		printf("count = %d \n",count);
 		(*getnotify) (args);
-
 		printf("NJ.C   : In NPMethod, Recd = %s\n", args->argsrecv);
+		strcpy(args->argssend, args_send_copy);
 	}
 	/*Dlclose       */
 	/* dlclose(handle); */
