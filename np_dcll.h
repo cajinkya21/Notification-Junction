@@ -38,14 +38,14 @@ typedef struct np_dcll {
 	int count;
 } np_dcll;
 
-void init_np(np_dcll *);
-int add_np(np_dcll *, char *np_name, char *usage, char ***key_val_arr);
-void print_np(np_dcll *);
-main_np_node *search_np(np_dcll *, char *);
-int del_np(np_dcll *, char *);
-void incr_np_app_cnt(np_dcll *, char *);
-void decr_np_app_cnt(np_dcll *, char *);
-int get_np_app_cnt(np_dcll *, char *);
-int check_key_validity(np_dcll * npList, char * key_to_check);
+void init_np(np_dcll *l);
+int add_np(np_dcll *l, char *np_name, char *usage, char ***key_val_arr);
+void print_np(np_dcll *l);
+main_np_node *search_np(np_dcll *l, char *val);
+int del_np(np_dcll * l, char *val);
+void incr_np_app_cnt(np_dcll * l, char *nval);
+void decr_np_app_cnt(np_dcll * l, char *nval);
+int get_np_app_cnt(np_dcll * l, char *nval);
+int check_key_validity(np_dcll *npList, char *key_to_check);
 
 #endif				/*np_dcll.h */
