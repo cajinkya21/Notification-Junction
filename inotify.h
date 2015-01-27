@@ -21,7 +21,7 @@ typedef struct getnotify_threadArgs {
 	char argsrecv[1024];	//getnotify of np will fill the notification response in this field
 } getnotify_threadArgs;
 
-void getmask(long long unsigned int *, char *);
-void getnotify(struct getnotify_threadArgs *);
+void getmask(long long unsigned int *maskval, char *mask);
+void getnotify(struct getnotify_threadArgs *args);
 
 #endif				/*inotify.h */

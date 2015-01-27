@@ -46,20 +46,20 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 /*FUNCTION DECLARATIONS*/
 
 void print_stat();
-int register_app(char *);
-int unregister_app(char *);
-int register_np(char *);
-int unregister_np(char *);
+int register_app(char *buff);
+int unregister_app(char *buff);
+int register_np(char *buff);
+int unregister_np(char *buff);
 
-void *PrintStat(void *);
-void *AppRegMethod(void *);
-void *AppUnRegMethod(void *);
-void *NpRegMethod(void *);
-void *NpUnRegMethod(void *);
-void *AppGetNotifyMethod(void *);
-void *NpGetNotifyMethod(void *);
+void *PrintStat(void *arguments);
+void *AppRegMethod(void *arguments);
+void *AppUnRegMethod(void *arguments);
+void *NpRegMethod(void *arguments);
+void *NpUnRegMethod(void *arguments);
+void *AppGetNotifyMethod(void *arguments);
+void *NpGetNotifyMethod(void *arguments);
 void *ProceedGetnotifyMethod(void *arguments);
-void dec_all_np_counts(app_dcll *, np_dcll *, char *);
+void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name);
 /*STRUCTURE FOR ARGUMENTS TO BE PASSED TO THREAD*/
 typedef struct threadArgs {
 	int sock, msgsock, rval;
@@ -79,23 +79,23 @@ typedef struct getnotify_threadArgs {
 } getnotify_threadArgs;
 
 /* function returns negative value if error in registering app This function will add node in the app list  for first registration of app with particular NP*/
-int register_app(char *);
+int register_app(char *buff);
 
 /*function returns negative value if error in registering np this function will add node in the np list for np registration of np */
-int register_np(char *);
+int register_np(char *buff);
 
 /* function returns negative value if error in unregistering app eg(app not found in list)*/
-int unregister_app(char *);
+int unregister_app(char *buff);
 
 /*function returns negative valuse if error in unregistering np eg(np not found in list)*/
-int unregister_np(char *);
+int unregister_np(char *buff);
 
 /*function to get notification */
-char *getnotify_app(char *);
+char *getnotify_app(char *buff);
 
 void sigintHandler(int signum);
 
-void extractKeyVal(char *, char ***);
+void extractKeyVal(char *usage, char ***keyVal);
 
 char* extract_key(char *key_val);
 
