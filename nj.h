@@ -105,4 +105,6 @@ int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr);
 
 void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr, char * fillit);
 
+char* get_val_from_args(char *usage, char* key);
+
 #endif				/*nj.h */

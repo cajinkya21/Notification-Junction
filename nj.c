@@ -882,7 +882,7 @@ void *NpGetNotifyMethod(void *arguments)
 	int j;
 
 	void (*getnotify) (struct getnotify_threadArgs *);
-	char *error;
+	char *error, *countkey;
 	char rough[1024], r[1024];
 	
 	printf("1. args->argssend is %s\n", args->argssend);
@@ -897,7 +897,7 @@ void *NpGetNotifyMethod(void *arguments)
 	/* INOTIFY needs npname::<npname>##pathname::<pathname>##flags::<flags> */
 
 	printf("NJ.C   : Args received by getnotify - %s\n", args->argssend);
-	int i, count = 2, k;
+	int i, count = -1, k;
 	char np_name[64], dir_name[256], flag_set[512], one[512], two[512],
 	    three[512];
 	char delimattr[3] = "##";
@@ -958,8 +958,9 @@ void *NpGetNotifyMethod(void *arguments)
 
 	printf("PRINTING BEFORE EXTRACT\n");
 
-
-
+    countkey = get_val_from_args(args->argssend, "count");
+    count = atoi(extract_val(countkey));
+    printf("count is %d!\n", count);
 
 	extractKeyVal(args->argssend, &pointer);
 	
@@ -1263,3 +1264,28 @@ void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr , char * fi
     fillit[(strlen(fillit)) - 2] = '\0';
     return;
 }
+
+
+char* get_val_from_args(char *usage, char* key) {
+    
+    char *occ, keycopy[128], *retstr, localkeyval[256];
+    int l, i = 0;
+    
+    strcpy(keycopy, key);
+    strcat(keycopy, "::");
+    l = strlen(keycopy);
+    occ = strstr(usage, keycopy);
+    while(*occ != '#') {
+        localkeyval[i++] = *occ;
+        occ++;    
+    }
+    localkeyval[i] = '\0';
+    
+    retstr = (char *)malloc(sizeof(char) * i);
+    strcpy(retstr, localkeyval);
+    printf("Retstr is %s!\n", retstr);
+    return retstr;
+    
+}
+    
+
