@@ -115,4 +115,6 @@ void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr, char * fil
 
 char* get_val_from_args(char *usage, char* key);
 
+char *getfilename(char *argsbuf);
+
 #endif				/*nj.h */
