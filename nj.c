@@ -346,16 +346,17 @@ char *getnotify_app(char *buff)
 {
 	char *notification;
 	notification = (char *)malloc(1024 * sizeof(char));
-	struct getnotify_threadArgs arguments;
-	strcpy(arguments.argssend, buff);
+	struct getnotify_threadArgs *arguments;
+	arguments = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs));
+	strcpy(arguments->argssend, buff);
 	pthread_t tid_app_np_gn;
 
 	/* Fork thread to invoke the NP's code with the arguments given in the structure 'arguments', which contains argssend and argsrecv */
-	if (pthread_create(&tid_app_np_gn, NULL, &NpGetNotifyMethod,(void *)&arguments) == 0) {
+	if (pthread_create(&tid_app_np_gn, NULL, &NpGetNotifyMethod,(void *)arguments) == 0) {
 		printf("NJ.C   : Pthread_Creation successful for getnotify\n");
 	}
 	pthread_join(tid_app_np_gn, NULL);
-	strcpy(notification, arguments.argsrecv);
+	strcpy(notification, arguments->argsrecv);
 	return notification;	/*it will be callers responsibility to free the malloced notification string */
 }
 
@@ -839,12 +840,17 @@ void *AppGetNotifyMethod(void *arguments)
 				strcpy(sendargs->buf, args->buf);
 				printf("\n\n\nsendargs has buf = %s\n",
 				       sendargs->buf);
-			    pthread_mutex_unlock(&getnotify_socket_mutex);
-				if (args->rval < 0)
+			   
+				if (args->rval < 0) {
 					perror
 					    ("NJ.C   : reading stream message");
-				else if (args->rval == 0)
+					    
+					     pthread_mutex_unlock(&getnotify_socket_mutex);
+					}    
+				else if (args->rval == 0) {
 					printf("NJ.C   : Ending connection\n");
+					 pthread_mutex_unlock(&getnotify_socket_mutex);
+			}
 				else {
 					printf
 					    ("ARGS SENDING TO PROCEEDGETN are %s\n\n\n",
@@ -858,6 +864,7 @@ void *AppGetNotifyMethod(void *arguments)
 						perror
 						    ("NJ.C   : Pthread_Creations for ProceedgetnotifyMethod\n");
 					}
+					 pthread_mutex_unlock(&getnotify_socket_mutex);
 					//ProceedGetnotifyMethod(arguments);
 					break;
 				}
@@ -884,10 +891,11 @@ void *NpGetNotifyMethod(void *arguments)
 {				/*here we need to call Np_specific getnotify to get the notificationstring..this notificationstring is then copied to arguments->argsrecv
 				   for now I am sending the received strig directly as notificationstring for now I have simply returned the string receive1::value1 */
 	struct getnotify_threadArgs *args = arguments;
-	char args_send_copy[1024];
+	char args_send_copy[1024], args_send_copy_2[1024];
 
+    
 	
-	int j;
+	int j, filefd, al;
 
 	void (*getnotify) (struct getnotify_threadArgs *);
 	char *error, *countkey;
@@ -901,6 +909,15 @@ void *NpGetNotifyMethod(void *arguments)
 	char appname[64];
 	//int count = 2;
 	main_np_node *np_node;
+
+    strcpy(args_send_copy_2, args->argssend);
+    char *filename;
+    
+    filename = getfilename(args_send_copy_2);
+    
+    printf("FILENAME obtained is %s\n", filename);
+    
+    
 
 	/* INOTIFY needs npname::<npname>##pathname::<pathname>##flags::<flags> */
 
@@ -1026,11 +1043,32 @@ void *NpGetNotifyMethod(void *arguments)
 		
 		strcpy(args_send_copy, args->argssend);	
 	for(;count != 0; count--) {
-	
+	    
+	    
+	    //open
+	    if (!(filefd = open(filename, O_CREAT | O_APPEND | O_RDWR , 0777))) {
+			    perror("NJ.C   : not able to open file\n");
+			    return;
+		    }
+	    
 		printf("count = %d \n",count);
 		(*getnotify) (args);
 		printf("NJ.C   : In NPMethod, Recd = %s\n", args->argsrecv);
+		
+		//write
+		al = write((int)filefd, args->argsrecv, strlen(args->argsrecv));
+	    if (al < 0)
+		    perror("NJ.C   : Fwrite failed");
+	    else
+		    printf("NJ.C   : %s madhe %d bytes WRITTEN\n", filename, al);
+		
 		strcpy(args->argssend, args_send_copy);
+		
+		//close
+		close(filefd);
+		
+		//to do kill here
+		
 	}
 	/*Dlclose       */
 	/* dlclose(handle); */
@@ -1082,27 +1120,28 @@ void *ProceedGetnotifyMethod(void *arguments)
 {
 	char *received;
 	struct proceedGetnThreadArgs *args = arguments;
-	printf("ARGS SENDING TO PROCEEDGETN are %s\n\n\n", args->buf);
+	printf("ARGS SENDING TO PROCEEDGETN PROCEEDGETNOTIFY are %s\n\n\n", args->buf);
 	int pid;
 	char rough[1024];
 	char choice;
 	int j;
 	char *ptr;
 	strcpy(rough, args->buf);
-	printf("NJ.C   :  %s  args-.buf received from library call\n",
+	printf("NJ.C   :  %s  args-.buf received PROCEEDGETNOTIFY from library call\n",
 	       args->buf);
 	int len = strlen(rough);
 	choice = rough[len - 1];
 	char spid[32];
 	strcpy(spid, strtok(rough, "##"));
 	pid = atoi(spid);
-/*for(j = 0; j < len ; j++) {
+    for(j = 0; j < len ; j++) {
 			if(rough[j] == '#')
 			if(rough[j+1] == '#')
 					break;
-		}*/
+		}
 
 	j = strlen(rough);
+	
 	//strcpy(rough, args->buf);
 	//strcpy(rough , &(rough[j+2]));
 	//strcpy(args->buf, rough);
@@ -1121,25 +1160,28 @@ void *ProceedGetnotifyMethod(void *arguments)
 	
 	
 	   // printf("NJ : FOR : Proceedgetnotify count : %d\n\n", count);
+	   
+	   
+	   
 	    received = getnotify_app(args->buf);
 	    if (choice == 'N') {
-		    if (!(fd = open(filename, O_CREAT | O_APPEND | O_RDWR, 0777))) {
+		    /*if (!(fd = open(filename, O_CREAT | O_APPEND | O_RDWR, 0777))) {
 			    perror("NJ.C   : not able to open file\n");
 			    return;
 		    }
 		    printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
-
+*/
 		    printf("NJ.C   : %s \n", received);
 		    strcat(received, "\n");
 		    write((int)fd_pidnames, filename1, strlen(filename1));
 		    printf("\n\nPID filename is written successfully.....\n\n");
-		    al = write((int)fd, received, strlen(received));
+		    /*al = write((int)fd, received, strlen(received));
 		    if (al < 0)
 			    perror("NJ.C   : Fwrite failed");
 		    else
 			    printf("NJ.C   : %s madhe %d bytes WRITTEN\n", filename,
 			           al);
-
+*/
 		    printf("NJ.C   : Before Sig, %d sending to pid = %d \n",
 		           getpid(), pid);
 		           
@@ -1158,12 +1200,12 @@ void *ProceedGetnotifyMethod(void *arguments)
 	    printf("NJ.C   : REPORTING TO CLIENT EVENT : %s\n", received);
 	    if (choice == 'B') {
 
-		    if (!(fd = open(filename, O_CREAT | O_APPEND | O_RDWR, 0777))) {
+		   /* if (!(fd = open(filename, O_CREAT | O_APPEND | O_RDWR, 0777))) {
 			    perror("NJ.C   : not able to open file\n");
 			    return;
 		    }
 		    printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
-
+*/
 		    printf("NJ.C   : %s \n", received);
 		    strcat(received, "\n");
 		    write((int)fd_pidnames, filename1, strlen(filename1));
@@ -1296,4 +1338,40 @@ char* get_val_from_args(char *usage, char* key) {
     
 }
     
+char *getfilename(char *argsbuf) {
 
+int pid;
+	char rough[1024], *retstr;
+	char choice;
+	int j;
+	char *ptr;
+	strcpy(rough, argsbuf);
+	printf("NJ.C   :  %s  args-.buf received from library call\n",
+	       argsbuf);
+	int len = strlen(rough);
+	choice = rough[len - 1];
+	char spid[32];
+	strcpy(spid, strtok(rough, "##"));
+	pid = atoi(spid);
+/*for(j = 0; j < len ; j++) {
+			if(rough[j] == '#')
+			if(rough[j+1] == '#')
+					break;
+		}*/
+
+	j = strlen(rough);
+	//strcpy(rough, args->buf);
+	//strcpy(rough , &(rough[j+2]));
+	//strcpy(args->buf, rough);
+	printf("NJ.C   : Received args->buf IN FILENAME FUNCTION %s\n", argsbuf);
+	int fd, al;
+	char filename[64], filename1[64];
+	strcpy(filename, "./");
+	strcat(filename, spid);
+strcat(filename, ".txt");
+printf("NJ.C   : Filename:%s\n\n", filename);
+retstr = (char*)malloc(sizeof(char) * (strlen(filename) + 1));
+strcpy(retstr, filename);
+    return retstr;
+
+}
