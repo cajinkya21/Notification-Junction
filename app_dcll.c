@@ -562,7 +562,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 			temp->np_count--;
 			printf("temp->np_count = %d\n", temp->np_count);
 
-			free(m);
+		free(m);
 			return 0;
 		}
 		m = m->next;

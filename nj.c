@@ -39,7 +39,7 @@
 /* Declare global NP list */
 
 np_dcll npList;			/*head of npList */
-
+FILE* logfd;
 /*Declare global app List*/
 app_dcll appList;		/*head of appList */
 int fd_pidnames;
@@ -48,7 +48,13 @@ void *handle;
 /*Mutexes to be used for synchronizing list*/
 
 pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex, np_list_count_mutex, getnotify_socket_mutex;
-    
+void force_logs(void) {
+	fclose(logfd);
+	if (!(logfd = fopen("Logs", "a+"))) {
+			    perror("NJ.C   : not able to open  Log file\n");
+	}
+	return;
+}
 
     
     
@@ -343,7 +349,8 @@ int unregister_np(char *buff)
 
 /*FUNCTION TO GET NOTIFICATION FOR APP*/
 char *getnotify_app(char *buff)
-{
+{	fprintf(logfd, "6. buf is %s \n", buff);
+	force_logs();
 	char *notification;
 	notification = (char *)malloc(1024 * sizeof(char));
 	struct getnotify_threadArgs *arguments;
@@ -351,11 +358,15 @@ char *getnotify_app(char *buff)
 	strcpy(arguments->argssend, buff);
 	pthread_t tid_app_np_gn;
 
-	/* Fork thread to invoke the NP's code with the arguments given in the structure 'arguments', which contains argssend and argsrecv */
+	/* Fork thread to invoke the NP's code with the arguments given in the structure 'arguments', which contains argssend and argsrecv */	fprintf(logfd, "7. buf is %s \n", arguments->argssend);
+	
+	force_logs();
 	if (pthread_create(&tid_app_np_gn, NULL, &NpGetNotifyMethod,(void *)arguments) == 0) {
 		printf("NJ.C   : Pthread_Creation successful for getnotify\n");
 	}
+	
 	pthread_join(tid_app_np_gn, NULL);
+	
 	strcpy(notification, arguments->argsrecv);
 	return notification;	/*it will be callers responsibility to free the malloced notification string */
 }
@@ -366,7 +377,12 @@ int main(int argc, char *argv[])
 	/* first remove(unlink) the sockets if they already exist */
 	struct threadArgs stat;
 
-
+	
+	if (!(logfd = fopen("Logs", "a+"))) {
+			    perror("NJ.C   : not able to open  Log file\n");
+			    return 1;
+		    }
+	
 	signal(SIGINT, sigintHandler);
 	sigset_t mask, oldmask;
 	sigemptyset(&mask);
@@ -812,6 +828,9 @@ void *AppGetNotifyMethod(void *arguments)
 	struct threadArgs *args = arguments;
 	printf("NJ.C   : In AppGetNotify\n");
 	printf("NJ.C   : args -> msgsock - %d\n", args->msgsock);
+	
+	fprintf(logfd,"NJ.C   : In AppGetNotify\n");
+	fprintf(logfd,"NJ.C   : args -> msgsock - %d\n", args->msgsock);
 	int i = 0;
 	struct proceedGetnThreadArgs *sendargs;
 	sendargs = (struct proceedGetnThreadArgs *)
@@ -840,7 +859,7 @@ void *AppGetNotifyMethod(void *arguments)
 				strcpy(sendargs->buf, args->buf);
 				printf("\n\n\nsendargs has buf = %s\n",
 				       sendargs->buf);
-			   
+			   	fprintf(logfd, "1. buf is %s \n",sendargs->buf);
 				if (args->rval < 0) {
 					perror
 					    ("NJ.C   : reading stream message");
@@ -896,7 +915,7 @@ void *NpGetNotifyMethod(void *arguments)
     
 	
 	int j, filefd, al;
-
+	fprintf(logfd, "8. buf is %s \n", args->argssend);
 	void (*getnotify) (struct getnotify_threadArgs *);
 	char *error, *countkey;
 	char rough[1024], r[1024];
@@ -912,9 +931,11 @@ void *NpGetNotifyMethod(void *arguments)
 
     strcpy(args_send_copy_2, args->argssend);
     char *filename;
-    
+    	fprintf(logfd, "9. buf is %s \n", args->argssend);
     filename = getfilename(args_send_copy_2);
-    
+    	fprintf(logfd, "10. buf is %s \n", args->argssend);
+    	
+	force_logs();
     printf("FILENAME obtained is %s\n", filename);
     
     
@@ -1052,6 +1073,9 @@ void *NpGetNotifyMethod(void *arguments)
 		    }
 	    
 		printf("count = %d \n",count);
+			fprintf(logfd, "11 %d. buf is %s \n", count, args->argssend);
+			
+	force_logs();
 		(*getnotify) (args);
 		printf("NJ.C   : In NPMethod, Recd = %s\n", args->argsrecv);
 		
@@ -1119,16 +1143,20 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 void *ProceedGetnotifyMethod(void *arguments)
 {
 	char *received;
-	struct proceedGetnThreadArgs *args = arguments;
-	printf("ARGS SENDING TO PROCEEDGETN PROCEEDGETNOTIFY are %s\n\n\n", args->buf);
+	struct proceedGetnThreadArgs *temparguments = arguments;
+	struct proceedGetnThreadArgs args = *temparguments;
+	printf("ARGS SENDING TO PROCEEDGETN PROCEEDGETNOTIFY are %s\n\n\n", args.buf);
+	fprintf(logfd, "2. buf is %s \n", args.buf);
+	
+	force_logs();
 	int pid;
 	char rough[1024];
 	char choice;
 	int j;
 	char *ptr;
-	strcpy(rough, args->buf);
+	strcpy(rough, args.buf);
 	printf("NJ.C   :  %s  args-.buf received PROCEEDGETNOTIFY from library call\n",
-	       args->buf);
+	       args.buf);
 	int len = strlen(rough);
 	choice = rough[len - 1];
 	char spid[32];
@@ -1145,7 +1173,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 	//strcpy(rough, args->buf);
 	//strcpy(rough , &(rough[j+2]));
 	//strcpy(args->buf, rough);
-	printf("NJ.C   : Received args->buf is %s\n", args->buf);
+	printf("NJ.C   : Received args->buf is %s\n", args.buf);
 	int fd, al;
 	char filename[64], filename1[64];
 	strcpy(filename, "./");
@@ -1162,15 +1190,22 @@ void *ProceedGetnotifyMethod(void *arguments)
 	   // printf("NJ : FOR : Proceedgetnotify count : %d\n\n", count);
 	   
 	   
+	   fprintf(logfd, "3. buf is %s \n", args.buf);
 	   
-	    received = getnotify_app(args->buf);
+	force_logs();
+	    received = getnotify_app(args.buf);
+	    fprintf(logfd, "4. buf is %s \n", args.buf);
+	    
+	force_logs();
 	    if (choice == 'N') {
 		    /*if (!(fd = open(filename, O_CREAT | O_APPEND | O_RDWR, 0777))) {
 			    perror("NJ.C   : not able to open file\n");
 			    return;
 		    }
 		    printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
-*/
+*/		    fprintf(logfd, "5. buf is %s \n", args.buf);
+			
+	force_logs();
 		    printf("NJ.C   : %s \n", received);
 		    strcat(received, "\n");
 		    write((int)fd_pidnames, filename1, strlen(filename1));
@@ -1194,7 +1229,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 		    }
 		    printf("NJ.C   : After Sig \n");
 	    }
-	    printf("NJ.C   : -->%s\n", args->buf);
+	    printf("NJ.C   : -->%s\n", args.buf);
 	    printf("NJ.C   : received notification is %s \n", received);
 	
 	    printf("NJ.C   : REPORTING TO CLIENT EVENT : %s\n", received);
