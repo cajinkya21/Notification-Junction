@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 	printf("Arr is %s\n", arr);
 	pid = getpid();
 	signal(SIGUSR1, sigusrhandler);
-	sigset_t mask, oldmask;
+	sigset_t mask;
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGUSR1);
 
@@ -37,10 +37,10 @@ int main(int argc, char *argv[])
 	sprintf(str, "%d", pid);
 	strcat(str, "::inotify");
 
-	i = app_register(str);	/* Application registers with inotify */
+	app_register(str);	/* Application registers with inotify */
 	printf("Dummy app app register done\n");
 	printf("DUMMYAPP : Sending pid = %d\n", pid);
-	i = app_getnotify(pid, arr, 'N');
+	app_getnotify(pid, arr, 'N');
 	/* Application request for notification from inotify */
 
 	printf("Dummy app getnotify done \n");
