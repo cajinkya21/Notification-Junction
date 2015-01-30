@@ -78,7 +78,11 @@ void getnotify(struct getnotify_threadArgs *args)
 
 	if (length < 0) {
 		perror("read");
+		 printf("Couldn't read\n");
+		 return;
 	}
+
+   
 
 	while (i < length) {
 

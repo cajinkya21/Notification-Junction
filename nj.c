@@ -1002,6 +1002,7 @@ void *NpGetNotifyMethod(void *arguments)
     countkey = get_val_from_args(args->argssend, "count");
     count = atoi(extract_val(countkey));
     printf("count is %d!\n", count);
+    fprintf(logfd, "99. count is %d! for buf %s!\n", count, args->argssend);
 
 	extractKeyVal(args->argssend, &pointer);
 	
@@ -1096,7 +1097,7 @@ void *NpGetNotifyMethod(void *arguments)
 	printf("NJ.C   : ARGSRECV IN THREAD HANDLER = %s\n", args->argsrecv);
 
 	pthread_exit(NULL);
-	return NULL;
+	//return NULL;
 
 	/* Functions have to be written such that the argument will be the address of struct args */
 }
@@ -1138,19 +1139,21 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 void *ProceedGetnotifyMethod(void *arguments)
 {
 	char *received;
-	struct proceedGetnThreadArgs *temparguments = arguments;
-	struct proceedGetnThreadArgs args = *temparguments;
-	printf("ARGS SENDING TO PROCEEDGETN PROCEEDGETNOTIFY are %s\n\n\n", args.buf);
-	fprintf(logfd, "2. buf is %s \n", args.buf);
+	struct proceedGetnThreadArgs *temparguments = (struct proceedGetnThreadArgs *)arguments;
+	struct proceedGetnThreadArgs *args = (struct proceedGetnThreadArgs *)malloc(sizeof(struct proceedGetnThreadArgs));
+	
+	*args = *temparguments;
+	printf("ARGS SENDING TO PROCEEDGETN PROCEEDGETNOTIFY are %s\n\n\n", args->buf);
+	fprintf(logfd, "2. buf is %s \n", args->buf);
 	
 	force_logs();
 	int pid;
 	char rough[1024];
 	char choice;
 	int j;
-	strcpy(rough, args.buf);
+	strcpy(rough, args->buf);
 	printf("NJ.C   :  %s  args-.buf received PROCEEDGETNOTIFY from library call\n",
-	       args.buf);
+	       args->buf);
 	int len = strlen(rough);
 	choice = rough[len - 1];
 	char spid[32];
@@ -1167,7 +1170,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 	//strcpy(rough, args->buf);
 	//strcpy(rough , &(rough[j+2]));
 	//strcpy(args->buf, rough);
-	printf("NJ.C   : Received args->buf is %s\n", args.buf);
+	printf("NJ.C   : Received args->buf is %s\n", args->buf);
 	char filename[64], filename1[64];
 	strcpy(filename, "./");
 	strcat(filename, spid);
@@ -1183,11 +1186,21 @@ void *ProceedGetnotifyMethod(void *arguments)
 	   // printf("NJ : FOR : Proceedgetnotify count : %d\n\n", count);
 	   
 	   
-	   fprintf(logfd, "3. buf is %s \n", args.buf);
+	   fprintf(logfd, "3. buf is %s \n", args->buf);
 	   
 	force_logs();
-	    received = getnotify_app(args.buf);
-	    fprintf(logfd, "4. buf is %s \n", args.buf);
+	    
+	    
+	    
+	    received = getnotify_app(args->buf);
+	    while(received == NULL) {
+	        //received = "\0";
+	        pthread_exit(NULL);
+       
+	    }
+	    
+	    
+	    fprintf(logfd, "4. Notification received from getnotify_app is %s \n", received);
 	    
 	force_logs();
 	    if (choice == 'N') {
@@ -1196,7 +1209,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 			    return;
 		    }
 		    printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
-*/		    fprintf(logfd, "5. buf is %s \n", args.buf);
+*/		    fprintf(logfd, "5. buf is %s \n", args->buf);
 			
 	force_logs();
 		    printf("NJ.C   : %s \n", received);
@@ -1222,10 +1235,10 @@ void *ProceedGetnotifyMethod(void *arguments)
 		    }
 		    printf("NJ.C   : After Sig \n");
 	    }
-	    printf("NJ.C   : -->%s\n", args.buf);
-	    printf("NJ.C   : received notification is %s \n", received);
+	    printf("NJ.C   : -->%s\n", args->buf);
+	  //  printf("NJ.C   : received notification is [%s]. \n", received);
 	
-	    printf("NJ.C   : REPORTING TO CLIENT EVENT : %s\n", received);
+	  //  printf("NJ.C   : REPORTING TO CLIENT EVENT : [%s].\n", received);
 	    if (choice == 'B') {
 
 		   /* if (!(fd = open(filename, O_CREAT | O_APPEND | O_RDWR, 0777))) {
@@ -1234,7 +1247,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 		    }
 		    printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
 */
-		    printf("NJ.C   : %s \n", received);
+		    //printf("NJ.C   : %s \n", received);
 		    strcat(received, "\n");
 		    write((int)fd_pidnames, filename1, strlen(filename1));
 		    printf("\n\nPID filename is written successfully.....\n\n");
@@ -1249,7 +1262,8 @@ void *ProceedGetnotifyMethod(void *arguments)
 		*/
 	}
 		free(received);
-		return NULL;
+		pthread_exit(NULL);
+		//return NULL;
 
 
 }

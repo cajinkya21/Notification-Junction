@@ -12,7 +12,7 @@ void sigusrhandler(int signum)
 
 int main(int argc, char *argv[])
 {
-	int i;
+
 	int pid;
 	char arr[512];
 	char str[512];
