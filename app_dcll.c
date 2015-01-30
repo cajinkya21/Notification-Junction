@@ -241,7 +241,7 @@ app_node *search_app(app_dcll * l, char *val)
 	app_node *ptr;
 
 	if (l->count == 0)
-		return;
+		return NULL;
 
 	ptr = l->head;
 
@@ -268,7 +268,7 @@ int searchReg(app_dcll * l, char *appname, char *npname)
 
 	app_node *ptr;
 	np_node *nptr;
-	int k;
+	//int k;
 	ptr = search_app(l, appname);
 
 	printf("Searching Registration\n");
@@ -281,7 +281,7 @@ int searchReg(app_dcll * l, char *appname, char *npname)
 		printf("App %s has been found. Checking np %s in app's list\n",
 		       appname, npname);
 		nptr = ptr->np_list_head;
-		k = ptr->np_count;
+		//k = ptr->np_count;
 
 		/* CODE FOR CHECKING NP EXISTANCE */
 		while (nptr != NULL) {
@@ -302,7 +302,7 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 
 	app_node *ptr;
 	np_node *nptr;
-	int k;
+	//int k;
 	ptr = search_app(l, appname);
 
 	//printf("Searching Registration\n");
@@ -314,7 +314,7 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 
 		printf("App %s has been found. Checking np %s in app's list\n",appname, npname);
 		nptr = ptr->np_list_head;
-		k = ptr->np_count;
+		//k = ptr->np_count;
 
 		/* CODE FOR CHECKING NP EXISTANCE */
 		while (nptr != NULL) {
@@ -568,11 +568,9 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		m = m->next;
 		while (m != NULL) {
 			if (strcmp(m->name, nval) == 0) {
-
 				b->next = m->next;
 				temp->np_count--;
 				printf("temp->np_count = %d\n", temp->np_count);
-
 				free(m);
 				return 0;
 			}
@@ -580,6 +578,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 			m = m->next;
 		}
 	}
+	return -1;
 }
 
 /* Below is the code to test the list */

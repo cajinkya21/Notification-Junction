@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
 
 	pid = getpid();
 	signal(SIGUSR1, sigusrhandler);
-	sigset_t mask, oldmask;
+	sigset_t mask;
 	sigemptyset (&mask);
 	sigaddset (&mask, SIGUSR1);
 	
@@ -45,8 +45,11 @@ int main(int argc, char* argv[]) {
 	printf("Dummy app app register done\n");
 	printf("DUMMYAPP : Sending pid = %d\n", pid);
 	i = app_getnotify(pid, arr, 'N' );
-									/* Application request for notification from inotify */
-    j = app_getnotify(pid, arr2,'N');
+	printf("return value of getnotify1 : %d\n", i);								/* Application request for notification from inotify */
+    	j = app_getnotify(pid, arr2,'N');
+    	printf("return value of getnotify2 : %d\n", j);	
+    	
+    	
 	printf("Dummy app getnotify done \n");
 	//sigsuspend(&mask);
 	while(1) ;							/* Loop to make application wait for notification */

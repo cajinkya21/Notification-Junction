@@ -25,13 +25,14 @@
 #include <sys/un.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #define NAME "./app_getn"	/* Socket name for sending parametes */
 									/* and for getting notifications in case of BLOCKED getnotify */
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-	int sock, msgsock, rval;
+	int sock, rval;
 	struct sockaddr_un server;
 	char buf[1024];
 	char data[1024];
@@ -80,4 +81,5 @@ main(int argc, char *argv[])
 	//After reading delete the file (truncate)
 
 	close(sock);
+	return 0;
 }
