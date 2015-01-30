@@ -13,7 +13,6 @@ int app_register(char *key_val_string)
 
 	int sock;
 	struct sockaddr_un server;
-	char buf[1024];
 	char data[1024];
 	if (key_val_string == NULL) {
 		printf("Provide arg string\n");
@@ -49,7 +48,6 @@ int app_unregister(char *key_val_string)
 {
 	int sock;
 	struct sockaddr_un server;
-	char buf[1024];
 	char data[1024];
 
 	if (key_val_string == NULL) {
@@ -77,13 +75,14 @@ int app_unregister(char *key_val_string)
 	if (write(sock, data, sizeof(data)) < 0)
 		perror("APP_UNREG : Writing On Stream Socket");
 	close(sock);
+	return 1;//proper return without error
 }
 
 /* Request for notifications from an np, the choice field is B for blocking and N for non-blocking */
 
 int app_getnotify(int pid, char *key_val_string, char choice)
 {
-	int sock, msgsock, rval;
+	int sock,  rval;
 	struct sockaddr_un server;
 	char buf[1024];
 	char data[1024];

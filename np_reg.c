@@ -27,6 +27,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #define NAME "./np_reg"
 
@@ -35,7 +36,7 @@ int main(int argc, char *argv[])
 
 	int sock;
 	struct sockaddr_un server;
-	char buf[1024];
+	
 	char data[1024];
 	char trash[1024];
 	strcpy(data, argv[1]);

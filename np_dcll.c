@@ -280,7 +280,7 @@ void decr_np_app_cnt(np_dcll * l, char *nval)
 }
 
 int check_key_validity(np_dcll * npList, char * key_to_check) {
-    
+    return 1;
 }
 
 

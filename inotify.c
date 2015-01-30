@@ -337,7 +337,7 @@ void getmask(long long unsigned int *maskval, char *mask)
 	printf("Mask is %s\n", mask);
 	int i = 0;
 	int index;
-	const char del = '*';
+	//const char del = '*';
 	char p[512];
 	char *ptr;
 	printf("Mask copy is %s\n", copy);

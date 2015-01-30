@@ -36,6 +36,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #define NAME "./statsock"
 
