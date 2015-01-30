@@ -26,6 +26,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdio.h>
+#include <unistd.h>
+
     
 #define NAME "./app_reg"						
 
@@ -37,7 +39,6 @@ int sock;
 	
 struct sockaddr_un server;
 	
-char buf[1024];
 	
 char data[1024];
 	
