@@ -117,4 +117,6 @@ char* get_val_from_args(char *usage, char* key);
 
 char *getfilename(char *argsbuf);
 
+int countArgs(char *usage, char *count_occurence_of);
+
 #endif				/*nj.h */

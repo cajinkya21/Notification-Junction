@@ -82,8 +82,7 @@ void sigintHandler(int signum)
 		close(fd_pidnames);
 
 		fd_pidnames = open("File_PIDS.txt", O_CREAT | O_RDWR, 0777);
-		int r_cnt, sys_r;
-		char buf1[64], buf2[64];
+		char buf2[64];
 		FILE *pidnames = fdopen(fd_pidnames, "r");
 		//printf("Removing pid files\n");
 		while (fgets(buf2, sizeof(buf2), pidnames)) {
@@ -105,9 +104,8 @@ void sigintHandler(int signum)
 /*TO REGISTER APP with NJ*/
 int register_app(char *buff)
 {
-	int i;
 	char app_name[32], np_name[32];
-	char *s, *n;
+	char *s;
 	char delim[3] = "::";
 	int retval;
 
@@ -248,14 +246,11 @@ int unregister_app(char *buff)
 int register_np(char *buff)
 {
 	char np_name[32];
-	char delimkeyval[3] = "::";
 	char delimusage[3] = "==";
 	char usage[512];
 	char *s;
 	char **keyVal;
-	main_np_node *ptr;
 	main_np_node *new;
-	int i;
 	strcpy(np_name, strtok(buff, delimusage));
 	s = strtok(NULL, delimusage);
 	if (s == NULL) {
@@ -270,7 +265,7 @@ int register_np(char *buff)
     
 	
 	if(new != NULL) {
-		i = del_np(&npList, np_name);
+		del_np(&npList, np_name);
 	}
 	pthread_mutex_unlock(&np_list_mutex);
 	
@@ -323,7 +318,7 @@ void extractKeyVal(char *usage, char ***keyVal)
 int countArgs(char *myString, char *delim) {
 	int count = 0;
 	const char *tmp = myString;
-	while (tmp = strstr(tmp, delim)) {
+	while ((tmp = (strstr(tmp, delim)))) {
 		count++;
 		tmp++;
 	}
@@ -384,7 +379,7 @@ int main(int argc, char *argv[])
 		    }
 	
 	signal(SIGINT, sigintHandler);
-	sigset_t mask, oldmask;
+	sigset_t mask;
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGINT);
 
@@ -623,7 +618,6 @@ void *PrintStat(void *arguments)
 	printf("args -> msgsock - %d\n", args->msgsock);
 
 	listen(args->sock, QLEN);
-	int i = 0;
 	for (;;) {
 		args->msgsock = accept(args->sock, 0, 0);
 		if (args->msgsock == -1)
@@ -837,14 +831,11 @@ void *AppGetNotifyMethod(void *arguments)
 	    malloc(sizeof(struct proceedGetnThreadArgs));
 
 	listen(args->sock, QLEN);
-	char *argstring;
-	FILE *fp;
 	struct sockaddr_un server;
 	server.sun_family = AF_UNIX;
 	strcpy(server.sun_path, AppGetnotify);
 	pthread_t threadarr[APPLIMIT];
 
-	argstring = (char *)malloc(sizeof(char) * 1024);
 	for (;;) {
 		args->msgsock = accept(args->sock, 0, 0);
 		if (args->msgsock == -1)
@@ -948,9 +939,8 @@ void *NpGetNotifyMethod(void *arguments)
 	/* INOTIFY needs npname::<npname>##pathname::<pathname>##flags::<flags> */
 
 	printf("NJ.C   : Args received by getnotify - %s\n", args->argssend);
-	int i, count = -1, k;
-	char np_name[64], dir_name[256], flag_set[512], one[512], two[512],
-	    three[512];
+	int count = -1, k;
+	char np_name[64], one[512] ;
 	char delimattr[3] = "##";
 	char delimval[3] = "::";
 	struct extr_key_val *temp, *m, *p;
@@ -1023,7 +1013,7 @@ void *NpGetNotifyMethod(void *arguments)
         printf("Array matched..\n");
     else {
         printf("Array not matched..\n");	
-        return;
+        return NULL;
 	}
 	temp->key_val_arr = pointer;
 	print_app(&appList);
@@ -1074,7 +1064,7 @@ void *NpGetNotifyMethod(void *arguments)
 	    //open
 	    if (!(filefd = open(filename, O_CREAT | O_APPEND | O_RDWR , 0777))) {
 			    perror("NJ.C   : not able to open file\n");
-			    return;
+			    return NULL;
 		    }
 	    
 		printf("count = %d \n",count);
@@ -1158,7 +1148,6 @@ void *ProceedGetnotifyMethod(void *arguments)
 	char rough[1024];
 	char choice;
 	int j;
-	char *ptr;
 	strcpy(rough, args.buf);
 	printf("NJ.C   :  %s  args-.buf received PROCEEDGETNOTIFY from library call\n",
 	       args.buf);
@@ -1179,7 +1168,6 @@ void *ProceedGetnotifyMethod(void *arguments)
 	//strcpy(rough , &(rough[j+2]));
 	//strcpy(args->buf, rough);
 	printf("NJ.C   : Received args->buf is %s\n", args.buf);
-	int fd, al;
 	char filename[64], filename1[64];
 	strcpy(filename, "./");
 	strcat(filename, spid);
@@ -1250,7 +1238,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 		    strcat(received, "\n");
 		    write((int)fd_pidnames, filename1, strlen(filename1));
 		    printf("\n\nPID filename is written successfully.....\n\n");
-		    al = write((int)fd, received, strlen(received));
+		   /* al = write((int)fd, received, strlen(received));
 		    if (al < 0)
 			    perror("NJ.C   : Fwrite failed");
 		    else
@@ -1258,10 +1246,10 @@ void *ProceedGetnotifyMethod(void *arguments)
 			           al);
 
 		    printf("NJ.C   :  Before freeing \n");
-		
+		*/
 	}
 		free(received);
-		return;
+		return NULL;
 
 
 }
@@ -1281,7 +1269,7 @@ char* extract_key(char *key_val) {
 
 char* extract_val(char *key_val) {
     
-    char *key, *ptr, *val;
+    char *ptr, *val;
     char temp[128] ;
     strcpy(temp, key_val);
     ptr = strtok(temp, "::");
@@ -1359,11 +1347,10 @@ void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr , char * fi
 char* get_val_from_args(char *usage, char* key) {
     
     char *occ, keycopy[128], *retstr, localkeyval[256];
-    int l, i = 0;
+    int i = 0;
     
     strcpy(keycopy, key);
     strcat(keycopy, "::");
-    l = strlen(keycopy);
     occ = strstr(usage, keycopy);
     while(*occ != '#') {
         localkeyval[i++] = *occ;
@@ -1380,32 +1367,25 @@ char* get_val_from_args(char *usage, char* key) {
     
 char *getfilename(char *argsbuf) {
 
-int pid;
 	char rough[1024], *retstr;
-	char choice;
-	int j;
-	char *ptr;
 	strcpy(rough, argsbuf);
 	printf("NJ.C   :  %s  args-.buf received from library call\n",
 	       argsbuf);
-	int len = strlen(rough);
-	choice = rough[len - 1];
+	//choice = rough[len - 1];
 	char spid[32];
 	strcpy(spid, strtok(rough, "##"));
-	pid = atoi(spid);
+	//pid = atoi(spid);
 /*for(j = 0; j < len ; j++) {
 			if(rough[j] == '#')
 			if(rough[j+1] == '#')
 					break;
 		}*/
 
-	j = strlen(rough);
 	//strcpy(rough, args->buf);
 	//strcpy(rough , &(rough[j+2]));
 	//strcpy(args->buf, rough);
 	printf("NJ.C   : Received args->buf IN FILENAME FUNCTION %s\n", argsbuf);
-	int fd, al;
-	char filename[64], filename1[64];
+	char filename[64];
 	strcpy(filename, "./");
 	strcat(filename, spid);
 strcat(filename, ".txt");
