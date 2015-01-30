@@ -299,7 +299,7 @@ void extractKeyVal(char *usage, char ***keyVal)
 	ptr = strtok(copyusage, "##");
 
 	printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
-	(*keyVal)[i] = (char *)malloc(sizeof(char) * strlen(ptr));
+	(*keyVal)[i] = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
 	printf("Before strcpy\n");
 	strcpy((*keyVal)[i], ptr);
 	printf("After strcpy\n");
@@ -909,7 +909,12 @@ void *AppGetNotifyMethod(void *arguments)
 void *NpGetNotifyMethod(void *arguments)
 {				/*here we need to call Np_specific getnotify to get the notificationstring..this notificationstring is then copied to arguments->argsrecv
 				   for now I am sending the received strig directly as notificationstring for now I have simply returned the string receive1::value1 */
-	struct getnotify_threadArgs *args = arguments;
+	struct getnotify_threadArgs *bargs = (struct getnotify_threadArgs *)arguments;
+
+	struct getnotify_threadArgs *args = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs)); 
+
+	*args = *bargs;
+
 	char args_send_copy[1024], args_send_copy_2[1024];
 
     

@@ -56,7 +56,7 @@ int addapp_node(app_dcll * l, char *val)
 		exit(1);
 	}
 
-	new->data =(char *)malloc(sizeof(val) + 1);
+	new->data =(char *)malloc((strlen(val) + 1) * sizeof(char));
 
 	if (new->data == NULL) {
 		perror("APP_DCLL : ERROR IN MALLOC");
@@ -349,7 +349,7 @@ int del_app(app_dcll * l, char *val)
 		l->head->prev = NULL;
 		l->head->next = NULL;
 		l->head = NULL;
-		//free(temp);
+		free(temp);
 		l->count--;
 		return 0;
 	}
@@ -361,7 +361,7 @@ int del_app(app_dcll * l, char *val)
 		p = temp->prev;
 		(temp->next)->prev = p;
 		p->next = temp->next;
-		//free(temp);
+		free(temp);
 		l->count--;
 		return 0;
 	} else {
@@ -371,7 +371,7 @@ int del_app(app_dcll * l, char *val)
 		//printf("APP_DCLL : q:%s\n", q->data);
 		p->next = q;
 		q->prev = p;
-		//free(temp);
+		free(temp);
 		l->count--;
 		return 0;
 	}
@@ -477,14 +477,14 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 		//printf("APP_DCLL : FOUND AND ADDING TO %s\n", temp->data);    
 	}
 
-	n = malloc(sizeof(np_node));
+	n = (np_node *)malloc(sizeof(np_node));
 
 	if (n == NULL) {
 		perror("APP_DCLL :  ERROR IN MALLOC");
 		exit(1);
 	}
 
-	n->name = malloc(sizeof(nval) + 1);
+	n->name = (char *)malloc((strlen(nval) + 1) * sizeof(char));
 	n->arguments = NULL;
 	n->key_val_ptr = NULL;
 
@@ -543,7 +543,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		temp->np_count--;
 		printf("temp->np_count = %d\n", temp->np_count);
 
-		//free(m);
+		free(m);
 		return 0;
 	} else if (!strcmp(temp->np_list_head->name, nval)) {
 		m = temp->np_list_head;
@@ -552,7 +552,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		temp->np_count--;
 		printf("temp->np_count = %d\n", temp->np_count);
 
-		//free(m);
+		free(m);
 		return 0;
 	} else {
 		m = temp->np_list_head;
@@ -562,7 +562,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 			temp->np_count--;
 			printf("temp->np_count = %d\n", temp->np_count);
 
-		//free(m);
+		free(m);
 			return 0;
 		}
 		m = m->next;
@@ -573,7 +573,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 				temp->np_count--;
 				printf("temp->np_count = %d\n", temp->np_count);
 
-				//free(m);
+				free(m);
 				return 0;
 			}
 			b = m;

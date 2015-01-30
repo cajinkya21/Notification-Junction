@@ -72,7 +72,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 	}
 	// WRITE AN INIT FUNCTION FOR A NODE
 
-	new->data = malloc(sizeof(val) + 1);
+	new->data = (char *)malloc((strlen(val) + 1) * sizeof(char));
 	new->usage = usage;
 	new->key_val_arr = *key_val_arr;
 
