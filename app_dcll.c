@@ -5,8 +5,8 @@
                             Kaveri Sangale<sangale.kaveri9@gmail.com>
 	All Rights Reserved.
 	
-    This program is free software; you can redistribute it and/or modify it under the terms of the 
-    GNU General Public License as published by the Free Software Foundation; either version 3 of the
+    This program is //free software; you can redistribute it and/or modify it under the terms of the 
+    GNU General Public License as published by the //free Software Foundation; either version 3 of the
     License, or (at your option) any later version.
 
     This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
@@ -14,7 +14,7 @@
     See the GNU General Public License for more details.
        
     You should have received a copy of the GNU General Public License along with this program; if not, write to the 
-    Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+    //free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
 /* 
@@ -349,7 +349,7 @@ int del_app(app_dcll * l, char *val)
 		l->head->prev = NULL;
 		l->head->next = NULL;
 		l->head = NULL;
-		free(temp);
+		//free(temp);
 		l->count--;
 		return 0;
 	}
@@ -361,7 +361,7 @@ int del_app(app_dcll * l, char *val)
 		p = temp->prev;
 		(temp->next)->prev = p;
 		p->next = temp->next;
-		free(temp);
+		//free(temp);
 		l->count--;
 		return 0;
 	} else {
@@ -371,7 +371,7 @@ int del_app(app_dcll * l, char *val)
 		//printf("APP_DCLL : q:%s\n", q->data);
 		p->next = q;
 		q->prev = p;
-		free(temp);
+		//free(temp);
 		l->count--;
 		return 0;
 	}
@@ -543,7 +543,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		temp->np_count--;
 		printf("temp->np_count = %d\n", temp->np_count);
 
-		free(m);
+		//free(m);
 		return 0;
 	} else if (!strcmp(temp->np_list_head->name, nval)) {
 		m = temp->np_list_head;
@@ -552,7 +552,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		temp->np_count--;
 		printf("temp->np_count = %d\n", temp->np_count);
 
-		free(m);
+		//free(m);
 		return 0;
 	} else {
 		m = temp->np_list_head;
@@ -562,7 +562,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 			temp->np_count--;
 			printf("temp->np_count = %d\n", temp->np_count);
 
-		free(m);
+		//free(m);
 			return 0;
 		}
 		m = m->next;
@@ -573,7 +573,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 				temp->np_count--;
 				printf("temp->np_count = %d\n", temp->np_count);
 
-				free(m);
+				//free(m);
 				return 0;
 			}
 			b = m;
