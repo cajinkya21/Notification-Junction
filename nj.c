@@ -966,7 +966,7 @@ pthread_mutex_unlock(&malloc_mutex);
 	/* INOTIFY needs npname::<npname>##pathname::<pathname>##flags::<flags> */
 
 	printf("NJ.C   : Args received by getnotify - %s\n", args->argssend);
-	int count = -1, k;
+	int count = -1, k, x;
 	char np_name[64], one[512] ;
 	char delimattr[3] = "##";
 	char delimval[3] = "::";
@@ -1044,10 +1044,10 @@ pthread_mutex_unlock(&app_list_mutex);
     fprintf(logfd, "99. count is %d! for buf %s!\n", count, args->argssend);
 
 	extractKeyVal(args->argssend, &pointer);
-	
+	pthread_mutex_lock(&np_list_mutex);
 	np_node = search_np(&npList, np_name);
-	
 	k = compare_array(&(np_node->key_val_arr), &pointer);
+	pthread_mutex_unlock(&np_list_mutex);
 	
     if(k == 0)
         printf("Array matched..\n");
@@ -1056,26 +1056,29 @@ pthread_mutex_unlock(&app_list_mutex);
         return NULL;
 	}
 	temp->key_val_arr = pointer;
+	pthread_mutex_lock(&app_list_mutex);
 	print_app(&appList);
+	pthread_mutex_unlock(&app_list_mutex);
 	printf("PRINTING AFTER EXTRACT\n");
 //    print_app(&appList);
 
 	//
 	//
 	//
-
+pthread_mutex_lock(&np_list_mutex);
     forward_convert(&(np_node->key_val_arr),&pointer, args->argssend);
+   pthread_mutex_unlock(&np_list_mutex);
 	/* HANDLE NO NAME AND STUFF */
 	
-
+ x = get_np_app_cnt(&npList, np_name);
 	printf("NJ.C   : App Count = %d for NP = %s\n",
-	       get_np_app_cnt(&npList, np_name), np_name);
+	      x, np_name);
 
 
 
 
 	/* App count will be 0 initially. App can call getnotify only after NP has registered, and doing App_getnotify for the first time increments the count to 1. Therefore compare count with 1 to do dlopen() for the first time */
-	if (get_np_app_cnt(&npList, np_name) == 1) {
+	if (x == 1) {
 		/* Do dlopen() */
 		printf("NJ.C   : Opening\n....\n");
 		handle = dlopen("./libinotify.so", RTLD_LAZY);
