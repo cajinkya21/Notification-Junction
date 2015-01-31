@@ -47,7 +47,7 @@ void *handle;
 
 /*Mutexes to be used for synchronizing list*/
 
-pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex, np_list_count_mutex, getnotify_socket_mutex;
+pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex, np_list_count_mutex, getnotify_socket_mutex, malloc_mutex;
 void force_logs(void) {
 	fclose(logfd);
 	if (!(logfd = fopen("Logs", "a+"))) {
@@ -290,11 +290,17 @@ void extractKeyVal(char *usage, char ***keyVal)
 	strcpy(copyusage, usage);
 	cnt = countArgs(copyusage, "::");
 	printf("EXTRACT KEYVAL : NJ : The count is %d\n", cnt);
+	
+	pthread_mutex_lock(&malloc_mutex);
 	*keyVal = (char **)malloc((cnt + 1) * sizeof(char *));
+	pthread_mutex_unlock(&malloc_mutex);
 	ptr = strtok(copyusage, "##");
 
 	printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
+	pthread_mutex_lock(&malloc_mutex);
 	(*keyVal)[i] = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+	pthread_mutex_unlock(&malloc_mutex);
+
 	printf("Before strcpy\n");
 	strcpy((*keyVal)[i], ptr);
 	printf("After strcpy\n");
@@ -305,8 +311,13 @@ void extractKeyVal(char *usage, char ***keyVal)
 			break;
 		}
 		printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
+		pthread_mutex_lock(&malloc_mutex);
+
 		if (!((*keyVal)[i] = (char *)malloc(sizeof(char) * 128)))
 			perror("MALLOC IS THE CULPRIT");
+			
+		pthread_mutex_unlock(&malloc_mutex);
+
 		printf("Before strcpy\n");
 		strcpy((*keyVal)[i], ptr);
 		printf("After strcpy\n");
@@ -347,9 +358,13 @@ char *getnotify_app(char *buff)
 {	fprintf(logfd, "6. buf is %s \n", buff);
 	force_logs();
 	char *notification;
+	pthread_mutex_lock(&malloc_mutex);
+
 	notification = (char *)malloc(1024 * sizeof(char));
 	struct getnotify_threadArgs *arguments;
 	arguments = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs));
+	pthread_mutex_unlock(&malloc_mutex);
+
 	strcpy(arguments->argssend, buff);
 	pthread_t tid_app_np_gn;
 
@@ -367,10 +382,10 @@ char *getnotify_app(char *buff)
 }
 
 /* MAIN CODE */
-int main(int argc, char *argv[])
+int main()
 {
 	/* first remove(unlink) the sockets if they already exist */
-	struct threadArgs stat;
+	//
 
 	
 	if (!(logfd = fopen("Logs", "a+"))) {
@@ -378,10 +393,11 @@ int main(int argc, char *argv[])
 			    return 1;
 		    }
 	
-	signal(SIGINT, sigintHandler);
+
 	sigset_t mask;
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGINT);
+	signal(SIGINT, sigintHandler);
 
 	unlink(StatSocket);
 	unlink(AppReg);
@@ -416,6 +432,11 @@ int main(int argc, char *argv[])
 		printf("NJ.C   : \n mutex init failed\n");
 		return 1;
 	}
+	if (pthread_mutex_init(&malloc_mutex, NULL) != 0) {
+		printf("NJ.C   : \n mutex init failed\n");
+		return 1;
+	}
+	
 	/*Initialize NP List */
 	pthread_mutex_lock(&np_list_mutex);
 	init_np(&npList);
@@ -427,6 +448,7 @@ int main(int argc, char *argv[])
 	pthread_mutex_unlock(&app_list_mutex);
 	
 	/* CREATE SOCKET FOR STAT */
+	struct threadArgs stat;
 	stat.sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	printf("Socket stat created\n");
 	if (stat.sock < 0) {
@@ -827,8 +849,11 @@ void *AppGetNotifyMethod(void *arguments)
 	fprintf(logfd,"NJ.C   : args -> msgsock - %d\n", args->msgsock);
 	int i = 0;
 	struct proceedGetnThreadArgs *sendargs;
+	pthread_mutex_lock(&malloc_mutex);
+
 	sendargs = (struct proceedGetnThreadArgs *)
 	    malloc(sizeof(struct proceedGetnThreadArgs));
+pthread_mutex_unlock(&malloc_mutex);
 
 	listen(args->sock, QLEN);
 	struct sockaddr_un server;
@@ -901,8 +926,10 @@ void *NpGetNotifyMethod(void *arguments)
 {				/*here we need to call Np_specific getnotify to get the notificationstring..this notificationstring is then copied to arguments->argsrecv
 				   for now I am sending the received strig directly as notificationstring for now I have simply returned the string receive1::value1 */
 	struct getnotify_threadArgs *bargs = (struct getnotify_threadArgs *)arguments;
+pthread_mutex_lock(&malloc_mutex);
 
 	struct getnotify_threadArgs *args = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs)); 
+pthread_mutex_unlock(&malloc_mutex);
 
 	*args = *bargs;
 
@@ -962,7 +989,12 @@ void *NpGetNotifyMethod(void *arguments)
 	printf("N.C : npname = %s\n", np_name);
 	/* Get the reg, Malloc space for a getn registration key_val  */
 
+// lock
+pthread_mutex_lock(&app_list_mutex);
+
 	nptr = getReg(&appList, appname, np_name);
+	
+	
 	if (nptr) {
 		printf("\nRETURNED nptr->name = %s\n", nptr->name);
 	}
@@ -973,9 +1005,14 @@ void *NpGetNotifyMethod(void *arguments)
 	}
 
 	printf("NJ : ARGSSEND BEFORE EXTRACT : %s\n", args->argssend);
+pthread_mutex_lock(&malloc_mutex);
 
 	temp = (struct extr_key_val *)malloc(sizeof(struct extr_key_val));
+	pthread_mutex_unlock(&malloc_mutex);
+
 	temp->next = NULL;
+	
+	
 	m = nptr->key_val_ptr;
 	p = m;
 
@@ -996,7 +1033,9 @@ void *NpGetNotifyMethod(void *arguments)
 	//
 	//
 	//
+//unlock
 
+pthread_mutex_unlock(&app_list_mutex);
 	printf("PRINTING BEFORE EXTRACT\n");
 
     countkey = get_val_from_args(args->argssend, "count");
@@ -1140,8 +1179,11 @@ void *ProceedGetnotifyMethod(void *arguments)
 {
 	char *received;
 	struct proceedGetnThreadArgs *temparguments = (struct proceedGetnThreadArgs *)arguments;
+	pthread_mutex_lock(&malloc_mutex);
+
 	struct proceedGetnThreadArgs *args = (struct proceedGetnThreadArgs *)malloc(sizeof(struct proceedGetnThreadArgs));
-	
+	pthread_mutex_unlock(&malloc_mutex);
+
 	*args = *temparguments;
 	printf("ARGS SENDING TO PROCEEDGETN PROCEEDGETNOTIFY are %s\n\n\n", args->buf);
 	fprintf(logfd, "2. buf is %s \n", args->buf);
@@ -1261,7 +1303,9 @@ void *ProceedGetnotifyMethod(void *arguments)
 		    printf("NJ.C   :  Before freeing \n");
 		*/
 	}
-		free(received);
+	
+	
+	    free(received);
 		pthread_exit(NULL);
 		//return NULL;
 
@@ -1275,8 +1319,11 @@ char* extract_key(char *key_val) {
     char temp[128] ;
     strcpy(temp, key_val);
     ptr = strtok(temp, "::");
-    
+    pthread_mutex_lock(&malloc_mutex);
+
     key = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+    pthread_mutex_unlock(&malloc_mutex);
+
     strcpy(key, ptr);
     return key;
 }
@@ -1292,7 +1339,11 @@ char* extract_val(char *key_val) {
     //ptr = strtok(NULL, "::");
     ptr = (key_val + strlen(ptr) + 2);
     if(!ptr) printf("RETURNED NULL");
+    pthread_mutex_lock(&malloc_mutex);
+
     val = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+    pthread_mutex_unlock(&malloc_mutex);
+
     strcpy(val, ptr);
     return val;
 }
@@ -1316,11 +1367,15 @@ int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr) {
             }
             if(found == 0) {
                 printf("ERROR : NJ : NP cannot process key %s\n", key_one);
+                free(key_one);
+                free(key_two);
                 return -1;
             }
         
             one++;
         }
+        free(key_one);
+        free(key_two);
         return 0;
 }
 
@@ -1371,8 +1426,11 @@ char* get_val_from_args(char *usage, char* key) {
         occ++;    
     }
     localkeyval[i] = '\0';
-    
+    pthread_mutex_lock(&malloc_mutex);
+
     retstr = (char *)malloc(sizeof(char) * i);
+    pthread_mutex_unlock(&malloc_mutex);
+
     strcpy(retstr, localkeyval);
     printf("Retstr is %s!\n", retstr);
     return retstr;
@@ -1404,7 +1462,11 @@ char *getfilename(char *argsbuf) {
 	strcat(filename, spid);
 strcat(filename, ".txt");
 printf("NJ.C   : Filename:%s\n\n", filename);
+pthread_mutex_lock(&malloc_mutex);
+
 retstr = (char*)malloc(sizeof(char) * (strlen(filename) + 1));
+pthread_mutex_unlock(&malloc_mutex);
+
 strcpy(retstr, filename);
     return retstr;
 
