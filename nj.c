@@ -120,7 +120,7 @@ int register_app(char *buff)
 
 	/*Check if NP provided is registered or not */
 	pthread_mutex_lock(&app_list_mutex);
-    pthread_mutex_lock(&np_list_mutex);
+    	pthread_mutex_lock(&np_list_mutex);
 	if (search_np(&npList, np_name) == NULL && np_name != NULL) {	/* HANDLE IF NP IS NULL, CHECK FOR STRTOK */
 		printf("NJ.C   :  NJ : Np not registered. Register NP first.\n");
 		printf("NJ.C   : AppList:\n");
@@ -129,21 +129,21 @@ int register_app(char *buff)
 		print_np(&npList);
 		return 1;
 	}
-    pthread_mutex_unlock(&np_list_mutex);
-    pthread_mutex_unlock(&app_list_mutex);
+    //pthread_mutex_unlock(&np_list_mutex);
+    //pthread_mutex_unlock(&app_list_mutex);
 	
 	/*Check if that registration already exists */
-    pthread_mutex_lock(&app_list_mutex);
+   // pthread_mutex_lock(&app_list_mutex);
 	if (search_app(&appList, app_name) == NULL) {
 		addapp_node(&appList, app_name);
 		printf("Added for the first time\n");
 	}
-    pthread_mutex_unlock(&app_list_mutex);
+   // pthread_mutex_unlock(&app_list_mutex);
 
 	/*HANDLED IN LIST */
-	pthread_mutex_lock(&app_list_mutex);
+	//pthread_mutex_lock(&app_list_mutex);
 	retval = searchReg(&appList, app_name, np_name);
-    pthread_mutex_unlock(&app_list_mutex);
+   // pthread_mutex_unlock(&app_list_mutex);
 
 	if (retval == -1) {
 		printf("NJ.C   : NJ : EXISTING REGISTRATION\n");
@@ -152,12 +152,12 @@ int register_app(char *buff)
 	/*need to change this function to return appropriate values */
 	
 	if (retval != -1) {	 
-		pthread_mutex_lock(&app_list_mutex);
-        pthread_mutex_lock(&np_list_mutex);                        /*IF APP IS NOT PREVIOUSLY REGISTERED */
+	//	pthread_mutex_lock(&app_list_mutex);
+        //pthread_mutex_lock(&np_list_mutex);                        /*IF APP IS NOT PREVIOUSLY REGISTERED */
 		add_np_to_app(&appList, app_name, np_name);                               
 		incr_np_app_cnt(&npList, np_name);
-		pthread_mutex_unlock(&np_list_mutex);
-        pthread_mutex_unlock(&app_list_mutex);
+	//	pthread_mutex_unlock(&np_list_mutex);
+        //pthread_mutex_unlock(&app_list_mutex);
 		if (np_name == NULL) {
 			printf("NJ.C   : NJ : Added successfully\n");
 		}
@@ -165,13 +165,15 @@ int register_app(char *buff)
 
 	
 	printf("NJ.C   : AppList:\n");
-	pthread_mutex_lock(&app_list_mutex);
+//	pthread_mutex_lock(&app_list_mutex);
 	print_app(&appList);
-	pthread_mutex_unlock(&app_list_mutex);
+//	pthread_mutex_unlock(&app_list_mutex);
 	printf("NJ.C   : NPList:\n");
-    pthread_mutex_lock(&np_list_mutex);
+  //  pthread_mutex_lock(&np_list_mutex);
 	print_np(&npList);
+	//pthread_mutex_unlock(&np_list_mutex);
 	pthread_mutex_unlock(&np_list_mutex);
+    	pthread_mutex_unlock(&app_list_mutex);
 	return 1;
 }
 
@@ -193,34 +195,37 @@ int unregister_app(char *buff)
 		printf("np name - %s\n", np_name);
 
 	}
+	pthread_mutex_lock(&app_list_mutex);
+        pthread_mutex_lock(&np_list_mutex);
+
 	if (s == NULL) {
 		printf("NJ.C   : np_name == NULL case in unregister app\n");
 //This function decrements counts for all NPs with that app, we have to write this function in the nj because it accesses both lists
-		pthread_mutex_lock(&app_list_mutex);
-        pthread_mutex_lock(&np_list_mutex);
+//	pthread_mutex_lock(&app_list_mutex);
+  //      pthread_mutex_lock(&np_list_mutex);
         
 		del_app(&appList, app_name);		
 		dec_all_np_counts(&appList, &npList, app_name);
 		
-		pthread_mutex_unlock(&np_list_mutex);
-        pthread_mutex_unlock(&app_list_mutex);
+	//	pthread_mutex_unlock(&np_list_mutex);
+        //pthread_mutex_unlock(&app_list_mutex);
 // DEC HERE FOR ALL NPs with that app.
 	} 
 	else {
-		pthread_mutex_lock(&app_list_mutex);
+	//	pthread_mutex_lock(&app_list_mutex);
 	    retval = searchReg(&appList, app_name, np_name);
-        pthread_mutex_unlock(&app_list_mutex);
+       // pthread_mutex_unlock(&app_list_mutex);
 	    if (retval == -1) {
 			printf("NJ.C   : NJ : REGISTRATION FOUND.\n");
 
-    		pthread_mutex_lock(&app_list_mutex);
-            pthread_mutex_lock(&np_list_mutex);
+    	//	pthread_mutex_lock(&app_list_mutex);
+          //  pthread_mutex_lock(&np_list_mutex);
             
 			del_np_from_app(&appList, app_name, np_name);
 			decr_np_app_cnt(&npList, np_name);
 
-		    pthread_mutex_unlock(&np_list_mutex);
-            pthread_mutex_unlock(&app_list_mutex);
+		//    pthread_mutex_unlock(&np_list_mutex);
+          //  pthread_mutex_unlock(&app_list_mutex);
 
 // DEC HERE for the np given.
 		}
@@ -232,13 +237,16 @@ int unregister_app(char *buff)
 
 	}
 	printf("NJ.C   : AppList:\n");
-	pthread_mutex_lock(&app_list_mutex);
+	//pthread_mutex_lock(&app_list_mutex);
 	print_app(&appList);
-	pthread_mutex_unlock(&app_list_mutex);
+	//pthread_mutex_unlock(&app_list_mutex);
 	printf("NJ.C   : NPList:\n");
-    pthread_mutex_lock(&np_list_mutex);
+    //pthread_mutex_lock(&np_list_mutex);
 	print_np(&npList);
-	pthread_mutex_unlock(&np_list_mutex);
+	//pthread_mutex_unlock(&np_list_mutex);
+	
+	 pthread_mutex_unlock(&np_list_mutex);
+  	 pthread_mutex_unlock(&app_list_mutex);
 	return 1;
 }
 
@@ -261,22 +269,25 @@ int register_np(char *buff)
 	extractKeyVal(usage, &keyVal);
 	
 	pthread_mutex_lock(&np_list_mutex);	
+	
 	new = search_np(&npList, np_name);
     
 	
 	if(new != NULL) {
 		del_np(&npList, np_name);
 	}
+	//pthread_mutex_unlock(&np_list_mutex);
+	
+    //pthread_mutex_lock(&np_list_mutex);	
+	add_np(&npList, np_name, usage, &keyVal);
+    //pthread_mutex_unlock(&np_list_mutex);
+	
+    //pthread_mutex_lock(&np_list_mutex);
+	print_np(&npList);
+    //pthread_mutex_unlock(&np_list_mutex);
+
 	pthread_mutex_unlock(&np_list_mutex);
 	
-    pthread_mutex_lock(&np_list_mutex);	
-	add_np(&npList, np_name, usage, &keyVal);
-    pthread_mutex_unlock(&np_list_mutex);
-	
-    pthread_mutex_lock(&np_list_mutex);
-	print_np(&npList);
-    pthread_mutex_unlock(&np_list_mutex);
-
 	return 1;
 }
 
@@ -291,15 +302,15 @@ void extractKeyVal(char *usage, char ***keyVal)
 	cnt = countArgs(copyusage, "::");
 	printf("EXTRACT KEYVAL : NJ : The count is %d\n", cnt);
 	
-	pthread_mutex_lock(&malloc_mutex);
+	//pthread_mutex_lock(&malloc_mutex);
 	*keyVal = (char **)malloc((cnt + 1) * sizeof(char *));
-	pthread_mutex_unlock(&malloc_mutex);
+	//pthread_mutex_unlock(&malloc_mutex);
 	ptr = strtok(copyusage, "##");
 
 	printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
-	pthread_mutex_lock(&malloc_mutex);
+	//pthread_mutex_lock(&malloc_mutex);
 	(*keyVal)[i] = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
-	pthread_mutex_unlock(&malloc_mutex);
+	//pthread_mutex_unlock(&malloc_mutex);
 
 	printf("Before strcpy\n");
 	strcpy((*keyVal)[i], ptr);
@@ -311,12 +322,12 @@ void extractKeyVal(char *usage, char ***keyVal)
 			break;
 		}
 		printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
-		pthread_mutex_lock(&malloc_mutex);
+	//	pthread_mutex_lock(&malloc_mutex);
 
 		if (!((*keyVal)[i] = (char *)malloc(sizeof(char) * 128)))
 			perror("MALLOC IS THE CULPRIT");
 			
-		pthread_mutex_unlock(&malloc_mutex);
+	//	pthread_mutex_unlock(&malloc_mutex);
 
 		printf("Before strcpy\n");
 		strcpy((*keyVal)[i], ptr);
@@ -345,9 +356,9 @@ int unregister_np(char *buff)
 
     pthread_mutex_lock(&np_list_mutex);
 	del_np(&npList, np_name);
-    pthread_mutex_unlock(&np_list_mutex);
+//    pthread_mutex_unlock(&np_list_mutex);
 
-    pthread_mutex_lock(&np_list_mutex);
+  //  pthread_mutex_lock(&np_list_mutex);
 	print_np(&npList);
     pthread_mutex_unlock(&np_list_mutex);
 	return 1;
@@ -358,12 +369,12 @@ char *getnotify_app(char *buff)
 {	fprintf(logfd, "6. buf is %s \n", buff);
 	force_logs();
 	char *notification;
-	pthread_mutex_lock(&malloc_mutex);
+	//pthread_mutex_lock(&malloc_mutex);
 
 	notification = (char *)malloc(1024 * sizeof(char));
 	struct getnotify_threadArgs *arguments;
 	arguments = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs));
-	pthread_mutex_unlock(&malloc_mutex);
+	//pthread_mutex_unlock(&malloc_mutex);
 
 	strcpy(arguments->argssend, buff);
 	pthread_t tid_app_np_gn;
@@ -849,11 +860,11 @@ void *AppGetNotifyMethod(void *arguments)
 	fprintf(logfd,"NJ.C   : args -> msgsock - %d\n", args->msgsock);
 	int i = 0;
 	struct proceedGetnThreadArgs *sendargs;
-	pthread_mutex_lock(&malloc_mutex);
+	//pthread_mutex_lock(&malloc_mutex);
 
 	sendargs = (struct proceedGetnThreadArgs *)
 	    malloc(sizeof(struct proceedGetnThreadArgs));
-pthread_mutex_unlock(&malloc_mutex);
+//pthread_mutex_unlock(&malloc_mutex);
 
 	listen(args->sock, QLEN);
 	struct sockaddr_un server;
@@ -926,10 +937,10 @@ void *NpGetNotifyMethod(void *arguments)
 {				/*here we need to call Np_specific getnotify to get the notificationstring..this notificationstring is then copied to arguments->argsrecv
 				   for now I am sending the received strig directly as notificationstring for now I have simply returned the string receive1::value1 */
 	struct getnotify_threadArgs *bargs = (struct getnotify_threadArgs *)arguments;
-pthread_mutex_lock(&malloc_mutex);
+//pthread_mutex_lock(&malloc_mutex);
 
 	struct getnotify_threadArgs *args = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs)); 
-pthread_mutex_unlock(&malloc_mutex);
+//pthread_mutex_unlock(&malloc_mutex);
 
 	*args = *bargs;
 
@@ -990,7 +1001,7 @@ pthread_mutex_unlock(&malloc_mutex);
 	/* Get the reg, Malloc space for a getn registration key_val  */
 
 // lock
-pthread_mutex_lock(&app_list_mutex);
+	pthread_mutex_lock(&app_list_mutex);
 
 	nptr = getReg(&appList, appname, np_name);
 	
@@ -1005,10 +1016,10 @@ pthread_mutex_lock(&app_list_mutex);
 	}
 
 	printf("NJ : ARGSSEND BEFORE EXTRACT : %s\n", args->argssend);
-pthread_mutex_lock(&malloc_mutex);
+//pthread_mutex_lock(&malloc_mutex);
 
 	temp = (struct extr_key_val *)malloc(sizeof(struct extr_key_val));
-	pthread_mutex_unlock(&malloc_mutex);
+	//pthread_mutex_unlock(&malloc_mutex);
 
 	temp->next = NULL;
 	
@@ -1038,11 +1049,7 @@ pthread_mutex_lock(&malloc_mutex);
 pthread_mutex_unlock(&app_list_mutex);
 	printf("PRINTING BEFORE EXTRACT\n");
 
-    countkey = get_val_from_args(args->argssend, "count");
-    count = atoi(extract_val(countkey));
-    printf("count is %d!\n", count);
-    fprintf(logfd, "99. count is %d! for buf %s!\n", count, args->argssend);
-
+   
 	extractKeyVal(args->argssend, &pointer);
 	pthread_mutex_lock(&np_list_mutex);
 	np_node = search_np(&npList, np_name);
@@ -1069,6 +1076,10 @@ pthread_mutex_lock(&np_list_mutex);
     forward_convert(&(np_node->key_val_arr),&pointer, args->argssend);
    pthread_mutex_unlock(&np_list_mutex);
 	/* HANDLE NO NAME AND STUFF */
+ countkey = get_val_from_args(args->argssend, "count");
+    count = atoi(extract_val(countkey));
+    printf("count is %d!\n", count);
+    fprintf(logfd, "99. count is %d! for buf %s!\n", count, args->argssend);
 	
  x = get_np_app_cnt(&npList, np_name);
 	printf("NJ.C   : App Count = %d for NP = %s\n",
@@ -1182,10 +1193,10 @@ void *ProceedGetnotifyMethod(void *arguments)
 {
 	char *received;
 	struct proceedGetnThreadArgs *temparguments = (struct proceedGetnThreadArgs *)arguments;
-	pthread_mutex_lock(&malloc_mutex);
+//	pthread_mutex_lock(&malloc_mutex);
 
 	struct proceedGetnThreadArgs *args = (struct proceedGetnThreadArgs *)malloc(sizeof(struct proceedGetnThreadArgs));
-	pthread_mutex_unlock(&malloc_mutex);
+//	pthread_mutex_unlock(&malloc_mutex);
 
 	*args = *temparguments;
 	printf("ARGS SENDING TO PROCEEDGETN PROCEEDGETNOTIFY are %s\n\n\n", args->buf);
@@ -1322,10 +1333,10 @@ char* extract_key(char *key_val) {
     char temp[128] ;
     strcpy(temp, key_val);
     ptr = strtok(temp, "::");
-    pthread_mutex_lock(&malloc_mutex);
+  //  pthread_mutex_lock(&malloc_mutex);
 
     key = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
-    pthread_mutex_unlock(&malloc_mutex);
+    //pthread_mutex_unlock(&malloc_mutex);
 
     strcpy(key, ptr);
     return key;
@@ -1342,10 +1353,10 @@ char* extract_val(char *key_val) {
     //ptr = strtok(NULL, "::");
     ptr = (key_val + strlen(ptr) + 2);
     if(!ptr) printf("RETURNED NULL");
-    pthread_mutex_lock(&malloc_mutex);
+    //pthread_mutex_lock(&malloc_mutex);
 
     val = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
-    pthread_mutex_unlock(&malloc_mutex);
+    //pthread_mutex_unlock(&malloc_mutex);
 
     strcpy(val, ptr);
     return val;
@@ -1429,10 +1440,10 @@ char* get_val_from_args(char *usage, char* key) {
         occ++;    
     }
     localkeyval[i] = '\0';
-    pthread_mutex_lock(&malloc_mutex);
+    //pthread_mutex_lock(&malloc_mutex);
 
     retstr = (char *)malloc(sizeof(char) * i);
-    pthread_mutex_unlock(&malloc_mutex);
+//    pthread_mutex_unlock(&malloc_mutex);
 
     strcpy(retstr, localkeyval);
     printf("Retstr is %s!\n", retstr);
@@ -1465,10 +1476,10 @@ char *getfilename(char *argsbuf) {
 	strcat(filename, spid);
 strcat(filename, ".txt");
 printf("NJ.C   : Filename:%s\n\n", filename);
-pthread_mutex_lock(&malloc_mutex);
+//pthread_mutex_lock(&malloc_mutex);
 
 retstr = (char*)malloc(sizeof(char) * (strlen(filename) + 1));
-pthread_mutex_unlock(&malloc_mutex);
+//pthread_mutex_unlock(&malloc_mutex);
 
 strcpy(retstr, filename);
     return retstr;
