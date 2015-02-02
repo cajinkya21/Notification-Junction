@@ -862,8 +862,8 @@ void *AppGetNotifyMethod(void *arguments)
 	struct proceedGetnThreadArgs *sendargs;
 	//pthread_mutex_lock(&malloc_mutex);
 
-	sendargs = (struct proceedGetnThreadArgs *)
-	    malloc(sizeof(struct proceedGetnThreadArgs));
+	//sendargs = (struct proceedGetnThreadArgs *)
+	  //  malloc(sizeof(struct proceedGetnThreadArgs));
 //pthread_mutex_unlock(&malloc_mutex);
 
 	listen(args->sock, QLEN);
@@ -878,8 +878,10 @@ void *AppGetNotifyMethod(void *arguments)
 			perror("NJ.C   : accept");
 		else
 			do {
+				pthread_mutex_lock(&getnotify_socket_mutex);
+				sendargs = (struct proceedGetnThreadArgs *)
+	    malloc(sizeof(struct proceedGetnThreadArgs));
 			
-			    pthread_mutex_lock(&getnotify_socket_mutex);
 				bzero(args->buf, sizeof(args->buf));
 				args->rval =
 				    read(args->msgsock, args->buf, 1024);
@@ -910,7 +912,7 @@ void *AppGetNotifyMethod(void *arguments)
 						perror
 						    ("NJ.C   : Pthread_Creations for ProceedgetnotifyMethod\n");
 					}
-					 pthread_mutex_unlock(&getnotify_socket_mutex);
+					pthread_mutex_unlock(&getnotify_socket_mutex);
 					//ProceedGetnotifyMethod(arguments);
 					break;
 				}
