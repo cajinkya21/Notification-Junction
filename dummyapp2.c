@@ -17,12 +17,49 @@ int main(int argc, char* argv[]) {
 	int i,j;
 	int pid;
 	char arr[512],arr2[512];
-
+	struct stat s;
 	if(argc < 2) {
-	    printf("Kindly enter the directory\n");
+	    printf("Kindly enter 2  directories\n");
 	    exit(0);
 	}
-	
+	int err = stat(argv[1], &s);
+	if(-1 == err) {
+    		if(ENOENT == errno) {
+			printf("%s is not a valid argument Check if it exists\n",argv[1]);
+			exit(0);
+        		/* does not exist */
+    		} else {
+        		perror("stat");
+        		exit(1);
+    		}
+} 	else {
+    		if(S_ISDIR(s.st_mode)) {
+			printf("%s is a directoryj\t Proceeding for NJ \n",argv[1]);
+       			 /* it's a dir */
+    		} else {
+			printf("%s is not a directory \n", argv[1]);
+        		/* exists but is no dir */
+    		}
+	}
+	err = stat(argv[2], &s);
+	if(-1 == err) {
+    		if(ENOENT == errno) {
+			printf("%s is not a valid argument Check if it exists\n",argv[2]);
+			exit(0);
+        		/* does not exist */
+    		} else {
+        		perror("stat");
+        		exit(1);
+    		}
+} 	else {
+    		if(S_ISDIR(s.st_mode)) {
+			printf("%s is a directory \tProceeding for NJ\n",argv[2]);
+       			 /* it's a dir */
+    		} else {
+			printf("%s is not a directory \n", argv[2]);
+        		/* exists but is no dir */
+    		}
+	}
 	strcpy(arr, "npname::inotify##dir::");
 	strcat(arr, argv[1]);   // The directory to be watched.
 	strcat(arr, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY##count::2");

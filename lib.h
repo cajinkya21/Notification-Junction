@@ -4,12 +4,13 @@
 #include<sys/types.h>
 #include<sys/socket.h>
 #include<sys/un.h>
+#include<sys/stat.h>
 #include<pthread.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<unistd.h>
 #include<signal.h>
-
+#include<errno.h>
 #define AppGetnotify "app_getn"
 #define AppReg "app_reg"
 #define AppUnReg "app_unreg"
