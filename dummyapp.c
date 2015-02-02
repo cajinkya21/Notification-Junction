@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 
 	strcpy(arr, "npname::inotify##dir::");
 	strcat(arr, argv[1]);	// The directory to be watched.
-	strcat(arr, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY");
+	strcat(arr, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY##count::2");
 	printf("Arr is %s\n", arr);
 	pid = getpid();
 	signal(SIGUSR1, sigusrhandler);
