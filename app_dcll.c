@@ -271,29 +271,28 @@ int searchReg(app_dcll * l, char *appname, char *npname)
 	//int k;
 	ptr = search_app(l, appname);
 
-	printf("Searching Registration\n");
+	//printf("Searching Registration\n");
 
 	if (ptr == NULL)
 		return 0;
 
 	if (ptr != NULL) {
 
-		printf("App %s has been found. Checking np %s in app's list\n",
-		       appname, npname);
+		//printf("App %s has been found. Checking np %s in app's list\n",  appname, npname);
 		nptr = ptr->np_list_head;
 		//k = ptr->np_count;
 
 		/* CODE FOR CHECKING NP EXISTANCE */
 		while (nptr != NULL) {
 			if (!strcmp(npname, nptr->name)) {
-				printf("Duplicate Registration Detected");
+				//printf("Duplicate Registration Detected\n\n");
 				return -1;
 			}
 			nptr = nptr->next;
 		}
 
 	}
-
+	//printf("SearchReg successfull\n");
 	return 0;
 }
 

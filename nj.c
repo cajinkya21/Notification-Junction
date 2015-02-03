@@ -36,256 +36,196 @@
 
 #include "nj.h"
 
-/* Declare global NP list */
-
-np_dcll npList;			/*head of npList */
-FILE* logfd;
-/*Declare global app List*/
-app_dcll appList;		/*head of appList */
-int fd_pidnames;
-void *handle;
-
-/*Mutexes to be used for synchronizing list*/
-
+np_dcll npList;						/* Head of global NP List */
+FILE* logfd;						/* File pointer of log file */
+app_dcll appList;					/* Head of global APP List */
+int fd_pidnames;					/* FD of file used for storing PID filenames */
+void *handle;						/* Handle of the function in shared library */
 pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex, np_list_count_mutex, getnotify_socket_mutex, malloc_mutex;
+							/*Mutexes to be used for synchronizing list*/
+
+/* FUNCTION TO FORCEFULLY WRITING TO LOG FILE */
 void force_logs(void) {
 	fclose(logfd);
 	if (!(logfd = fopen("Logs", "a+"))) {
-			    perror("NJ.C   : not able to open  Log file\n");
+		perror("NJ.C   : not able to open  Log file\n");
 	}
 	return;
 }
-
-    
-    
+ 
+/* FUNCTION TO PRINT STATISTICS OF NJ */
 void print_stat()
 {
-
-	//printf("NP\t\t\t\t\tCOUNT OF REGISTERED APPs");
-	//printf("---------------------------------------------------------------------------------------------------------");
 	pthread_mutex_lock(&np_list_mutex);
 	print_np(&npList);
 	pthread_mutex_unlock(&np_list_mutex);
-	//printf("---------------------------------------------------------------------------------------------------------");
 	pthread_mutex_lock(&app_list_mutex);
 	print_app(&appList);
 	pthread_mutex_unlock(&app_list_mutex);
-	//printf("---------------------------------------------------------------------------------------------------------");
-
 }
 
-//To be called while NJ is exiting to remove all pid files
+/* SIGNAL HANDLER OF NJ */
 void sigintHandler(int signum)
 {
+	char buf2[64];
 	printf("In sigIntHandlere\n");
-	if (signum == SIGINT) {
+	if (signum == SIGINT) {				/* Handling SIGINT signal to remove PID files */
 		close(fd_pidnames);
-
 		fd_pidnames = open("File_PIDS.txt", O_CREAT | O_RDWR, 0777);
-		char buf2[64];
 		FILE *pidnames = fdopen(fd_pidnames, "r");
-		//printf("Removing pid files\n");
 		while (fgets(buf2, sizeof(buf2), pidnames)) {
 			buf2[strlen(buf2) - 1] = '\0';
-			/*strcpy(buf1, "rm ");
-			   strcat(buf1, buf2);
-			   sys_r = system(buf1); */
 			unlink(buf2);
 			printf("%s removed\n", buf2);
 		}
 		unlink("File_PIDS.txt");
 		printf("File_PIDS.txt removed\n");
-		//printf("Removed pid files\n\n");
 		exit(0);
-
 	}
 }
 
 /*TO REGISTER APP with NJ*/
 int register_app(char *buff)
 {
-	char app_name[32], np_name[32];
+	char app_name[32], np_name[32], delim[3] = "::";
 	char *s;
-	char delim[3] = "::";
 	int retval;
 
 	strcpy(app_name, strtok(buff, delim));
 	s = strtok(NULL, delim);
 	if (s != NULL)
 		strcpy(np_name, s);
-
-	//strtok(buff, "##");
-	//n = strtok(NULL, "##");
-	//printf("ARGUMENTS LIST _ %s\n", n);
-
-	/*Check if NP provided is registered or not */
+		
 	pthread_mutex_lock(&app_list_mutex);
     	pthread_mutex_lock(&np_list_mutex);
-	if (search_np(&npList, np_name) == NULL && np_name != NULL) {	/* HANDLE IF NP IS NULL, CHECK FOR STRTOK */
-		printf("NJ.C   :  NJ : Np not registered. Register NP first.\n");
-		printf("NJ.C   : AppList:\n");
-		print_app(&appList);
-		printf("NJ.C   : NPList:\n");
-		print_np(&npList);
-		return 1;
-	}
-    //pthread_mutex_unlock(&np_list_mutex);
-    //pthread_mutex_unlock(&app_list_mutex);
-	
-	/*Check if that registration already exists */
-   // pthread_mutex_lock(&app_list_mutex);
-	if (search_app(&appList, app_name) == NULL) {
-		addapp_node(&appList, app_name);
-		printf("Added for the first time\n");
-	}
-   // pthread_mutex_unlock(&app_list_mutex);
-
-	/*HANDLED IN LIST */
-	//pthread_mutex_lock(&app_list_mutex);
-	retval = searchReg(&appList, app_name, np_name);
-   // pthread_mutex_unlock(&app_list_mutex);
-
-	if (retval == -1) {
-		printf("NJ.C   : NJ : EXISTING REGISTRATION\n");
-	}
-
-	/*need to change this function to return appropriate values */
-	
-	if (retval != -1) {	 
-	//	pthread_mutex_lock(&app_list_mutex);
-        //pthread_mutex_lock(&np_list_mutex);                        /*IF APP IS NOT PREVIOUSLY REGISTERED */
-		add_np_to_app(&appList, app_name, np_name);                               
-		incr_np_app_cnt(&npList, np_name);
-	//	pthread_mutex_unlock(&np_list_mutex);
-        //pthread_mutex_unlock(&app_list_mutex);
-		if (np_name == NULL) {
-			printf("NJ.C   : NJ : Added successfully\n");
+    	
+    	if(np_name != NULL) {
+    		/*Check if NP provided is registered or not */
+		if (search_np(&npList, np_name) == NULL) {				/* NP is not registerd */
+			printf("NJ.C   :  NJ : Np not registered. Register NP first.\n");
+			return -1;
 		}
+		
+		/*Check if app is already registered */
+		if (search_app(&appList, app_name) == NULL) {				/* Registering app for the first time */
+			addapp_node(&appList, app_name);
+			printf("Added for the first time\n");
+			add_np_to_app(&appList, app_name, np_name);                               
+			incr_np_app_cnt(&npList, np_name);
+		}
+		else {									/* Adding NP registration to already */
+											/* existing App */
+			retval = searchReg(&appList, app_name, np_name);
+			if (retval == -1) {
+				printf("NJ.C   : NJ : EXISTING REGISTRATION\n");
+				return -2;
+			}
+			else {	 
+				add_np_to_app(&appList, app_name, np_name);                               
+				incr_np_app_cnt(&npList, np_name);
+			}
+		}
+	
 	}
-
+	else {
+		addapp_node(&appList, app_name);
+		printf("Only app is added successfully.\n");
+	}
 	
 	printf("NJ.C   : AppList:\n");
-//	pthread_mutex_lock(&app_list_mutex);
 	print_app(&appList);
-//	pthread_mutex_unlock(&app_list_mutex);
 	printf("NJ.C   : NPList:\n");
-  //  pthread_mutex_lock(&np_list_mutex);
 	print_np(&npList);
-	//pthread_mutex_unlock(&np_list_mutex);
+	
 	pthread_mutex_unlock(&np_list_mutex);
     	pthread_mutex_unlock(&app_list_mutex);
+    	
 	return 1;
 }
 
 /*FUNCTION TO UNREISTER AN APP*/
-
 int unregister_app(char *buff)
 {
-	/*if app_unregister ie buff passes app1::np1 it will remove np1 .......else if buff is app1 ie app_unregister app1 then remove app node directly */
-	char app_name[32], np_name[32];
-	int retval;
-	char *s;
-	char delim[3] = "::";
+	char app_name[32], np_name[32], delim[3] = "::";
+	char *np_ptr;
 
 	strcpy(app_name, strtok(buff, delim));
 	printf("App name - %s\n", app_name);
-	s = strtok(NULL, delim);
-	if (s != NULL) {
-		strcpy(np_name, s);
+	np_ptr = strtok(NULL, delim);
+	
+	if (np_ptr != NULL) {
+		strcpy(np_name, np_ptr);
 		printf("np name - %s\n", np_name);
 
 	}
+	
 	pthread_mutex_lock(&app_list_mutex);
         pthread_mutex_lock(&np_list_mutex);
 
-	if (s == NULL) {
+	if (np_ptr == NULL) {
 		printf("NJ.C   : np_name == NULL case in unregister app\n");
-//This function decrements counts for all NPs with that app, we have to write this function in the nj because it accesses both lists
-//	pthread_mutex_lock(&app_list_mutex);
-  //      pthread_mutex_lock(&np_list_mutex);
-        
-		del_app(&appList, app_name);		
-		dec_all_np_counts(&appList, &npList, app_name);
+		if(search_app(&appList, app_name) != NULL) {
+			del_app(&appList, app_name);		
+			dec_all_np_counts(&appList, &npList, app_name);
+			printf("NJ.C : Unregistration done\n");
+		}
+		else {
+			printf("App not found\n");
+			return -3;
+		}
 		
-	//	pthread_mutex_unlock(&np_list_mutex);
-        //pthread_mutex_unlock(&app_list_mutex);
-// DEC HERE FOR ALL NPs with that app.
-	} 
+	}
+	
 	else {
-	//	pthread_mutex_lock(&app_list_mutex);
-	    retval = searchReg(&appList, app_name, np_name);
-       // pthread_mutex_unlock(&app_list_mutex);
-	    if (retval == -1) {
+	    	if (searchReg(&appList, app_name, np_name) == -1) {
 			printf("NJ.C   : NJ : REGISTRATION FOUND.\n");
-
-    	//	pthread_mutex_lock(&app_list_mutex);
-          //  pthread_mutex_lock(&np_list_mutex);
-            
 			del_np_from_app(&appList, app_name, np_name);
 			decr_np_app_cnt(&npList, np_name);
-
-		//    pthread_mutex_unlock(&np_list_mutex);
-          //  pthread_mutex_unlock(&app_list_mutex);
-
-// DEC HERE for the np given.
 		}
-		/*need to change this function to return appropriate values */
 		else {
-			printf
-			    ("NJ : Invalid argument to app_unregister : Registration not found\n");
+			printf("NJ : Invalid argument to app_unregister : Registration not found\n");
 		}
 
 	}
-	printf("NJ.C   : AppList:\n");
-	//pthread_mutex_lock(&app_list_mutex);
-	print_app(&appList);
-	//pthread_mutex_unlock(&app_list_mutex);
-	printf("NJ.C   : NPList:\n");
-    //pthread_mutex_lock(&np_list_mutex);
-	print_np(&npList);
-	//pthread_mutex_unlock(&np_list_mutex);
 	
-	 pthread_mutex_unlock(&np_list_mutex);
-  	 pthread_mutex_unlock(&app_list_mutex);
+	printf("NJ.C   : AppList:\n");
+	print_app(&appList);
+	printf("NJ.C   : NPList:\n");
+	print_np(&npList);	
+	
+	pthread_mutex_unlock(&np_list_mutex);
+  	pthread_mutex_unlock(&app_list_mutex);
+  	
 	return 1;
 }
 
 /*FUNCTION TO REGISTER AN NP*/
 int register_np(char *buff)
 {
-	char np_name[32];
-	char delimusage[3] = "==";
-	char usage[512];
+	char np_name[32], usage[512], delimusage[3] = "==";
 	char *s;
 	char **keyVal;
 	main_np_node *new;
+	
 	strcpy(np_name, strtok(buff, delimusage));
 	s = strtok(NULL, delimusage);
+	
 	if (s == NULL) {
 		printf("Enter usage\nExiting\n");
 		return -1;
 	}
+	
 	strcpy(usage, s);
 	extractKeyVal(usage, &keyVal);
-	
 	pthread_mutex_lock(&np_list_mutex);	
-	
-	new = search_np(&npList, np_name);
-    
+	new = search_np(&npList, np_name);					/* Search for already existing registration */
 	
 	if(new != NULL) {
-		del_np(&npList, np_name);
+		del_np(&npList, np_name);					/* Delete already existing registration to modify */ 											/* parameters */
 	}
-	//pthread_mutex_unlock(&np_list_mutex);
 	
-    //pthread_mutex_lock(&np_list_mutex);	
 	add_np(&npList, np_name, usage, &keyVal);
-    //pthread_mutex_unlock(&np_list_mutex);
-	
-    //pthread_mutex_lock(&np_list_mutex);
 	print_np(&npList);
-    //pthread_mutex_unlock(&np_list_mutex);
-
 	pthread_mutex_unlock(&np_list_mutex);
 	
 	return 1;
@@ -293,24 +233,21 @@ int register_np(char *buff)
 
 void extractKeyVal(char *usage, char ***keyVal)
 {
-
-	printf("NJ : EXTRACTVAL : usage is %s\n", usage);
 	int cnt = 0, i = 0;
 	char copyusage[512];
 	char *ptr;
+	
+	printf("NJ : EXTRACTVAL : usage is %s\n", usage);
+	
 	strcpy(copyusage, usage);
-	cnt = countArgs(copyusage, "::");
+	cnt = countArgs(copyusage, "::");					/* Counting no. of arguments */
 	printf("EXTRACT KEYVAL : NJ : The count is %d\n", cnt);
 	
-	//pthread_mutex_lock(&malloc_mutex);
 	*keyVal = (char **)malloc((cnt + 1) * sizeof(char *));
-	//pthread_mutex_unlock(&malloc_mutex);
 	ptr = strtok(copyusage, "##");
 
 	printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
-	//pthread_mutex_lock(&malloc_mutex);
 	(*keyVal)[i] = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
-	//pthread_mutex_unlock(&malloc_mutex);
 
 	printf("Before strcpy\n");
 	strcpy((*keyVal)[i], ptr);
@@ -322,13 +259,8 @@ void extractKeyVal(char *usage, char ***keyVal)
 			break;
 		}
 		printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
-	//	pthread_mutex_lock(&malloc_mutex);
-
 		if (!((*keyVal)[i] = (char *)malloc(sizeof(char) * 128)))
 			perror("MALLOC IS THE CULPRIT");
-			
-	//	pthread_mutex_unlock(&malloc_mutex);
-
 		printf("Before strcpy\n");
 		strcpy((*keyVal)[i], ptr);
 		printf("After strcpy\n");
@@ -340,6 +272,7 @@ void extractKeyVal(char *usage, char ***keyVal)
 int countArgs(char *myString, char *delim) {
 	int count = 0;
 	const char *tmp = myString;
+
 	while ((tmp = (strstr(tmp, delim)))) {
 		count++;
 		tmp++;
@@ -352,32 +285,85 @@ int unregister_np(char *buff)
 {
 	char np_name[32];
 	char delim[3] = "::";
+	int app_cnt;
+	app_node *aptr = appList.head;
+	np_node *p, *q;
+	
 	strcpy(np_name, strtok(buff, delim));
 
-    pthread_mutex_lock(&np_list_mutex);
-	del_np(&npList, np_name);
-//    pthread_mutex_unlock(&np_list_mutex);
+    	pthread_mutex_lock(&app_list_mutex);
+    	pthread_mutex_lock(&np_list_mutex);
 
-  //  pthread_mutex_lock(&np_list_mutex);
+
+	app_cnt = appList.count;
+    	if(search_np(&npList, np_name) != NULL) {
+		while(app_cnt != 0) {
+			printf("App::%s\n", aptr->data);
+			printf("Before searchReg\n");
+		 	if(searchReg(&appList, aptr->data, np_name) == -1) {
+		 		printf("In searchReg\n");
+		 		p = aptr->np_list_head;
+		 		while(p != NULL) {
+		 			q = p;
+		 			if(!strcmp(p->name, np_name)) {	
+		 				printf("Np node found : %s\n", np_name);
+		 				break;	
+		 			}
+		 			p = p->next;
+		 		}
+		 		if(aptr->np_count == 1) {
+		 			printf("Only 1 node in NP trailing\n\n");
+		 			aptr->np_list_head = NULL;
+		 			free(p);
+		 			aptr->np_count--;
+		 		}
+		 		else if(p == q) {						/* If node to be deleted is the first node */
+		 			q = p->next;
+		 			aptr->np_list_head = q;
+		 			free(p);
+		 			aptr->np_count--;
+		 		}
+		 		
+		 		else {
+			 		q->next = p->next;
+			 		free(p);
+			 		aptr->np_count--;
+			 	}
+		 	}
+		 	printf("After searchReg\n");
+			aptr = aptr->next;
+			app_cnt--;	   	
+    		}
+    		del_np(&npList, np_name);
+	
+	}
+	else {
+		printf("Np not registerd.\n");
+		return -1;
+	}
+	
 	print_np(&npList);
-    pthread_mutex_unlock(&np_list_mutex);
+	print_app(&appList);
+    	pthread_mutex_unlock(&np_list_mutex);
+    	pthread_mutex_unlock(&app_list_mutex);
+    	
 	return 1;
 }
 
 /*FUNCTION TO GET NOTIFICATION FOR APP*/
 char *getnotify_app(char *buff)
-{	fprintf(logfd, "6. buf is %s \n", buff);
-	force_logs();
+{	
 	char *notification;
-	//pthread_mutex_lock(&malloc_mutex);
+	struct getnotify_threadArgs *arguments;
+	pthread_t tid_app_np_gn;
+	
+	fprintf(logfd, "6. buf is %s \n", buff);
+	force_logs();
 
 	notification = (char *)malloc(1024 * sizeof(char));
-	struct getnotify_threadArgs *arguments;
 	arguments = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs));
-	//pthread_mutex_unlock(&malloc_mutex);
-
 	strcpy(arguments->argssend, buff);
-	pthread_t tid_app_np_gn;
+
 
 	/* Fork thread to invoke the NP's code with the arguments given in the structure 'arguments', which contains argssend and argsrecv */	fprintf(logfd, "7. buf is %s \n", arguments->argssend);
 	
@@ -395,21 +381,21 @@ char *getnotify_app(char *buff)
 /* MAIN CODE */
 int main()
 {
-	/* first remove(unlink) the sockets if they already exist */
-	//
-
+	sigset_t mask;
+	struct threadArgs stat, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
+	pthread_t tid_stat, tid_app_reg, tid_app_unreg, tid_np_reg, tid_np_unreg, tid_app_getnotify;
 	
 	if (!(logfd = fopen("Logs", "a+"))) {
-			    perror("NJ.C   : not able to open  Log file\n");
-			    return 1;
-		    }
+		perror("NJ.C   : not able to open  Log file\n");
+	    	return 1;
+	}
 	
 
-	sigset_t mask;
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGINT);
 	signal(SIGINT, sigintHandler);
-
+	
+	/* first remove(unlink) the sockets if they already exist */
 	unlink(StatSocket);
 	unlink(AppReg);
 	unlink(AppUnReg);
@@ -422,7 +408,6 @@ int main()
 	printf("NJ.C   : fd = %d", fd_pidnames);
 
 	/*Initialization of all mutexes */
-
 	if (pthread_mutex_init(&app_list_mutex, NULL) != 0) {
 		printf("NJ.C   : \n mutex init failed\n");
 		return 1;
@@ -459,7 +444,6 @@ int main()
 	pthread_mutex_unlock(&app_list_mutex);
 	
 	/* CREATE SOCKET FOR STAT */
-	struct threadArgs stat;
 	stat.sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	printf("Socket stat created\n");
 	if (stat.sock < 0) {
@@ -468,16 +452,13 @@ int main()
 	}
 	stat.server.sun_family = AF_UNIX;
 	strcpy(stat.server.sun_path, StatSocket);
-	if (bind
-	    (stat.sock, (struct sockaddr *)&stat.server,
-	     sizeof(struct sockaddr_un))) {
+	if (bind(stat.sock, (struct sockaddr *)&stat.server, sizeof(struct sockaddr_un))) {
 		perror("binding stream socket");
 		exit(1);
 	}
 	printf("Socket has name %s\n", stat.server.sun_path);
 
 	/* CREATE SOCKET FOR APPLICATION REGISTRATION */
-	struct threadArgs app_reg;
 	app_reg.sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	printf("NJ.C   : Socket app_reg created\n");
 	if (app_reg.sock < 0) {
@@ -486,16 +467,13 @@ int main()
 	}
 	app_reg.server.sun_family = AF_UNIX;
 	strcpy(app_reg.server.sun_path, AppReg);
-	if (bind
-	    (app_reg.sock, (struct sockaddr *)&app_reg.server,
-	     sizeof(struct sockaddr_un))) {
+	if (bind(app_reg.sock, (struct sockaddr *)&app_reg.server, sizeof(struct sockaddr_un))) {
 		perror("NJ.C   : binding stream socket");
 		exit(1);
 	}
 	printf("NJ.C   : Socket has name %s\n", app_reg.server.sun_path);
 
 	/* CREATE SOCKET FOR APPLICATION UNREGISTRATION */
-	struct threadArgs app_unreg;
 	app_unreg.sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (app_unreg.sock < 0) {
 		perror("NJ.C   : opening stream socket");
@@ -504,127 +482,75 @@ int main()
 	app_unreg.server.sun_family = AF_UNIX;
 	strcpy(app_unreg.server.sun_path, AppUnReg);
 
-	if (bind
-	    (app_unreg.sock, (struct sockaddr *)&app_unreg.server,
-	     sizeof(struct sockaddr_un))) {
+	if (bind(app_unreg.sock, (struct sockaddr *)&app_unreg.server, sizeof(struct sockaddr_un))) {
 		perror("NJ.C   : binding stream socket");
 		exit(1);
 	}
-
 	printf("NJ.C   : Socket has name %s\n", app_unreg.server.sun_path);
 
 	/* SOCKET FOR NP REGISTRATION */
-
-	struct threadArgs np_reg;
-
 	np_reg.sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	printf("NJ.C   : Socket np_reg created\n");
-
 	if (np_reg.sock < 0) {
 		perror("NJ.C   : opening stream socket");
 		exit(1);
 	}
-
 	np_reg.server.sun_family = AF_UNIX;
 	strcpy(np_reg.server.sun_path, NpReg);
-
-	if (bind
-	    (np_reg.sock, (struct sockaddr *)&np_reg.server,
-	     sizeof(struct sockaddr_un))) {
+	if (bind(np_reg.sock, (struct sockaddr *)&np_reg.server, sizeof(struct sockaddr_un))) {
 		perror("NJ.C   : binding stream socket");
 		exit(1);
 	}
-
 	printf("NJ.C   : Socket has name %s\n", np_reg.server.sun_path);
 
 	/* SOCKET FOR NP UNREGISTRATION */
-
-	struct threadArgs np_unreg;
-
 	np_unreg.sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	printf("NJ.C   : Socket np_unreg created\n");
-
 	if (np_unreg.sock < 0) {
 		perror("NJ.C   : opening stream socket");
 		exit(1);
 	}
-
 	np_unreg.server.sun_family = AF_UNIX;
 	strcpy(np_unreg.server.sun_path, NpUnReg);
-
-	if (bind
-	    (np_unreg.sock, (struct sockaddr *)&np_unreg.server,
-	     sizeof(struct sockaddr_un))) {
+	if (bind(np_unreg.sock, (struct sockaddr *)&np_unreg.server, sizeof(struct sockaddr_un))) {
 		perror("NJ.C   : binding stream socket");
 		exit(1);
 	}
-
 	printf("NJ.C   : Socket has name %s\n", np_unreg.server.sun_path);
+	
 	/* CREATE SOCKET for APP SIDE GETNOTIFY */
-
-	struct threadArgs app_getnotify;
-
 	app_getnotify.sock = socket(AF_UNIX, SOCK_STREAM, 0);
-
 	if (app_getnotify.sock < 0) {
 		perror("NJ.C   : opening stream socket for getnotify");
 		exit(1);
 	}
-
 	app_getnotify.server.sun_family = AF_UNIX;
 	strcpy(app_getnotify.server.sun_path, AppGetnotify);
-
-	if (bind
-	    (app_getnotify.sock, (struct sockaddr *)&app_getnotify.server,
-	     sizeof(struct sockaddr_un))) {
+	if (bind(app_getnotify.sock, (struct sockaddr *)&app_getnotify.server, sizeof(struct sockaddr_un))) {
 		perror("NJ.C   : binding stream socket");
 		exit(1);
 	}
-
 	printf("NJ.C   : Socket has name %s\n", app_getnotify.server.sun_path);
 
 	/* FORK THREADS TO LISTEN  AND ACCEPT */
-
-	pthread_t tid_stat;
-
 	if (pthread_create(&tid_stat, NULL, &PrintStat, (void *)&stat) == 0) {
 		printf("Pthread_Creation successful for stat\n");
 	}
-
-	pthread_t tid_app_reg;
-
-	if (pthread_create(&tid_app_reg, NULL, &AppRegMethod, (void *)&app_reg)
-	    == 0) {
+	
+	if (pthread_create(&tid_app_reg, NULL, &AppRegMethod, (void *)&app_reg) == 0) {
 		printf("NJ.C   : Pthread_Creation successful\n");
 	}
-
-	pthread_t tid_app_unreg;
-
-	if (pthread_create
-	    (&tid_app_unreg, NULL, &AppUnRegMethod, (void *)&app_unreg) == 0) {
+	if (pthread_create(&tid_app_unreg, NULL, &AppUnRegMethod, (void *)&app_unreg) == 0) {
 		printf("NJ.C   : Pthread_Creation successful\n");
 	}
-
-	pthread_t tid_np_reg;
-
-	if (pthread_create(&tid_np_reg, NULL, &NpRegMethod, (void *)&np_reg) ==
-	    0) {
+	if (pthread_create(&tid_np_reg, NULL, &NpRegMethod, (void *)&np_reg) == 0) {
 		printf("NJ.C   : Pthread_Creation successful\n");
 	}
-
-	pthread_t tid_np_unreg;
-
-	if (pthread_create
-	    (&tid_np_unreg, NULL, &NpUnRegMethod, (void *)&np_unreg) == 0) {
+	if (pthread_create(&tid_np_unreg, NULL, &NpUnRegMethod, (void *)&np_unreg) == 0) {
 		printf("NJ.C   : Pthread_Creation successful\n");
 	}
-
-	pthread_t tid_app_getnotify;
-	if (pthread_create
-	    (&tid_app_getnotify, NULL, &AppGetNotifyMethod,
-	     (void *)&app_getnotify) == 0) {
-		printf
-		    ("NJ.C   : Pthread_creation of getnotify thread successful\n");
+	if (pthread_create(&tid_app_getnotify, NULL, &AppGetNotifyMethod, (void *)&app_getnotify) == 0) {
+		printf("NJ.C   : Pthread_creation of getnotify thread successful\n");
 	}
 
 	/*Join all the threads */
@@ -643,10 +569,10 @@ int main()
 }
 
 /* APP REGISTER METHOD THAT WILL RUN IN THREAD FORKED FOR APP REGISTRATION*/
-
 void *PrintStat(void *arguments)
 {
 	struct threadArgs *args = arguments;
+	
 	printf("In STAT\n");
 	printf("args -> msgsock - %d\n", args->msgsock);
 
@@ -655,11 +581,10 @@ void *PrintStat(void *arguments)
 		args->msgsock = accept(args->sock, 0, 0);
 		if (args->msgsock == -1)
 			perror("accept");
-		else
+		else {
 			do {
 				bzero(args->buf, sizeof(args->buf));
-				if ((args->rval =
-				     read(args->msgsock, args->buf, 1024)) < 0)
+				if ((args->rval = read(args->msgsock, args->buf, 1024)) < 0)
 					perror("reading stream message");
 				else if (args->rval == 0) {
 					printf("\nPrinting Statistics :\n");
@@ -667,6 +592,7 @@ void *PrintStat(void *arguments)
 				}
 			} while (args->rval > 0);
 
+		}
 		close(args->msgsock);
 	}
 
@@ -680,6 +606,7 @@ void *PrintStat(void *arguments)
 void *AppRegMethod(void *arguments)
 {
 	struct threadArgs *args = arguments;
+	
 	printf("NJ.C   : In Reg\n");
 	printf("NJ.C   : args -> msgsock - %d\n", args->msgsock);
 
@@ -692,18 +619,15 @@ void *AppRegMethod(void *arguments)
 		else
 			do {
 				bzero(args->buf, sizeof(args->buf));
-				if ((args->rval =
-				     read(args->msgsock, args->buf, 1024)) < 0)
-					perror
-					    ("NJ.C   : reading stream message");
+				if ((args->rval = read(args->msgsock, args->buf, 1024)) < 0)
+					perror("NJ.C   : reading stream message");
 				else if (args->rval == 0)
 					printf("NJ.C   : Ending connection\n");
 				else {	/*code to register application ie add entry in list */
 					printf("NJ.C   : -->%s\n", args->buf);
 					i = register_app(args->buf);
 					if (i < 0) {
-						printf
-						    ("NJ.C   : Error in registering, try again\n");
+						printf("NJ.C   : Error in registering, try again\n");
 					}
 					break;
 				}
@@ -723,6 +647,7 @@ void *AppRegMethod(void *arguments)
 void *AppUnRegMethod(void *arguments)
 {
 	struct threadArgs *args = arguments;
+	
 	printf("NJ.C   : In UnReg\n");
 	printf("NJ.C   : args -> msgsock - %d\n", args->msgsock);
 
@@ -746,8 +671,7 @@ void *AppUnRegMethod(void *arguments)
 					printf("NJ.C   : -->%s\n", args->buf);
 
 					if (i < 0)
-						printf
-						    ("NJ.C   : Error in registering\n");
+						printf("NJ.C   : Error in registering\n");
 
 					break;
 				}
@@ -767,6 +691,7 @@ void *AppUnRegMethod(void *arguments)
 void *NpRegMethod(void *arguments)
 {
 	struct threadArgs *args = arguments;
+	
 	printf("NJ.C   : In NpReg\n");
 	printf("NJ.C   : args -> msgsock - %d\n", args->msgsock);
 
@@ -789,8 +714,7 @@ void *NpRegMethod(void *arguments)
 					printf("NJ.C   : -->%s\n", args->buf);
 					i = register_np(args->buf);
 					if (i < 0)
-						printf
-						    ("NJ.C   : Error in registering\n");
+						printf("NJ.C   : Error in registering\n");
 					break;
 				}
 			} while (args->rval > 0);
@@ -823,8 +747,7 @@ void *NpUnRegMethod(void *arguments)
 				bzero(args->buf, sizeof(args->buf));
 				if ((args->rval =
 				     read(args->msgsock, args->buf, 1024)) < 0)
-					perror
-					    ("NJ.C   : reading stream message");
+					perror("NJ.C   : reading stream message");
 				else if (args->rval == 0)
 					printf("NJ.C   : Ending connection\n");
 				else {
@@ -832,8 +755,7 @@ void *NpUnRegMethod(void *arguments)
 					printf("NJ.C   : -->%s\n", args->buf);
 
 					if (i < 0)
-						printf
-						    ("NJ.C   : Error in registering\n");
+						printf("NJ.C   : Error in registering\n");
 
 					break;
 				}
@@ -853,21 +775,19 @@ void *NpUnRegMethod(void *arguments)
 void *AppGetNotifyMethod(void *arguments)
 {
 	struct threadArgs *args = arguments;
+	struct proceedGetnThreadArgs *sendargs;
+	struct sockaddr_un server;
+	int i = 0;
+	
+		
 	printf("NJ.C   : In AppGetNotify\n");
 	printf("NJ.C   : args -> msgsock - %d\n", args->msgsock);
 	
 	fprintf(logfd,"NJ.C   : In AppGetNotify\n");
 	fprintf(logfd,"NJ.C   : args -> msgsock - %d\n", args->msgsock);
-	int i = 0;
-	struct proceedGetnThreadArgs *sendargs;
-	//pthread_mutex_lock(&malloc_mutex);
-
-	//sendargs = (struct proceedGetnThreadArgs *)
-	  //  malloc(sizeof(struct proceedGetnThreadArgs));
-//pthread_mutex_unlock(&malloc_mutex);
 
 	listen(args->sock, QLEN);
-	struct sockaddr_un server;
+
 	server.sun_family = AF_UNIX;
 	strcpy(server.sun_path, AppGetnotify);
 	pthread_t threadarr[APPLIMIT];
@@ -879,19 +799,15 @@ void *AppGetNotifyMethod(void *arguments)
 		else
 			do {
 				pthread_mutex_lock(&getnotify_socket_mutex);
-				sendargs = (struct proceedGetnThreadArgs *)
-	    malloc(sizeof(struct proceedGetnThreadArgs));
+				sendargs = (struct proceedGetnThreadArgs *)malloc(sizeof(struct proceedGetnThreadArgs));
 			
 				bzero(args->buf, sizeof(args->buf));
-				args->rval =
-				    read(args->msgsock, args->buf, 1024);
+				args->rval = read(args->msgsock, args->buf, 1024);
 				strcpy(sendargs->buf, args->buf);
-				printf("\n\n\nsendargs has buf = %s\n",
-				       sendargs->buf);
+				printf("\n\n\nsendargs has buf = %s\n", sendargs->buf);
 			   	fprintf(logfd, "1. buf is %s \n",sendargs->buf);
 				if (args->rval < 0) {
-					perror
-					    ("NJ.C   : reading stream message");
+					perror("NJ.C   : reading stream message");
 					    
 					     pthread_mutex_unlock(&getnotify_socket_mutex);
 					}    
@@ -900,17 +816,11 @@ void *AppGetNotifyMethod(void *arguments)
 					 pthread_mutex_unlock(&getnotify_socket_mutex);
 			}
 				else {
-					printf
-					    ("ARGS SENDING TO PROCEEDGETN are %s\n\n\n",
-					     args->buf);
+					printf("ARGS SENDING TO PROCEEDGETN are %s\n\n\n", args->buf);
 					printf("%d is i in ProcerdGetnotify \n",
 					       i);
-					if (pthread_create
-					    (&threadarr[i++], NULL,
-					     &ProceedGetnotifyMethod,
-					     (void *)sendargs) == 0) {
-						perror
-						    ("NJ.C   : Pthread_Creations for ProceedgetnotifyMethod\n");
+					if (pthread_create(&threadarr[i++], NULL, &ProceedGetnotifyMethod, (void *)sendargs) == 0) {
+						perror("NJ.C   : Pthread_Creations for ProceedgetnotifyMethod\n");
 					}
 					pthread_mutex_unlock(&getnotify_socket_mutex);
 					//ProceedGetnotifyMethod(arguments);
@@ -936,55 +846,48 @@ void *AppGetNotifyMethod(void *arguments)
 
 /*NP GET NOTIFY METHOD THAT WILL RUN NP GET NOTIFY THREAD*/
 void *NpGetNotifyMethod(void *arguments)
-{				/*here we need to call Np_specific getnotify to get the notificationstring..this notificationstring is then copied to arguments->argsrecv
-				   for now I am sending the received strig directly as notificationstring for now I have simply returned the string receive1::value1 */
-	struct getnotify_threadArgs *bargs = (struct getnotify_threadArgs *)arguments;
-//pthread_mutex_lock(&malloc_mutex);
+{
+	char args_send_copy[1024], args_send_copy_2[1024], rough[1024], r[1024], appname[64], np_name[64], one[512];
+	char delimattr[3] = "##", delimval[3] = "::";
+	char *error, *countkey, *filename;
+	char **pointer;    	
+    	int j, filefd, al, count = -1, k, x;
+	struct getnotify_threadArgs *bargs, *args; 
+	struct extr_key_val *temp, *m, *p;
+ 	np_node *nptr;
+ 	main_np_node *np_node;	
 
-	struct getnotify_threadArgs *args = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs)); 
-//pthread_mutex_unlock(&malloc_mutex);
+	bargs = (struct getnotify_threadArgs *)arguments;
+	args = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs)); 
 
+
+
+/*here we need to call Np_specific getnotify to get the notificationstring..this notificationstring is then copied to arguments->argsrecv
+for now I am sending the received strig directly as notificationstring for now I have simply returned the string receive1::value1 */
 	*args = *bargs;
 
-	char args_send_copy[1024], args_send_copy_2[1024];
-
-    
-	
-	int j, filefd, al;
 	fprintf(logfd, "8. buf is %s \n", args->argssend);
 	void (*getnotify) (struct getnotify_threadArgs *);
-	char *error, *countkey;
-	char rough[1024], r[1024];
+	
 	
 	printf("1. args->argssend is %s\n", args->argssend);
-	
 	strcpy(rough, args->argssend);
 	strcpy(r, rough);
-	np_node *nptr;
-	char appname[64];
-	//int count = 2;
-	main_np_node *np_node;
 
-    strcpy(args_send_copy_2, args->argssend);
-    char *filename;
+    	strcpy(args_send_copy_2, args->argssend);
+
     	fprintf(logfd, "9. buf is %s \n", args->argssend);
-    filename = getfilename(args_send_copy_2);
+    	filename = getfilename(args_send_copy_2);
     	fprintf(logfd, "10. buf is %s \n", args->argssend);
     	
 	force_logs();
-    printf("FILENAME obtained is %s\n", filename);
+    	printf("FILENAME obtained is %s\n", filename);
     
     
-
 	/* INOTIFY needs npname::<npname>##pathname::<pathname>##flags::<flags> */
 
 	printf("NJ.C   : Args received by getnotify - %s\n", args->argssend);
-	int count = -1, k, x;
-	char np_name[64], one[512] ;
-	char delimattr[3] = "##";
-	char delimval[3] = "::";
-	struct extr_key_val *temp, *m, *p;
-	char **pointer;
+
 
 	strtok(r, delimattr);
 	j = strlen(r);
@@ -1002,11 +905,8 @@ void *NpGetNotifyMethod(void *arguments)
 	printf("N.C : npname = %s\n", np_name);
 	/* Get the reg, Malloc space for a getn registration key_val  */
 
-// lock
 	pthread_mutex_lock(&app_list_mutex);
-
 	nptr = getReg(&appList, appname, np_name);
-	
 	
 	if (nptr) {
 		printf("\nRETURNED nptr->name = %s\n", nptr->name);
@@ -1018,10 +918,8 @@ void *NpGetNotifyMethod(void *arguments)
 	}
 
 	printf("NJ : ARGSSEND BEFORE EXTRACT : %s\n", args->argssend);
-//pthread_mutex_lock(&malloc_mutex);
 
 	temp = (struct extr_key_val *)malloc(sizeof(struct extr_key_val));
-	//pthread_mutex_unlock(&malloc_mutex);
 
 	temp->next = NULL;
 	
@@ -1039,16 +937,10 @@ void *NpGetNotifyMethod(void *arguments)
 			m = m->next;
 		}
 		p->next = temp;
-		//m->next = temp;
-		temp->next = NULL; // 
+		temp->next = NULL;  
 	}
-	// Save the keyvalarr
-	//
-	//
-	//
-//unlock
 
-pthread_mutex_unlock(&app_list_mutex);
+	pthread_mutex_unlock(&app_list_mutex);
 	printf("PRINTING BEFORE EXTRACT\n");
 
    
@@ -1058,37 +950,30 @@ pthread_mutex_unlock(&app_list_mutex);
 	k = compare_array(&(np_node->key_val_arr), &pointer);
 	pthread_mutex_unlock(&np_list_mutex);
 	
-    if(k == 0)
-        printf("Array matched..\n");
-    else {
-        printf("Array not matched..\n");	
-        return NULL;
+    	if(k == 0)
+        	printf("Array matched..\n");
+    	else {
+        	printf("Array not matched..\n");	
+        	return NULL;
 	}
 	temp->key_val_arr = pointer;
 	pthread_mutex_lock(&app_list_mutex);
 	print_app(&appList);
 	pthread_mutex_unlock(&app_list_mutex);
-	printf("PRINTING AFTER EXTRACT\n");
-//    print_app(&appList);
-
-	//
-	//
-	//
-pthread_mutex_lock(&np_list_mutex);
-    forward_convert(&(np_node->key_val_arr),&pointer, args->argssend);
-   pthread_mutex_unlock(&np_list_mutex);
-	/* HANDLE NO NAME AND STUFF */
- countkey = get_val_from_args(args->argssend, "count");
-    count = atoi(extract_val(countkey));
-    printf("count is %d!\n", count);
-    fprintf(logfd, "99. count is %d! for buf %s!\n", count, args->argssend);
 	
- x = get_np_app_cnt(&npList, np_name);
-	printf("NJ.C   : App Count = %d for NP = %s\n",
-	      x, np_name);
-
-
-
+	printf("PRINTING AFTER EXTRACT\n");
+	pthread_mutex_lock(&np_list_mutex);
+    	forward_convert(&(np_node->key_val_arr),&pointer, args->argssend);
+   	pthread_mutex_unlock(&np_list_mutex);
+	/* HANDLE NO NAME AND STUFF */
+ 	
+ 	countkey = get_val_from_args(args->argssend, "count");
+    	count = atoi(extract_val(countkey));
+    	printf("count is %d!\n", count);
+    	fprintf(logfd, "99. count is %d! for buf %s!\n", count, args->argssend);
+	
+ 	x = get_np_app_cnt(&npList, np_name);
+	printf("NJ.C   : App Count = %d for NP = %s\n", x, np_name);
 
 	/* App count will be 0 initially. App can call getnotify only after NP has registered, and doing App_getnotify for the first time increments the count to 1. Therefore compare count with 1 to do dlopen() for the first time */
 	if (x == 1) {
@@ -1152,7 +1037,6 @@ pthread_mutex_lock(&np_list_mutex);
 	printf("NJ.C   : ARGSRECV IN THREAD HANDLER = %s\n", args->argsrecv);
 
 	pthread_exit(NULL);
-	//return NULL;
 
 	/* Functions have to be written such that the argument will be the address of struct args */
 }
@@ -1163,11 +1047,10 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 	app_node *ptrapp;
 	np_node *ptrnp;
 	int cnt;
+	
 	// Find the app in the list. If it is found, for every np in its trailing list; visit the np_dcll and decrement its count.
 	printf("All nps deleted, since np_name was passed NULL\n");
-
 	ptrapp = search_app(appList, app_name);
-
 	if (ptrapp != NULL) {	// App found
 
 		cnt = ptrapp->np_count;
@@ -1177,15 +1060,13 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 		while (cnt) {
 			printf("\t%s\t", ptrnp->name);
 			decr_np_app_cnt(npList, ptrnp->name);
-			// printf("\t%d\n", ptrnp->);
 			ptrnp = ptrnp->next;
 			cnt--;
 		}
 
 	} else {
 
-		printf
-		    ("Error : NJ : Asked to delete non-existent application\n");
+		printf("Error : NJ : Asked to delete non-existent application\n");
 
 	}
 
@@ -1194,30 +1075,33 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 void *ProceedGetnotifyMethod(void *arguments)
 {
 	char *received;
-	struct proceedGetnThreadArgs *temparguments = (struct proceedGetnThreadArgs *)arguments;
-//	pthread_mutex_lock(&malloc_mutex);
-
-	struct proceedGetnThreadArgs *args = (struct proceedGetnThreadArgs *)malloc(sizeof(struct proceedGetnThreadArgs));
-//	pthread_mutex_unlock(&malloc_mutex);
+	struct proceedGetnThreadArgs *temparguments, *args;
+	int pid;
+	char rough[1024];
+	char spid[32];
+	char choice;
+	int j;	
+	int len;
+	char filename[64], filename1[64];
+	
+	
+	temparguments = (struct proceedGetnThreadArgs *)arguments;
+	args = (struct proceedGetnThreadArgs *)malloc(sizeof(struct proceedGetnThreadArgs));
 
 	*args = *temparguments;
 	printf("ARGS SENDING TO PROCEEDGETN PROCEEDGETNOTIFY are %s\n\n\n", args->buf);
 	fprintf(logfd, "2. buf is %s \n", args->buf);
 	
 	force_logs();
-	int pid;
-	char rough[1024];
-	char choice;
-	int j;
+	
 	strcpy(rough, args->buf);
-	printf("NJ.C   :  %s  args-.buf received PROCEEDGETNOTIFY from library call\n",
-	       args->buf);
-	int len = strlen(rough);
+	printf("NJ.C   :  %s  args-.buf received PROCEEDGETNOTIFY from library call\n", args->buf);
+	len = strlen(rough);
 	choice = rough[len - 1];
-	char spid[32];
+
 	strcpy(spid, strtok(rough, "##"));
 	pid = atoi(spid);
-    for(j = 0; j < len ; j++) {
+    	for(j = 0; j < len ; j++) {
 			if(rough[j] == '#')
 			if(rough[j+1] == '#')
 					break;
@@ -1225,11 +1109,8 @@ void *ProceedGetnotifyMethod(void *arguments)
 
 	j = strlen(rough);
 	
-	//strcpy(rough, args->buf);
-	//strcpy(rough , &(rough[j+2]));
-	//strcpy(args->buf, rough);
 	printf("NJ.C   : Received args->buf is %s\n", args->buf);
-	char filename[64], filename1[64];
+
 	strcpy(filename, "./");
 	strcat(filename, spid);
 	strcpy(filename1, spid);
@@ -1237,158 +1118,96 @@ void *ProceedGetnotifyMethod(void *arguments)
 	strcat(filename1, ".txt");
 	strcat(filename1, "\n");
 	printf("NJ.C   : Filename:%s\n\n", filename);
-	
-	
-	
-	
-	   // printf("NJ : FOR : Proceedgetnotify count : %d\n\n", count);
 	   
-	   
-	   fprintf(logfd, "3. buf is %s \n", args->buf);
-	   
+	fprintf(logfd, "3. buf is %s \n", args->buf);  
 	force_logs();
-	    
-	    
-	    
-	    received = getnotify_app(args->buf);
-	    while(received == NULL) {
-	        //received = "\0";
+ 
+	received = getnotify_app(args->buf);
+	while(received == NULL) {
 	        pthread_exit(NULL);
-       
-	    }
-	    
-	    
-	    fprintf(logfd, "4. Notification received from getnotify_app is %s \n", received);
-	    
+	}
+	       
+	fprintf(logfd, "4. Notification received from getnotify_app is %s \n", received); 
 	force_logs();
-	    if (choice == 'N') {
-		    /*if (!(fd = open(filename, O_CREAT | O_APPEND | O_RDWR, 0777))) {
-			    perror("NJ.C   : not able to open file\n");
-			    return;
-		    }
-		    printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
-*/		    fprintf(logfd, "5. buf is %s \n", args->buf);
-			
-	force_logs();
-		    printf("NJ.C   : %s \n", received);
-		    strcat(received, "\n");
-		    write((int)fd_pidnames, filename1, strlen(filename1));
-		    printf("\n\nPID filename is written successfully.....\n\n");
-		    /*al = write((int)fd, received, strlen(received));
-		    if (al < 0)
-			    perror("NJ.C   : Fwrite failed");
-		    else
-			    printf("NJ.C   : %s madhe %d bytes WRITTEN\n", filename,
-			           al);
-*/
-		    printf("NJ.C   : Before Sig, %d sending to pid = %d \n",
-		           getpid(), pid);
-		           
-		           
+	
+	if (choice == 'N') {
+		force_logs();
+		printf("NJ.C   : %s \n", received);
+		strcat(received, "\n");
+		write((int)fd_pidnames, filename1, strlen(filename1));
+		printf("\n\nPID filename is written successfully.....\n\n");
+		printf("NJ.C   : Before Sig, %d sending to pid = %d \n", getpid(), pid);
+		           	           
 		    // Getn count
 		           
-		    if (kill(pid, SIGUSR1) == -1) {
-			    perror("Error in kill :\n");
+		if (kill(pid, SIGUSR1) == -1) {
+			perror("Error in kill :\n");
 			    // CHANGE TO PRINTF LATER
-		    }
-		    printf("NJ.C   : After Sig \n");
-	    }
-	    printf("NJ.C   : -->%s\n", args->buf);
-	  //  printf("NJ.C   : received notification is [%s]. \n", received);
+		}
+		printf("NJ.C   : After Sig \n");
+	}
+	printf("NJ.C   : -->%s\n", args->buf);
 	
-	  //  printf("NJ.C   : REPORTING TO CLIENT EVENT : [%s].\n", received);
-	    if (choice == 'B') {
-
-		   /* if (!(fd = open(filename, O_CREAT | O_APPEND | O_RDWR, 0777))) {
-			    perror("NJ.C   : not able to open file\n");
-			    return;
-		    }
-		    printf("NJ.C   : OPEN::%d is FD for %s file\n\n", fd, filename);
-*/
-		    //printf("NJ.C   : %s \n", received);
-		    strcat(received, "\n");
-		    write((int)fd_pidnames, filename1, strlen(filename1));
-		    printf("\n\nPID filename is written successfully.....\n\n");
-		   /* al = write((int)fd, received, strlen(received));
-		    if (al < 0)
-			    perror("NJ.C   : Fwrite failed");
-		    else
-			    printf("NJ.C   : %s madhe %d bytes WRITTEN\n", filename,
-			           al);
-
-		    printf("NJ.C   :  Before freeing \n");
-		*/
+	if (choice == 'B') {
+	    strcat(received, "\n");
+	    write((int)fd_pidnames, filename1, strlen(filename1));
+	    printf("\n\nPID filename is written successfully.....\n\n");
 	}
 	
-	
-	    free(received);
-		pthread_exit(NULL);
-		//return NULL;
-
-
+	free(received);
+	pthread_exit(NULL);
 }
 
 
 char* extract_key(char *key_val) {
-    
-     char *key, *ptr;
-    char temp[128] ;
-    strcpy(temp, key_val);
-    ptr = strtok(temp, "::");
-  //  pthread_mutex_lock(&malloc_mutex);
-
-    key = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
-    //pthread_mutex_unlock(&malloc_mutex);
-
-    strcpy(key, ptr);
-    return key;
+     	char *key, *ptr;
+    	char temp[128];
+    	
+    	strcpy(temp, key_val);
+	ptr = strtok(temp, "::");
+	key = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+	strcpy(key, ptr);
+	return key;
 }
 
 char* extract_val(char *key_val) {
     
-    char *ptr, *val;
-    char temp[128] ;
-    strcpy(temp, key_val);
-    ptr = strtok(temp, "::");
-    //key = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
-    //strcpy(key, ptr);
-    //ptr = strtok(NULL, "::");
-    ptr = (key_val + strlen(ptr) + 2);
-    if(!ptr) printf("RETURNED NULL");
-    //pthread_mutex_lock(&malloc_mutex);
-
-    val = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
-    //pthread_mutex_unlock(&malloc_mutex);
-
-    strcpy(val, ptr);
-    return val;
+    	char *ptr, *val;
+    	char temp[128] ;
+    
+    	strcpy(temp, key_val);
+    	ptr = strtok(temp, "::");
+    	ptr = (key_val + strlen(ptr) + 2);
+    	if(!ptr) printf("RETURNED NULL");
+    	val = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+    	strcpy(val, ptr);
+    	return val;
 }
 
 int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr) {
-    
-      char **one, **two, *key_one, *key_two;
-        int found = 0;
+      	char **one, **two, *key_one, *key_two;
+      	int found = 0;
+      	
         one = *getn_key_val_arr;
         while(*one != NULL) {
-            found = 0;
-            key_one = extract_key(*one);
-            two = *np_key_val_arr;
-            while(*two != NULL) {
-                key_two = extract_key(*two);
-                if(!(strcmp(key_one, key_two))) {
-                    found = 1;
-                    break;
-                }
-                two++;
-            }
-            if(found == 0) {
-                printf("ERROR : NJ : NP cannot process key %s\n", key_one);
-                free(key_one);
-                free(key_two);
-                return -1;
-            }
-        
-            one++;
+            	found = 0;
+            	key_one = extract_key(*one);
+            	two = *np_key_val_arr;
+            	while(*two != NULL) {
+                	key_two = extract_key(*two);
+                	if(!(strcmp(key_one, key_two))) {
+                    		found = 1;
+                    		break;
+                	}
+                	two++;
+            	}
+            	if(found == 0) {
+                	printf("ERROR : NJ : NP cannot process key %s\n", key_one);
+                	free(key_one);
+                	free(key_two);
+                	return -1;
+            	}
+            	one++;
         }
         free(key_one);
         free(key_two);
@@ -1396,94 +1215,74 @@ int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr) {
 }
 
 void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr , char * fillit) {
-    char **one, **two, *key_one, *key_two;
-    int found = 0;
-    char ret_string[512];
-    strcpy(ret_string,"\0");
-    two = *np_key_val_arr;
-    while(*two != NULL) {
-        printf("In loop of forward conbert \n");
-        found = 0;
-        key_two = extract_key(*two);
-        one = *getn_key_val_arr;
-        while(*one != NULL) {
-            key_one = extract_key(*one);
-            printf("%s is in one\n", *one);
-            if(!(strcmp(key_one, key_two))) {
-                    strcat(ret_string, *one);
-                    strcat(ret_string, "##");
-                    found = 1;
-                    break;
-                }
-            one++;
-        }
-        if(found == 0) {
-            strcat(ret_string, *two);
-            strcat(ret_string, "##");
-        }
-      two++;
-    }
-    strcpy(fillit, ret_string);
-    fillit[(strlen(fillit)) - 2] = '\0';
-    return;
+    	char **one, **two, *key_one, *key_two;
+    	int found = 0;
+    	char ret_string[512];
+
+    	strcpy(ret_string,"\0");
+    	two = *np_key_val_arr;
+    	while(*two != NULL) {
+        	printf("In loop of forward conbert \n");
+        	found = 0;
+        	key_two = extract_key(*two);
+        	one = *getn_key_val_arr;
+        	while(*one != NULL) {
+            		key_one = extract_key(*one);
+            		printf("%s is in one\n", *one);
+            		if(!(strcmp(key_one, key_two))) {
+                    		strcat(ret_string, *one);
+                    		strcat(ret_string, "##");
+                    		found = 1;
+                    		break;
+                	}
+            		one++;
+        	}
+        	if(found == 0) {
+            		strcat(ret_string, *two);
+            		strcat(ret_string, "##");
+        	}
+      		two++;
+    	}
+    	strcpy(fillit, ret_string);
+    	fillit[(strlen(fillit)) - 2] = '\0';
+    	return;
 }
 
 
-char* get_val_from_args(char *usage, char* key) {
+char* get_val_from_args(char *usage, char* key) {   
+    	char *occ, keycopy[128], *retstr, localkeyval[256];
+    	int i = 0;
     
-    char *occ, keycopy[128], *retstr, localkeyval[256];
-    int i = 0;
-    
-    strcpy(keycopy, key);
-    strcat(keycopy, "::");
-    occ = strstr(usage, keycopy);
-    while(*occ != '#') {
-        localkeyval[i++] = *occ;
-        occ++;    
-    }
-    localkeyval[i] = '\0';
-    //pthread_mutex_lock(&malloc_mutex);
+    	strcpy(keycopy, key);
+    	strcat(keycopy, "::");
+    	occ = strstr(usage, keycopy);
+    	while(*occ != '#') {
+        	localkeyval[i++] = *occ;
+        	occ++;    
+    	}
+    	localkeyval[i] = '\0';
 
-    retstr = (char *)malloc(sizeof(char) * i);
-//    pthread_mutex_unlock(&malloc_mutex);
+    	retstr = (char *)malloc(sizeof(char) * i);
 
-    strcpy(retstr, localkeyval);
-    printf("Retstr is %s!\n", retstr);
-    return retstr;
-    
+    	strcpy(retstr, localkeyval);
+    	printf("Retstr is %s!\n", retstr);
+    	return retstr;
 }
     
 char *getfilename(char *argsbuf) {
 
 	char rough[1024], *retstr;
-	strcpy(rough, argsbuf);
-	printf("NJ.C   :  %s  args-.buf received from library call\n",
-	       argsbuf);
-	//choice = rough[len - 1];
-	char spid[32];
-	strcpy(spid, strtok(rough, "##"));
-	//pid = atoi(spid);
-/*for(j = 0; j < len ; j++) {
-			if(rough[j] == '#')
-			if(rough[j+1] == '#')
-					break;
-		}*/
+	char spid[32], filename[64];
 
-	//strcpy(rough, args->buf);
-	//strcpy(rough , &(rough[j+2]));
-	//strcpy(args->buf, rough);
+	strcpy(rough, argsbuf);
+	printf("NJ.C   :  %s  args-.buf received from library call\n", argsbuf);
+	strcpy(spid, strtok(rough, "##"));
 	printf("NJ.C   : Received args->buf IN FILENAME FUNCTION %s\n", argsbuf);
-	char filename[64];
 	strcpy(filename, "./");
 	strcat(filename, spid);
-strcat(filename, ".txt");
-printf("NJ.C   : Filename:%s\n\n", filename);
-//pthread_mutex_lock(&malloc_mutex);
-
-retstr = (char*)malloc(sizeof(char) * (strlen(filename) + 1));
-//pthread_mutex_unlock(&malloc_mutex);
-
-strcpy(retstr, filename);
-    return retstr;
-
+	strcat(filename, ".txt");
+	printf("NJ.C   : Filename:%s\n\n", filename);
+	retstr = (char*)malloc(sizeof(char) * (strlen(filename) + 1));
+	strcpy(retstr, filename);
+    	return retstr;
 }
