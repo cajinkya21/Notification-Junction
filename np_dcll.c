@@ -38,11 +38,8 @@
 
 void init_np(np_dcll * l)
 {
-
-	//printf("NP_DCLL  : In NP Init\n");    
 	l->head = NULL;
 	l->count = 0;
-	//printf("NP_DCLL : Initialization done\n");
 }
 
 /* Add an np with the given name*/
@@ -52,6 +49,16 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 
 	main_np_node *new;
 	
+	new = search_np(l, val);
+
+	if (new != NULL) {
+		printf("NP_DCLL : Existing NP\n");
+		new->data = (char *)malloc(sizeof(val) + 1);
+		new->usage = usage;
+		new->key_val_arr = *key_val_arr;
+		return ALREXST;
+	}
+
 	new = (main_np_node *) malloc(sizeof(main_np_node));
 
 	if (new == NULL) {
@@ -70,7 +77,6 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 	}
 
 	new->app_count = 0;
-	//printf("NP_DCLL  : COUNT in add_main_np_node: %d\n", l->count);
 
 	if (l->count == 0) {
 		l->head = new;
@@ -78,20 +84,16 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 		new->next = new;
 		strcpy(new->data, val);
 		l->count++;
-		//printf("NP_DCLL  : COUNT after add: %d\n", l->count);
 		return 0;
 	}
 
 	else if (l->count == 1) {
-		//printf("NP_DCLL  : l head %s\n", l->head->data);
 		l->head->prev = new;
 		l->head->next = new;
 		new->prev = l->head;
 		new->next = l->head;
 		strcpy(new->data, val);
-		//printf("NP_DCLL  : new data %s\n", l->head->next->data);
 		l->count++;
-		//printf("NP_DCLL  : COUNT after add: %d\n", l->count);
 		return 0;
 	}
 
@@ -101,9 +103,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 		new->next = l->head;
 		l->head->prev = new;
 		strcpy(new->data, val);
-		//printf("NP_DCLL  : new data %s\n", l->head->next->data);
 		l->count++;
-		//printf("NP_DCLL  : COUNT after add: %d\n", l->count);
 		return 0;
 	}
 
@@ -115,16 +115,16 @@ void print_np(np_dcll * l)
 {
 
 	int i = l->count;
+	main_np_node *ptr;
+	char **kptr;
 
 	if (l->count == 0) {
 		printf("NP_DCLL  : Nothing to print_np\n");
 		return;
-		
 	}
 
 	printf("\nTotal number of NPs : %d\n", l->count);
-	main_np_node *ptr;
-	char **kptr;
+	
 	ptr = l->head;
 	kptr = ptr->key_val_arr;
 
@@ -134,10 +134,12 @@ void print_np(np_dcll * l)
 	while (i) {
 		printf("%s   ", ptr->data);
 		printf("\t\t\t%d\n", ptr->app_count);
+		
 		while (*kptr) {
 			printf("\t\t\t\t%s\n", *kptr);
 			kptr++;
 		}
+		
 		printf("\n");
 		ptr = ptr->next;
 		i--;
@@ -145,7 +147,6 @@ void print_np(np_dcll * l)
 
 	printf("\nKey-Value ");
 
-	//printf("NP_DCLL  : \n");
 }
 
 /* Search for an np with the given name and return a pointer to that node if found */
@@ -190,7 +191,6 @@ int del_np(np_dcll * l, char *val)
 
 	main_np_node *p, *temp;
 	temp = search_np(l, val);
-	//printf("NP_DCLL  : Deleting THIS VALUE - %s\n\n", temp->data);
 
 	if (temp == NULL) {
 		//printf("NP_DCLL  : Not found %s\n", val);
@@ -207,7 +207,6 @@ int del_np(np_dcll * l, char *val)
 	}
 
 	else if (temp == l->head) {
-		//printf("NP_DCLL  : Asked to delete HEAD\n");
 		l->head = temp->next;
 		p = temp->prev;
 		(temp->next)->prev = p;
@@ -232,6 +231,7 @@ int del_np(np_dcll * l, char *val)
 int get_np_app_cnt(np_dcll * l, char *nval)
 {
 	main_np_node *temp;
+	
 	temp = search_np(l, nval);
 	if (temp == NULL)
 		return NOTFND;
@@ -244,13 +244,13 @@ void incr_np_app_cnt(np_dcll * l, char *nval)
 {
 
 	main_np_node *temp;
+	
 	temp = search_np(l, nval);
 
 	if (temp == NULL)
 		return;
 
 	temp->app_count++;
-	//printf("NP_DCLL  : App_cnt of %s = %d\n",nval, temp->app_count);
 }
 
 void decr_np_app_cnt(np_dcll * l, char *nval)
@@ -264,7 +264,6 @@ void decr_np_app_cnt(np_dcll * l, char *nval)
 
 	temp->app_count--;
 	printf("\t%d\n", temp->app_count);
-	//printf("NP_DCLL  : App_cnt of %s = %d\n",nval, temp->app_count);
 }
 
 int check_key_validity(np_dcll * npList, char * key_to_check) {

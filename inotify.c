@@ -3,46 +3,64 @@
 #include"inotify.h"
 
 /* flags for inotify in string format to match with requested paramaters */
-char *flags[] =
-    { "IN_ACCESS", "IN_ATTRIB", "IN_CLOSE_WRITE", "IN_CLOSE_NOWRITE",
-"IN_CREATE", "IN_DELETE", "IN_MODIFY", "IN_DELETE_SELF", "IN_MOVED_FROM",
-"IN_MOVED_TO", "IN_OPEN", "IN_DONT_FOLLOW", "IN_EXCL_UNLINK", "IN_MASK_ADD",
-"IN_ONESHOT", "IN_ONLYDIR" };
+
+char *flags[] =    {    "IN_ACCESS", 
+                        "IN_ATTRIB", 
+                        "IN_CLOSE_WRITE", 
+                        "IN_CLOSE_NOWRITE",
+                        "IN_CREATE", 
+                        "IN_DELETE", 
+                        "IN_MODIFY", 
+                        "IN_DELETE_SELF", 
+                        "IN_MOVED_FROM",
+                        "IN_MOVED_TO", 
+                        "IN_OPEN", 
+                        "IN_DONT_FOLLOW", 
+                        "IN_EXCL_UNLINK", 
+                        "IN_MASK_ADD",
+                        "IN_ONESHOT", 
+                        "IN_ONLYDIR" };
 
 /* flags for intotify in integer format */
-long long unsigned int values[] =
-    { IN_ACCESS, IN_ATTRIB, IN_CLOSE_WRITE, IN_CLOSE_NOWRITE, IN_CREATE,
-IN_DELETE, IN_MODIFY, IN_DELETE_SELF, IN_MOVED_FROM, IN_MOVED_TO, IN_OPEN, IN_DONT_FOLLOW,
-IN_EXCL_UNLINK, IN_MASK_ADD, IN_ONESHOT, IN_ONLYDIR };
+long long unsigned int values[] =    {
+                        IN_ACCESS, 
+                        IN_ATTRIB, 
+                        IN_CLOSE_WRITE, 
+                        IN_CLOSE_NOWRITE, 
+                        IN_CREATE,
+                        IN_DELETE, 
+                        IN_MODIFY, 
+                        IN_DELETE_SELF, 
+                        IN_MOVED_FROM, 
+                        IN_MOVED_TO, 
+                        IN_OPEN, 
+                        IN_DONT_FOLLOW,
+                        IN_EXCL_UNLINK, 
+                        IN_MASK_ADD, 
+                        IN_ONESHOT, 
+                        IN_ONLYDIR };
 
 /* FUNCTION TO GET NOTIFICATION */
 void getnotify(struct getnotify_threadArgs *args)
 {
 
-	printf("Args received in getnotify - %s!!!!\n", args->argssend);
+	
 
-	int length, i = 0;
-	int fd;
-	int wd;
-	char buffer[EVENT_BUF_LEN];
-	char pathname[256];
-
-	char mask[512];
-//      strcpy(mask, "IN_CREATE|IN_DELETE|IN_MODIFY");
-
+	int length, i = 0, fd, wd;
 	long long unsigned int maskval = 0;
 
-	char np_name[64], dir_name[256], flag_set[512], one[512], two[512],
-	    three[512];
-	char delimattr[3] = "##";
-	char delimval[3] = "::";
-	char retStr[1024];
+    char buffer[EVENT_BUF_LEN], pathname[256], mask[512];
+	char np_name[64], dir_name[256], flag_set[512], one[512], two[512], three[512];
+	char delimattr[3] = "##", delimval[3] = "::", retStr[1024];
+
+
+    printf("Args received in getnotify - %s!\n", args->argssend);
 
 	strcpy(one, strtok(args->argssend, delimattr));
 	strcpy(two, strtok(NULL, delimattr));
 	strcpy(three, strtok(NULL, delimattr));
 	printf("ONE : %s\nTWO : %s\nTHREE : %s\n", one, two, three);
-	strtok(one, delimval);	/* HERE */
+	strtok(one, delimval);	
 	strcpy(np_name, strtok(NULL, delimval));
 	strtok(two, delimval);
 	strcpy(dir_name, strtok(NULL, delimval));
@@ -70,8 +88,6 @@ void getnotify(struct getnotify_threadArgs *args)
 	}
 
 	wd = inotify_add_watch(fd, pathname, maskval);
-
-	//while(1) {
 
 	i = 0;
 	length = read(fd, buffer, sizeof(buffer));
@@ -203,13 +219,55 @@ void getnotify(struct getnotify_threadArgs *args)
 
 		}
 	}
-	//}
 
 	strcpy(args->argsrecv, retStr);
 
 	inotify_rm_watch(fd, wd);
 
 	close(fd);
+
+}
+
+/* FUNCTION TO CONVERT STRING MASK TO INTEGER */
+void getmask(long long unsigned int *maskval, char *mask)
+{
+
+	char copy[512];
+	char p[512];
+	char *ptr;
+	int i = 0;
+	int index;
+	
+	strcpy(copy, mask);
+	
+	printf("Mask is %s\n", mask);
+	
+	printf("Mask copy is %s\n", copy);
+
+	printf("PRINTING ALL TOKENS\n");
+
+	ptr = strtok(copy, "*");
+	printf("TOKEN - %s\n", ptr);
+	
+	while (ptr != NULL) {
+		strcpy(p, ptr);
+
+		for (i = 0; i < 16; i++) {
+
+			if (!strcmp(p, flags[i])) {
+				index = i;
+				printf("INDEX %d\n", index);
+				*maskval = *maskval | values[index];
+				printf("Value %llu\n", values[index]);
+				printf("Maskval = %llu\n", *maskval);
+				break;
+			}
+
+		}
+
+		printf("TOKEN - %s\n", ptr);
+		ptr = strtok(NULL, "*");
+	}
 
 }
 
@@ -332,73 +390,3 @@ int main(int argc, char *argv[]) {
 }
 */
 
-/* FUNCTION TO CONVERT STRING MASK TO INTEGER */
-void getmask(long long unsigned int *maskval, char *mask)
-{
-
-	char copy[512];
-	strcpy(copy, mask);
-	printf("Mask is %s\n", mask);
-	int i = 0;
-	int index;
-	//const char del = '*';
-	char p[512];
-	char *ptr;
-	printf("Mask copy is %s\n", copy);
-
-	printf("PRINTING ALL TOKENS\n");
-
-	ptr = strtok(copy, "*");
-	printf("TOKEN - %s\n", ptr);
-	while (ptr != NULL) {
-
-		strcpy(p, ptr);
-
-		for (i = 0; i < 16; i++) {
-			if (!strcmp(p, flags[i])) {
-				index = i;
-				printf("INDEX %d\n", index);
-				*maskval = *maskval | values[index];
-				printf("Value %llu\n", values[index]);
-				printf("Maskval = %llu\n", *maskval);
-				break;
-			}
-		}
-
-		printf("TOKEN - %s\n", ptr);
-		ptr = strtok(NULL, "*");
-	}
-
-/*
-
-	strcpy(p, strtok(copy, &del));
-	ptr = p;
-	//strcpy(p, strtok(m, &space));
-	printf("p is %s.\n", p);
-
-	while(ptr != NULL) {
-		
-		strcpy(p, ptr);
-	
-		printf("p is %s.\n", p);
-
-		for(i = 0; i < 16; i++) {
-			if(!strcmp(p, flags[i])) {
-				index = i;
-				printf("INDEX %d\n", index);
-				*maskval = *maskval | values[index];
-				printf("Value %d\n", values[index]);
-				printf("Maskval = %d\n", *maskval);
-				break;
-			}
-		}
-		
-		ptr = strtok(NULL, &del);
-		printf("ptr after strtok %s\n", ptr);
-		strcat(ptr, "\0");
-		
-	}
-
-	*/
-
-}
