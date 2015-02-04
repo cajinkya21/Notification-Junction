@@ -40,7 +40,6 @@ typedef struct extr_key_val {
 typedef struct np_node {
 	char *name;
 	struct np_node *next;
-	char *arguments;
 	struct extr_key_val *key_val_ptr;	/* The pointer to the list of structures containing pointers to the key-values */
 } np_node;
 

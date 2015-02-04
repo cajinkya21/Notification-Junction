@@ -188,7 +188,8 @@ main_np_node *search_np(np_dcll * l, char *val)
 
 int del_np(np_dcll * l, char *val)
 {
-
+	char **np_key_val_arr;
+	int i = 0;
 	main_np_node *p, *temp;
 	temp = search_np(l, val);
 
@@ -201,9 +202,6 @@ int del_np(np_dcll * l, char *val)
 		l->head->prev = NULL;
 		l->head->next = NULL;
 		l->head = NULL;
-		free(temp);
-		l->count--;
-		return 0;
 	}
 
 	else if (temp == l->head) {
@@ -211,19 +209,25 @@ int del_np(np_dcll * l, char *val)
 		p = temp->prev;
 		(temp->next)->prev = p;
 		p->next = temp->next;
-		free(temp);
-		l->count--;
-		return 0;
 	}
 
 	else {
 		p = temp->prev;
 		(temp->next)->prev = p;
 		p->next = temp->next;
-		free(temp);
-		l->count--;
-		return 0;
 	}
+
+	np_key_val_arr = temp->key_val_arr;
+	while(np_key_val_arr[i++] != NULL) {
+		free(np_key_val_arr[i]);
+	}
+	
+	free(temp->usage);
+	free(temp->data);
+	free(temp);
+	l->count--;
+	return 0;
+	
 }
 
 /* For the np with the given name, if found, find the count of the applications that have registered with it */
@@ -276,25 +280,65 @@ int check_key_validity(np_dcll * npList, char * key_to_check) {
 * This is the code for testing the list
 */
 
-/*
+/*void extractKeyVal(char *usage, char ***keyVal)
+{
+	int cnt = 0, i = 0;
+	char copyusage[512];
+	char *ptr;
+	
+	printf("NJ : EXTRACTVAL : usage is %s\n", usage);
+	
+	strcpy(copyusage, usage);
+	cnt = 4;					 
+	printf("EXTRACT KEYVAL : NJ : The count is %d\n", cnt);
+	
+	*keyVal = (char **)malloc((cnt + 1) * sizeof(char *));
+	ptr = strtok(copyusage, "##");
+
+	printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
+	(*keyVal)[i] = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+
+	printf("Before strcpy\n");
+	strcpy((*keyVal)[i], ptr);
+	printf("After strcpy\n");
+
+	for (i = 1; i < cnt; i++) {
+		ptr = strtok(NULL, "##");
+		if (!ptr) {
+			break;
+		}
+		printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
+		if (!((*keyVal)[i] = (char *)malloc(sizeof(char) * 128)))
+			perror("MALLOC IS THE CULPRIT");
+		printf("Before strcpy\n");
+		strcpy((*keyVal)[i], ptr);
+		printf("After strcpy\n");
+	}
+	(*keyVal)[i] = NULL;
+	return;
+}
 
 int main() {
-
+	char **keyVal;
 	np_dcll l;
 	char val[25];
 	init_np(&l);
 	int i;
 	int ch;
+	char *usage = (char *)malloc(sizeof(char) * 128);
 	while(1) {
-		//printf("NP_DCLL  : Enter Choice :\n0 - Print\n1 - Add NP\n2 - Search NP\n3 - Delete NP\n4 - Increment app_val\n5 - Get app_val\n\n");
+		printf("NP_DCLL  : Enter Choice :\n0 - Print\n1 - Add NP\n2 - Search NP\n3 - Delete NP\n4 - Increment app_val\n5 - Get app_val\n\n");
 		scanf("%d", &ch);
 		switch(ch) {
 	
 			case 0 :	print_np(&l);
 					break;
-			case 1 :	//printf("NP_DCLL  : Enter Val :\n");
+			case 1 :	printf("NP_DCLL  : Enter Val :\n");
 					scanf(" %s", val);
-					add_np(&l, val);
+					printf("Enter key val string:\n");
+					scanf("%s", usage);
+					extractKeyVal(usage, &keyVal);
+					add_np(&l, val, usage, &keyVal);
 					print_np(&l);
 					break;
 			case 2 : 	//printf("NP_DCLL  : Enter Val :\n");
@@ -313,12 +357,14 @@ int main() {
 			case 5 :	//printf("NP_DCLL  : Enter Val :\n");
 					scanf(" %s", val);
 					i = get_np_app_cnt(&l, val);
-					//printf("NP_DCLL  : app_cnt:%d\n", i);
+					printf("NP_DCLL  : app_cnt:%d\n", i);
 					break;
+			case 6 : 	
+					free(usage);
+					exit(0);
 		}
 	}
 	return 0;
 
 }
-
 */

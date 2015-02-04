@@ -304,8 +304,11 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 
 int del_app(app_dcll * l, char *val)
 {
-
+	char **np_key_val_arr;
+	int i = 0;
+	np_node *np_tail, *np_temp;
 	app_node *p, *temp, *q;
+	struct extr_key_val *extr_kv, *extr_kv_temp;
 
 	temp = search_app(l, val);
 	
@@ -318,9 +321,6 @@ int del_app(app_dcll * l, char *val)
 		l->head->prev = NULL;
 		l->head->next = NULL;
 		l->head = NULL;
-		free(temp);
-		l->count--;
-		return 0;
 	}
 
 	else if (temp == l->head && l->count > 1) {
@@ -329,18 +329,38 @@ int del_app(app_dcll * l, char *val)
 		p = temp->prev;
 		(temp->next)->prev = p;
 		p->next = temp->next;
-		free(temp);
-		l->count--;
-		return 0;
-	} else {
+	} 
+	else {
 		p = temp->prev;
 		q = temp->next;
 		p->next = q;
 		q->prev = p;
-		free(temp);
-		l->count--;
-		return 0;
 	}
+	
+	np_tail = temp->np_list_head;
+	
+	while(np_tail != NULL) {
+		extr_kv = np_tail->key_val_ptr;
+		while(extr_kv != NULL) {
+			np_key_val_arr = (extr_kv)->key_val_arr;
+		 	i = 0;
+			while(np_key_val_arr[i++] != NULL) {
+				free(np_key_val_arr[i]);
+			}
+			extr_kv_temp = extr_kv;
+			extr_kv = extr_kv->next;
+			free(extr_kv_temp);
+		}
+		np_temp = np_tail;
+		np_tail = np_tail->next;
+		free(np_temp->name);
+		free(np_temp);
+	}
+	
+	free(temp->data);
+	free(temp);
+	l->count--;
+	return 0;	
 }
 
 
@@ -369,7 +389,6 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 	}
 
 	n->name = (char *)malloc((strlen(nval) + 1) * sizeof(char));
-	n->arguments = NULL;
 	n->key_val_ptr = NULL;
 
 	if (n->name == NULL) {
@@ -409,7 +428,12 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 
 int del_np_from_app(app_dcll * l, char *aval, char *nval)
 {
-
+	char **np_key_val_arr;
+	int i = 0;
+	np_node *np_tail;
+	struct extr_key_val *extr_kv, *extr_kv_temp;
+	
+	int flag = 0;
 	app_node *temp = search_app(l, aval);
 	np_node *n, *m, *b;
 
@@ -429,8 +453,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		temp->np_list_head = m->next;
 		temp->np_count--;
 		printf("temp->np_count = %d\n", temp->np_count);
-		free(m);
-		return 0;
+		flag = 1;
 	} 
 	
 	else if (!strcmp(temp->np_list_head->name, nval)) {
@@ -439,8 +462,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		temp->np_list_head = n;
 		temp->np_count--;
 		printf("temp->np_count = %d\n", temp->np_count);
-		free(m);
-		return 0;
+		flag = 1;
 	} 
 	
 	else {
@@ -451,8 +473,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 			temp->np_list_head = m->next;
 			temp->np_count--;
 			printf("temp->np_count = %d\n", temp->np_count);
-		    free(m);
-			return 0;
+			flag = 1;
 		}
 		m = m->next;
 		
@@ -462,15 +483,33 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 				b->next = m->next;
 				temp->np_count--;
 				printf("temp->np_count = %d\n", temp->np_count);
-				free(m);
-				return 0;
+				flag = 1;
+				break;
 			}
-			
 			b = m;
 			m = m->next;
 		}
 	}
-	return -1;
+	if(flag == 0)
+		return -1;
+	
+	np_tail = m;
+		
+	extr_kv = np_tail->key_val_ptr;
+	while(extr_kv != NULL) {
+		np_key_val_arr = (extr_kv)->key_val_arr;
+	 	i = 0;
+		while(np_key_val_arr[i++] != NULL) {
+			free(np_key_val_arr[i]);
+		}
+		extr_kv_temp = extr_kv;
+		extr_kv = extr_kv->next;
+		free(extr_kv_temp);
+	}
+	free(np_tail->name);
+	free(np_tail);	
+		
+	return 0;
 }
 
 /* Below is the code to test the list */
