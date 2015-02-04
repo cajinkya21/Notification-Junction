@@ -306,6 +306,8 @@ int del_app(app_dcll * l, char *val)
 {
 
 	app_node *p, *temp, *q;
+
+	temp = search_app(l, val);
 	
 	if (temp == NULL) {
 		return NOTFND;

@@ -375,6 +375,13 @@ char *getnotify_app(char *buff)
 	pthread_join(tid_app_np_gn, NULL);
 	
 	strcpy(notification, arguments->argsrecv);
+	
+	free(buff);
+	buff = NULL;
+	
+	free(arguments);
+	arguments = NULL;
+	
 	return notification;	/*it will be callers responsibility to free the malloced notification string */
 }
 
@@ -856,6 +863,9 @@ void *NpGetNotifyMethod(void *arguments)
 	struct extr_key_val *temp, *m, *p;
  	np_node *nptr;
  	main_np_node *np_node;	
+ 	
+ 	pthread_mutex_lock(&app_list_mutex);
+ 	pthread_mutex_lock(&np_list_mutex);
 
 	bargs = (struct getnotify_threadArgs *)arguments;
 	args = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs)); 
@@ -905,7 +915,6 @@ for now I am sending the received strig directly as notificationstring for now I
 	printf("N.C : npname = %s\n", np_name);
 	/* Get the reg, Malloc space for a getn registration key_val  */
 
-	pthread_mutex_lock(&app_list_mutex);
 	nptr = getReg(&appList, appname, np_name);
 	
 	if (nptr) {
@@ -933,22 +942,19 @@ for now I am sending the received strig directly as notificationstring for now I
 	} else {
 		printf("EXTRAct : Next case else \n");
 		while (m != NULL) {
-            p = m; 
+            		p = m; 
 			m = m->next;
 		}
 		p->next = temp;
 		temp->next = NULL;  
 	}
 
-	pthread_mutex_unlock(&app_list_mutex);
 	printf("PRINTING BEFORE EXTRACT\n");
 
    
 	extractKeyVal(args->argssend, &pointer);
-	pthread_mutex_lock(&np_list_mutex);
 	np_node = search_np(&npList, np_name);
 	k = compare_array(&(np_node->key_val_arr), &pointer);
-	pthread_mutex_unlock(&np_list_mutex);
 	
     	if(k == 0)
         	printf("Array matched..\n");
@@ -957,14 +963,10 @@ for now I am sending the received strig directly as notificationstring for now I
         	return NULL;
 	}
 	temp->key_val_arr = pointer;
-	pthread_mutex_lock(&app_list_mutex);
 	print_app(&appList);
-	pthread_mutex_unlock(&app_list_mutex);
-	
 	printf("PRINTING AFTER EXTRACT\n");
-	pthread_mutex_lock(&np_list_mutex);
     	forward_convert(&(np_node->key_val_arr),&pointer, args->argssend);
-   	pthread_mutex_unlock(&np_list_mutex);
+
 	/* HANDLE NO NAME AND STUFF */
  	
  	countkey = get_val_from_args(args->argssend, "count");
@@ -1035,6 +1037,15 @@ for now I am sending the received strig directly as notificationstring for now I
 	/*HANDLE CLOSING PROPERLY. WHEN TO CLOSE */
 
 	printf("NJ.C   : ARGSRECV IN THREAD HANDLER = %s\n", args->argsrecv);
+	strcpy(bargs->argsrecv, args->argsrecv);
+	
+	
+	free(args);
+	args = NULL;
+	
+	
+	pthread_mutex_unlock(&np_list_mutex);
+	pthread_mutex_unlock(&app_list_mutex);
 
 	pthread_exit(NULL);
 
@@ -1074,7 +1085,7 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 
 void *ProceedGetnotifyMethod(void *arguments)
 {
-	char *received;
+	char *received, *buf;
 	struct proceedGetnThreadArgs *temparguments, *args;
 	int pid;
 	char rough[1024];
@@ -1092,9 +1103,15 @@ void *ProceedGetnotifyMethod(void *arguments)
 	printf("ARGS SENDING TO PROCEEDGETN PROCEEDGETNOTIFY are %s\n\n\n", args->buf);
 	fprintf(logfd, "2. buf is %s \n", args->buf);
 	
+	printf("Writing to log file\n\n");
+	
 	force_logs();
 	
 	strcpy(rough, args->buf);
+	
+	if(args->buf == NULL)
+		printf("args->buf is NULL\n\n");
+	
 	printf("NJ.C   :  %s  args-.buf received PROCEEDGETNOTIFY from library call\n", args->buf);
 	len = strlen(rough);
 	choice = rough[len - 1];
@@ -1122,7 +1139,9 @@ void *ProceedGetnotifyMethod(void *arguments)
 	fprintf(logfd, "3. buf is %s \n", args->buf);  
 	force_logs();
  
-	received = getnotify_app(args->buf);
+	buf = (char *)malloc(sizeof(char) * (strlen(args->buf) + 1 )); 
+ 	strcpy(buf, args->buf);
+	received = getnotify_app(buf);
 	while(received == NULL) {
 	        pthread_exit(NULL);
 	}
@@ -1155,6 +1174,12 @@ void *ProceedGetnotifyMethod(void *arguments)
 	}
 	
 	free(received);
+	received = NULL;
+	free(temparguments);
+	temparguments = NULL;
+	free(args);
+	args = NULL;
+	
 	pthread_exit(NULL);
 }
 
