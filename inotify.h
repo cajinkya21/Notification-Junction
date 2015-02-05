@@ -23,5 +23,7 @@ typedef struct getnotify_threadArgs {
 
 void getmask(long long unsigned int *maskval, char *mask);
 void getnotify(struct getnotify_threadArgs *args);
+char* get_val_from_args(char *usage, char* key);
+char* extract_val(char *key_val);
 
 #endif				/*inotify.h */
