@@ -50,27 +50,21 @@ void getnotify(struct getnotify_threadArgs *args)
 	long long unsigned int maskval = 0;
 
     char buffer[EVENT_BUF_LEN], pathname[256], mask[512];
-	char np_name[64], dir_name[256], flag_set[512], one[512], two[512], three[512];
-	char delimattr[3] = "##", delimval[3] = "::", retStr[1024];
+	char retStr[1024];
+	char *expt1, *expt2, *expt3;
+	
+	expt1 = get_val_from_args(args->argssend, "npname");
+	expt2 = get_val_from_args(args->argssend, "dir");
+	expt3 = get_val_from_args(args->argssend, "flags");
 
+	printf("=========================================NPNAME- %s, DIR - %s, FLAGS - %s\n============================", expt1, expt2, expt3);
 
     printf("Args received in getnotify - %s!\n", args->argssend);
 
-	strcpy(one, strtok(args->argssend, delimattr));
-	strcpy(two, strtok(NULL, delimattr));
-	strcpy(three, strtok(NULL, delimattr));
-	printf("ONE : %s\nTWO : %s\nTHREE : %s\n", one, two, three);
-	strtok(one, delimval);	
-	strcpy(np_name, strtok(NULL, delimval));
-	strtok(two, delimval);
-	strcpy(dir_name, strtok(NULL, delimval));
-	strtok(three, delimval);
-	strcpy(flag_set, strtok(NULL, delimval));
-	printf("NP NAME : %s\nDIR NAME : %s\nFLAG SET : %s\n", np_name,
-	       dir_name, flag_set);
+	strcpy(pathname, extract_val(expt2));
+	strcpy(mask, extract_val(expt3));
 
-	strcpy(pathname, dir_name);
-	strcpy(mask, flag_set);
+	printf("--------------------------pathname - %s. and mask is %s.------------\n", pathname, mask);
 
 	getmask(&maskval, mask);
 	printf("mask val in main is %llu\n", maskval);
@@ -269,6 +263,40 @@ void getmask(long long unsigned int *maskval, char *mask)
 		ptr = strtok(NULL, "*");
 	}
 
+}
+
+char* extract_val(char *key_val) {
+    
+    	char *ptr, *val;
+    	char temp[128] ;
+    
+    	strcpy(temp, key_val);
+    	ptr = strtok(temp, "::");
+    	ptr = (key_val + strlen(ptr) + 2);
+    	if(!ptr) printf("RETURNED NULL");
+    	val = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+    	strcpy(val, ptr);
+    	return val;
+}
+
+char* get_val_from_args(char *usage, char* key) {   
+    	char *occ, keycopy[128], *retstr, localkeyval[256];
+    	int i = 0;
+    
+    	strcpy(keycopy, key);
+    	strcat(keycopy, "::");
+    	occ = strstr(usage, keycopy);
+    	while(*occ != '#') {
+        	localkeyval[i++] = *occ;
+        	occ++;    
+    	}
+    	localkeyval[i] = '\0';
+
+    	retstr = (char *)malloc(sizeof(char) * i);
+
+    	strcpy(retstr, localkeyval);
+    	printf("Retstr is %s!\n", retstr);
+    	return retstr;
 }
 
 /*
