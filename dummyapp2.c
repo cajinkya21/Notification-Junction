@@ -2,13 +2,32 @@
 
 #include "lib.h"
 char str[512];
+int times,i;
+FILE* pidfd;	
+char pidfilename[64];
+char filebuffer[128];
 
 /* SIGNAL HANDLER FOR SIGUSR1 SINGAL THAT IS SENT FORM NJ WHEN NOTIFICATION ARRIVES  */
 void sigusrhandler(int signum) {
+
 	if (signum == SIGUSR1) {
-		printf("received SIGUSR1\n\n\n");
-	    app_unregister(str);	
-	    exit(0);			/* Application unregisters with inotify */
+		times++;
+		if(times == 1) {
+			if (!(pidfd = fopen(pidfilename, "r+"))) {
+				perror("dummyapp2.C   : not able to open  dummyapp file\n");
+				return;
+			}
+		}
+		printf("received SIGUSR1 %d \n\n\n",times);
+		i = 0;
+		fgets(filebuffer, 128,  pidfd );
+		/*do {
+			frea(filebuffer + i,sizeof(char),1,pidfd);
+		} while((filebuffer[i] != '\n'));*/
+		printf("Signalhandler Notification is %s \n",filebuffer);
+		return;
+	   // app_unregister(str);	
+	    //exit(0);			/* Application unregisters with inotify */
 	}	
 	
 }
@@ -16,6 +35,7 @@ void sigusrhandler(int signum) {
 int main(int argc, char* argv[]) {
 	int i,j;
 	int pid;
+	times = 0;
 	char arr[512],arr2[512];
 	struct stat s;
 	if(argc < 2) {
@@ -23,6 +43,7 @@ int main(int argc, char* argv[]) {
 	    exit(0);
 	}
 	int err = stat(argv[1], &s);
+
 	if(-1 == err) {
     		if(ENOENT == errno) {
 			printf("%s is not a valid argument Check if it exists\n",argv[1]);
@@ -70,6 +91,10 @@ int main(int argc, char* argv[]) {
 	printf("Arr2 is %s\n", arr2);
 
 	pid = getpid();
+	sprintf(str, "%d", pid );
+	strcpy(pidfilename,str);
+	strcat(pidfilename, ".txt");
+	strcat(str, "::inotify");
 	signal(SIGUSR1, sigusrhandler);
 	sigset_t mask;
 	sigemptyset (&mask);
@@ -79,8 +104,7 @@ int main(int argc, char* argv[]) {
 	printf(" Dummy app  signal handler set\n");
 	//sigprocmask (SIG_UNBLOCK, &mask, NULL);
 
-	sprintf(str, "%d", pid );
-	strcat(str, "::inotify");
+	
 
 	i = app_register(str);				/* Application registers with inotify */
 	printf("Dummy app app register done\n");
