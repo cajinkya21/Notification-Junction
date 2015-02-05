@@ -863,7 +863,7 @@ void *NpGetNotifyMethod(void *arguments)
 	struct extr_key_val *temp, *m, *p;
  	np_node *nptr;
  	main_np_node *np_node;	
- 	
+ 	int pid;
  	pthread_mutex_lock(&app_list_mutex);
  	pthread_mutex_lock(&np_list_mutex);
 
@@ -907,7 +907,8 @@ for now I am sending the received strig directly as notificationstring for now I
 
 	strcpy(appname, strtok(rough, delimattr));
 	printf("N.C : appname = %s\n", appname);
-
+	pid = atoi(appname);
+	fprintf(logfd, "77. pid is %d \n", pid);
 	strcpy(one, strtok(NULL, delimattr));
 	strtok(one, delimval);	/* HERE */
 	strcpy(np_name, strtok(NULL, delimval));
@@ -1025,7 +1026,12 @@ for now I am sending the received strig directly as notificationstring for now I
 		    printf("NJ.C   : %s madhe %d bytes WRITTEN\n", filename, al);
 		
 		strcpy(args->argssend, args_send_copy);
-		
+		//send signal call kill pid 
+		printf("NJ.C   : Before Sig, %d sending to pid = %d \n", getpid(), pid);
+		if (kill(pid, SIGUSR1) == -1) {
+			perror("Error in kill :\n");
+			    // CHANGE TO PRINTF LATER
+		}
 		//close
 		close(filefd);
 		
@@ -1087,7 +1093,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 {
 	char *received, *buf;
 	struct proceedGetnThreadArgs *temparguments, *args;
-	int pid;
+	//int pid;
 	char rough[1024];
 	char spid[32];
 	char choice;
@@ -1117,7 +1123,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 	choice = rough[len - 1];
 
 	strcpy(spid, strtok(rough, "##"));
-	pid = atoi(spid);
+	//pid = atoi(spid);
     	for(j = 0; j < len ; j++) {
 			if(rough[j] == '#')
 			if(rough[j+1] == '#')
@@ -1155,14 +1161,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 		strcat(received, "\n");
 		write((int)fd_pidnames, filename1, strlen(filename1));
 		printf("\n\nPID filename is written successfully.....\n\n");
-		printf("NJ.C   : Before Sig, %d sending to pid = %d \n", getpid(), pid);
-		           	           
-		    // Getn count
-		           
-		if (kill(pid, SIGUSR1) == -1) {
-			perror("Error in kill :\n");
-			    // CHANGE TO PRINTF LATER
-		}
+		
 		printf("NJ.C   : After Sig \n");
 	}
 	printf("NJ.C   : -->%s\n", args->buf);
