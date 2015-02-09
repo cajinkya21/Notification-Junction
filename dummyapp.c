@@ -8,7 +8,7 @@ void sigusrhandler(int signum)
 {
 	if (signum == SIGUSR1) {
 		printf("received SIGUSR1\n\n\n");
-		app_unregister(str);	/* Application unregisters with inotify */
+		appUnregister(str);	/* Application unregisters with inotify */
 			exit(0);
     }
 
@@ -59,10 +59,10 @@ int main(int argc, char *argv[])
 	sprintf(str, "%d", pid);
 	strcat(str, "::inotify");
 
-	app_register(str);	/* Application registers with inotify */
+	appRegister(str);	/* Application registers with inotify */
 	printf("Dummy app app register done\n");
 	printf("DUMMYAPP : Sending pid = %d\n", pid);
-	app_getnotify(pid, arr, 'N');
+	appGetnotify(pid, arr, 'N');
 	/* Application request for notification from inotify */
 
 	printf("Dummy app getnotify done \n");

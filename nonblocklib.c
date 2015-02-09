@@ -8,7 +8,7 @@
 
 /* Register the application by writing the key-value string to the NJ using socket  */
 
-int app_register(char *key_val_string)
+int appRegister(char *key_val_string)
 {
 
 	int sock;
@@ -44,7 +44,7 @@ int app_register(char *key_val_string)
 
 /* UnRegister the application by writing the key-value string to the NJ using socket  */
 
-int app_unregister(char *key_val_string)
+int appUnregister(char *key_val_string)
 {
 	int sock;
 	struct sockaddr_un server;
@@ -80,7 +80,7 @@ int app_unregister(char *key_val_string)
 
 /* Request for notifications from an np, the choice field is B for blocking and N for non-blocking */
 
-int app_getnotify(int pid, char *key_val_string, char choice)
+int appGetnotify(int pid, char *key_val_string, char choice)
 {
 	int sock,  rval;
 	struct sockaddr_un server;

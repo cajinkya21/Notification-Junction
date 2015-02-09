@@ -36,7 +36,7 @@
 
 /* Initialise */
 
-void init_np(np_dcll * l)
+void initNp(np_dcll * l)
 {
 	l->head = NULL;
 	l->count = 0;
@@ -44,12 +44,12 @@ void init_np(np_dcll * l)
 
 /* Add an np with the given name*/
 
-int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
+int addNp(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 {
 
 	main_np_node *new;
 	
-	new = search_np(l, val);
+	new = searchNp(l, val);
 
 	if (new != NULL) {
 		printf("NP_DCLL : Existing NP\n");
@@ -111,7 +111,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 
 /* Print the list */
 
-void print_np(np_dcll * l)
+void printNp(np_dcll * l)
 {
 
 	int i = l->count;
@@ -151,7 +151,7 @@ void print_np(np_dcll * l)
 
 /* Search for an np with the given name and return a pointer to that node if found */
 
-main_np_node *search_np(np_dcll * l, char *val)
+main_np_node *searchNp(np_dcll * l, char *val)
 {
 
 	int i = l->count;
@@ -186,12 +186,12 @@ main_np_node *search_np(np_dcll * l, char *val)
 
 /* Delete the np with the given name, if found */
 
-int del_np(np_dcll * l, char *val)
+int delNp(np_dcll * l, char *val)
 {
 	char **np_key_val_arr;
 	int i = 0;
 	main_np_node *p, *temp;
-	temp = search_np(l, val);
+	temp = searchNp(l, val);
 
 	if (temp == NULL) {
 		//printf("NP_DCLL  : Not found %s\n", val);
@@ -232,11 +232,11 @@ int del_np(np_dcll * l, char *val)
 
 /* For the np with the given name, if found, find the count of the applications that have registered with it */
 
-int get_np_app_cnt(np_dcll * l, char *nval)
+int getNpAppCnt(np_dcll * l, char *nval)
 {
 	main_np_node *temp;
 	
-	temp = search_np(l, nval);
+	temp = searchNp(l, nval);
 	if (temp == NULL)
 		return NOTFND;
 	return temp->app_count;
@@ -244,12 +244,12 @@ int get_np_app_cnt(np_dcll * l, char *nval)
 
 /* For the np with the given name, if found, increment the count of the applications that have registered with it */
 
-void incr_np_app_cnt(np_dcll * l, char *nval)
+void incrNpAppCnt(np_dcll * l, char *nval)
 {
 
 	main_np_node *temp;
 	
-	temp = search_np(l, nval);
+	temp = searchNp(l, nval);
 
 	if (temp == NULL)
 		return;
@@ -257,11 +257,11 @@ void incr_np_app_cnt(np_dcll * l, char *nval)
 	temp->app_count++;
 }
 
-void decr_np_app_cnt(np_dcll * l, char *nval)
+void decrNpAppCnt(np_dcll * l, char *nval)
 {
 
 	main_np_node *temp;
-	temp = search_np(l, nval);
+	temp = searchNp(l, nval);
 
 	if (temp == NULL)
 		return;
@@ -270,7 +270,7 @@ void decr_np_app_cnt(np_dcll * l, char *nval)
 	printf("\t%d\n", temp->app_count);
 }
 
-int check_key_validity(np_dcll * npList, char * key_to_check) {
+int checkKeyValidity(np_dcll * npList, char * key_to_check) {
     return 1;
 }
 
@@ -322,7 +322,7 @@ int main() {
 	char **keyVal;
 	np_dcll l;
 	char val[25];
-	init_np(&l);
+	initNp(&l);
 	int i;
 	int ch;
 	char *usage = (char *)malloc(sizeof(char) * 128);
@@ -331,32 +331,32 @@ int main() {
 		scanf("%d", &ch);
 		switch(ch) {
 	
-			case 0 :	print_np(&l);
+			case 0 :	printNp(&l);
 					break;
 			case 1 :	printf("NP_DCLL  : Enter Val :\n");
 					scanf(" %s", val);
 					printf("Enter key val string:\n");
 					scanf("%s", usage);
 					extractKeyVal(usage, &keyVal);
-					add_np(&l, val, usage, &keyVal);
-					print_np(&l);
+					addNp(&l, val, usage, &keyVal);
+					printNp(&l);
 					break;
 			case 2 : 	//printf("NP_DCLL  : Enter Val :\n");
 					scanf(" %s", val);
-					search_np(&l, val);
+					searchNp(&l, val);
 					break;
 			case 3 :	//printf("NP_DCLL  : Enter Val :\n");
 					scanf(" %s", val);
-					del_np(&l, val);
-					print_np(&l);
+					delNp(&l, val);
+					printNp(&l);
 					break;
 			case 4 :	//printf("NP_DCLL  : Enter Val :\n");
 					scanf(" %s", val);
-					incr_np_app_cnt(&l, val);
+					incrNpAppCnt(&l, val);
 					break;
 			case 5 :	//printf("NP_DCLL  : Enter Val :\n");
 					scanf(" %s", val);
-					i = get_np_app_cnt(&l, val);
+					i = getNpAppCnt(&l, val);
 					printf("NP_DCLL  : app_cnt:%d\n", i);
 					break;
 			case 6 : 	

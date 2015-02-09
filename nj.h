@@ -51,13 +51,54 @@
 #define StatSocket "statsock"
 #define APPLIMIT 32
 #define QLEN 32
-/*FUNCTION DECLARATIONS*/
 
-void print_stat();
-int register_app(char *buff);
-int unregister_app(char *buff);
-int register_np(char *buff);
+/*STRUCTURE FOR ARGUMENTS TO BE PASSED TO THREAD*/
+typedef struct thread_args {
+	int sock, msgsock, rval;
+	struct sockaddr_un server;
+	char buf[1024];
+	/*
+	* sock //
+	* msgsock //
+	* rval is to store return value of read() on the socket
+	* server // 
+	* buf is to send key_val pair argument to ProceedGetnotifyMethod thread
+	*/	
+} thread_args;
+
+typedef struct proceed_getn_thread_args	 {
+	char buf[1024];
+	/*
+	* buf is to send key_val pair argument to ProceedGetnotifyMethod thread
+	*/
+} proceed_getn_thread_args;
+
+/*STRUCTURE FOR ARGUMENTS TO BE PASSED TO GETNOTIFY THREAD*/
+typedef struct getnotify_thread_args {
+	char argssend[1024];	
+	char argsrecv[1024];
+	/*
+	* argssend is to send string of required notification request to getnotify thread
+	* argsrecv  tois fill the notification response by getnotify thread
+	*/
+} getnotify_thread_args;
+
+/* function returns negative value if error in registering app This function will add node in the app list  for first registration of app with particular NP*/
+int registerApp(char *buff);
+
+/*function returns negative value if error in registering np this function will add node in the np list for np registration of np */
+int registerNp(char *buff);
+
+/* function returns negative value if error in unregistering app eg(app not found in list)*/
+int unregisterApp(char *buff);
+
+/*function returns negative valuse if error in unregistering np eg(np not found in list)*/
 int unregister_np(char *buff);
+
+/*function to get notification */
+char *getnotifyApp(char *buff);
+
+/*FUNCTION DECLARATIONS*/
 
 void *PrintStat(void *arguments);
 void *AppRegMethod(void *arguments);
@@ -67,55 +108,23 @@ void *NpUnRegMethod(void *arguments);
 void *AppGetNotifyMethod(void *arguments);
 void *NpGetNotifyMethod(void *arguments);
 void *ProceedGetnotifyMethod(void *arguments);
-void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name);
-/*STRUCTURE FOR ARGUMENTS TO BE PASSED TO THREAD*/
-typedef struct threadArgs {
-	int sock, msgsock, rval;
-	struct sockaddr_un server;
-	char buf[1024];
-
-} threadArgs;
-
-typedef struct proceedGetnThreadArgs {
-	char buf[1024];
-} proceedGetnThreadArgs;
-
-/*STRUCTURE FOR ARGUMENTS TO BE PASSED TO GETNOTIFY THREAD*/
-typedef struct getnotify_threadArgs {
-	char argssend[1024];	/*getnotify thread will receive string of required notification request from this field */
-	char argsrecv[1024];	/*getnotify of np will fill the notification response in this field */
-} getnotify_threadArgs;
-
-/* function returns negative value if error in registering app This function will add node in the app list  for first registration of app with particular NP*/
-int register_app(char *buff);
-
-/*function returns negative value if error in registering np this function will add node in the np list for np registration of np */
-int register_np(char *buff);
-
-/* function returns negative value if error in unregistering app eg(app not found in list)*/
-int unregister_app(char *buff);
-
-/*function returns negative valuse if error in unregistering np eg(np not found in list)*/
-int unregister_np(char *buff);
-
-/*function to get notification */
-char *getnotify_app(char *buff);
+void decAllNpCounts(app_dcll * appList, np_dcll * npList, char *app_name);
 
 void sigintHandler(int signum);
 
 void extractKeyVal(char *usage, char ***keyVal);
 
-char* extract_key(char *key_val);
+char* extractKey(char *key_val);
 
-char* extract_val(char *key_val);
+char* extractVal(char *key_val);
 
-int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr);
+int compareArray(char *** np_key_val_arr, char *** getn_key_val_arr);
 
-void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr, char * fillit);
+void forwardConvert(char ***np_key_val_arr,char ***getn_key_val_arr, char * fillit);
 
-char* get_val_from_args(char *usage, char* key);
+char *getValFromArgs(char *usage, char* key);
 
-char *getfilename(char *argsbuf);
+char *getFilename(char *argsbuf);
 
 int countArgs(char *usage, char *count_occurence_of);
 

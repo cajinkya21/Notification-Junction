@@ -15,8 +15,8 @@
 #define AppReg "app_reg"
 #define AppUnReg "app_unreg"
 
-int app_register(char *key_val_string);
-int app_unregister(char *key_val_string);
-int app_getnotify(int pid, char *key_val_string, char choice);	/*choice is 1 for blocking and 0 for non_blocking...... */
+int appRegister(char *key_val_string);
+int appUnregister(char *key_val_string);
+int appGetnotify(int pid, char *key_val_string, char choice);	/*choice is 1 for blocking and 0 for non_blocking...... */
 
 #endif				/*lib.h */

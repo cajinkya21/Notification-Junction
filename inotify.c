@@ -41,7 +41,7 @@ long long unsigned int values[] =    {
                         IN_ONLYDIR };
 
 /* FUNCTION TO GET NOTIFICATION */
-void getnotify(struct getnotify_threadArgs *args)
+void getnotify(struct getnotify_thread_args *args)
 {
 
 	
@@ -53,16 +53,16 @@ void getnotify(struct getnotify_threadArgs *args)
 	char retStr[1024];
 	char *expt1, *expt2, *expt3;
 	
-	expt1 = get_val_from_args(args->argssend, "npname");
-	expt2 = get_val_from_args(args->argssend, "dir");
-	expt3 = get_val_from_args(args->argssend, "flags");
+	expt1 = getValFromArgs(args->argssend, "npname");
+	expt2 = getValFromArgs(args->argssend, "dir");
+	expt3 = getValFromArgs(args->argssend, "flags");
 
 	printf("=========================================NPNAME- %s, DIR - %s, FLAGS - %s\n============================", expt1, expt2, expt3);
 
     printf("Args received in getnotify - %s!\n", args->argssend);
 
-	strcpy(pathname, extract_val(expt2));
-	strcpy(mask, extract_val(expt3));
+	strcpy(pathname, extractVal(expt2));
+	strcpy(mask, extractVal(expt3));
 
 	printf("--------------------------pathname - %s. and mask is %s.------------\n", pathname, mask);
 
@@ -265,7 +265,7 @@ void getmask(long long unsigned int *maskval, char *mask)
 
 }
 
-char* extract_val(char *key_val) {
+char* extractVal(char *key_val) {
     
     	char *ptr, *val;
     	char temp[128] ;
@@ -279,7 +279,7 @@ char* extract_val(char *key_val) {
     	return val;
 }
 
-char* get_val_from_args(char *usage, char* key) {   
+char* getValFromArgs(char *usage, char* key) {   
     	char *occ, keycopy[128], *retstr, localkeyval[256];
     	int i = 0;
     

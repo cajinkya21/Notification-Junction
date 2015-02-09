@@ -17,7 +17,11 @@
     Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
-/* This file contains code for the dcll of np(s) */
+/*
+* This file contains code for the dcll of np(s) 
+*/
+
+
 #ifndef _NPDCLL_H
 #define _NPDCLL_H
 
@@ -37,6 +41,14 @@ typedef struct main_np_node {
 	char *usage;
 	int app_count;
 	char **key_val_arr;
+	/* 
+	* data is to store name of NP
+	* prev is a pointer to previous node of same type
+	* next is a pointer to previous node of same type
+	* usage is key_val pair string
+	* app_count is number od APPs registerd with NP
+	* key_val_arr is array of key_value pair ending with NULL
+	*/
 } main_np_node;
 
 /* The node for the dcll */
@@ -44,16 +56,20 @@ typedef struct main_np_node {
 typedef struct np_dcll {
 	main_np_node *head;
 	int count;
+	/*
+	* head is the pointer to the first node of NP List
+	* count is the number of NPs registered
+	*/
 } np_dcll;
 
-void init_np(np_dcll *l);
-int add_np(np_dcll *l, char *np_name, char *usage, char ***key_val_arr);
-void print_np(np_dcll *l);
-main_np_node *search_np(np_dcll *l, char *val);
-int del_np(np_dcll * l, char *val);
-void incr_np_app_cnt(np_dcll * l, char *nval);
-void decr_np_app_cnt(np_dcll * l, char *nval);
-int get_np_app_cnt(np_dcll * l, char *nval);
-int check_key_validity(np_dcll *npList, char *key_to_check);
+void initNp(np_dcll *l);
+int addNp(np_dcll *l, char *np_name, char *usage, char ***key_val_arr);
+void printNp(np_dcll *l);
+main_np_node *searchNp(np_dcll *l, char *val);
+int delNp(np_dcll * l, char *val);
+void incrNpAppCnt(np_dcll * l, char *nval);
+void decrNpAppCnt(np_dcll * l, char *nval);
+int getNpAppCnt(np_dcll * l, char *nval);
+int checkKeyValidity(np_dcll *npList, char *key_to_check);
 
 #endif				/*np_dcll.h */

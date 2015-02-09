@@ -16,14 +16,19 @@
 #define EVENT_SIZE  (sizeof(struct inotify_event))
 #define EVENT_BUF_LEN     (1024 * (EVENT_SIZE + 16))
 
-typedef struct getnotify_threadArgs {
-	char argssend[1024];	//getnotify thread will receive string of required notification request from this field 
-	char argsrecv[1024];	//getnotify of np will fill the notification response in this field
-} getnotify_threadArgs;
+typedef struct getnotify_thread_args {
+	char argssend[1024];	
+	char argsrecv[1024];	
+	/*
+	* argssend is to send string of required notification request to getnotify thread
+	* argsrecv  tois fill the notification response by getnotify thread
+	*/
+
+} getnotify_thread_args;
 
 void getmask(long long unsigned int *maskval, char *mask);
-void getnotify(struct getnotify_threadArgs *args);
-char* get_val_from_args(char *usage, char* key);
-char* extract_val(char *key_val);
+void getnotify(struct getnotify_thread_args *args);
+char* getValFromArgs(char *usage, char* key);
+char* extractVal(char *key_val);
 
 #endif				/*inotify.h */

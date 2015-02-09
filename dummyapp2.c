@@ -26,7 +26,6 @@ void sigusrhandler(int signum) {
 		} while((filebuffer[i] != '\n'));*/
 		printf("Signalhandler Notification is %s \n",filebuffer);
 		return;
-	   // app_unregister(str);	
 	    //exit(0);			/* Application unregisters with inotify */
 	}	
 	
@@ -106,12 +105,12 @@ int main(int argc, char* argv[]) {
 
 	
 
-	i = app_register(str);				/* Application registers with inotify */
+	i = appRegister(str);				/* Application registers with inotify */
 	printf("Dummy app app register done\n");
 	printf("DUMMYAPP : Sending pid = %d\n", pid);
-	i = app_getnotify(pid, arr, 'N' );
+	i = appGetnotify(pid, arr, 'N' );
 	printf("return value of getnotify1 : %d\n", i);								/* Application request for notification from inotify */
-    	j = app_getnotify(pid, arr2,'N');
+    	j = appGetnotify(pid, arr2,'N');
     	printf("return value of getnotify2 : %d\n", j);	
     	
     	

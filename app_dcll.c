@@ -35,7 +35,7 @@
 
 /* INITIALISE APPLICATION LIST */
 
-void init_app(app_dcll * l)
+void initApp(app_dcll * l)
 {
 	l->head = NULL;
 	l->count = 0;
@@ -43,12 +43,12 @@ void init_app(app_dcll * l)
 
 /* APPEND NEW APPLICATION-NODE TO THE LIST */
 
-int addapp_node(app_dcll * l, char *val)
+int addAppNode(app_dcll * l, char *val)
 {
 	
 	app_node *new, *tmp;
 	
-	tmp = search_app(l, val);	/* Search a app_node in app_list if it already exists */
+	tmp = searchApp(l, val);	/* Search a app_node in app_list if it already exists */
 	if (tmp != NULL)
 		return ALREXST;	/* If node already exists, it returns ALREXST error */
 	new = (app_node *) malloc(sizeof(app_node));
@@ -102,7 +102,7 @@ int addapp_node(app_dcll * l, char *val)
 
 /* PRINT LIST */
 
-void print_app(app_dcll * l)
+void printApp(app_dcll * l)
 {
 
 	int i = l->count;
@@ -208,7 +208,7 @@ void printNpKeyVal(app_node * temp)
 
 /* SEARCH APP, RETURN POINTER TO NODE */
 
-app_node *search_app(app_dcll * l, char *val)
+app_node *searchApp(app_dcll * l, char *val)
 {
 
 	int i = l->count;
@@ -244,7 +244,7 @@ int searchReg(app_dcll * l, char *appname, char *npname)
 	app_node *ptr;
 	np_node *nptr;
 	
-	ptr = search_app(l, appname);
+	ptr = searchApp(l, appname);
 
 	printf("Searching Registration\n");
 
@@ -275,7 +275,7 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 	app_node *ptr;
 	np_node *nptr;
 	
-	ptr = search_app(l, appname);
+	ptr = searchApp(l, appname);
 
 	if (ptr == NULL)
 		return 0;
@@ -302,7 +302,7 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 
 /* DELETE APP */
 
-int del_app(app_dcll * l, char *val)
+int delApp(app_dcll * l, char *val)
 {
 	char **np_key_val_arr;
 	int i = 0;
@@ -310,7 +310,7 @@ int del_app(app_dcll * l, char *val)
 	app_node *p, *temp, *q;
 	struct extr_key_val *extr_kv, *extr_kv_temp;
 
-	temp = search_app(l, val);
+	temp = searchApp(l, val);
 	
 	if (temp == NULL) {
 		return NOTFND;
@@ -364,13 +364,13 @@ int del_app(app_dcll * l, char *val)
 }
 
 
-int add_np_to_app(app_dcll * l, char *aval, char *nval)
+int addNpToApp(app_dcll * l, char *aval, char *nval)
 {
 
 	app_node *temp;
 	np_node *n, *m, *b;
 
-    temp = search_app(l, aval);
+    temp = searchApp(l, aval);
 
 	if (temp == NULL) {
 		//printf("APP_DCLL : NOT FOUND %s\n", aval);
@@ -426,7 +426,7 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 
 /* DELETE NP FROM APPLICATION */
 
-int del_np_from_app(app_dcll * l, char *aval, char *nval)
+int delNpFromApp(app_dcll * l, char *aval, char *nval)
 {
 	char **np_key_val_arr;
 	int i = 0;
@@ -434,7 +434,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 	struct extr_key_val *extr_kv, *extr_kv_temp;
 	
 	int flag = 0;
-	app_node *temp = search_app(l, aval);
+	app_node *temp = searchApp(l, aval);
 	np_node *n, *m, *b;
 
 	if (l->count == 0)
@@ -518,40 +518,40 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 
 	app_dcll l;
 	char val[25], aval[25], nval[25];
-	init_app(&l);
+	initApp(&l);
 	
 	int ch;
 	while(1) {
-		//printf("APP_DCLL : Enter Choice :\n0 - print_app\n1 - Add App\n2 - search_app App\n3 - Delete App\n4 - Add NP to App\n5 - Delete NP from App\n");
+		//printf("APP_DCLL : Enter Choice :\n0 - printApp\n1 - Add App\n2 - searchApp App\n3 - Delete App\n4 - Add NP to App\n5 - Delete NP from App\n");
 		scanf("%d", &ch);
 		switch(ch) {
 	
-			case 0 :	print_app(&l);
+			case 0 :	printApp(&l);
 					break;
 			case 1 :	//printf("APP_DCLL : Enter Val :\n");
 					scanf(" %s", val);
-					addapp_node(&l, val);
-					print_app(&l);
+					addAppNode(&l, val);
+					printApp(&l);
 					break;
 			case 2 : 	//printf("APP_DCLL : Enter Val :\n");
 					scanf(" %s", val);
-					search_app(&l, val);
+					searchApp(&l, val);
 					break;
 			case 3 :	//printf("APP_DCLL : Enter Val :\n");
 					scanf(" %s", val);
-					del_app(&l, val);
-					print_app(&l);
+					delApp(&l, val);
+					printApp(&l);
 					break;
 			case 4 :	//printf("APP_DCLL : Enter Val for App and NP:\n");
 					scanf(" %s %s", aval, nval);
 					//printf("APP_DCLL : Aval - %s| and nval - %s|\n", aval, nval);
-					add_np_to_app(&l, aval, nval);
-					print_app(&l);
+					addNpToApp(&l, aval, nval);
+					printApp(&l);
 					break;
 			case 5 :	//printf("APP_DCLL : Enter Val for App and NP:\n");
 					scanf(" %s %s", aval, nval);
-					del_np_from_app(&l, aval, nval);
-					print_app(&l);
+					delNpFromApp(&l, aval, nval);
+					printApp(&l);
 					break;
 		}
 	}

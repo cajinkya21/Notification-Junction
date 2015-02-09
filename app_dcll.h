@@ -32,7 +32,11 @@
 
 typedef struct extr_key_val {
 	char **key_val_arr;
-	struct extr_key_val *next;
+	struct extr_key_val *next;	
+	/*	
+	* key_val_arr is the pointer to the key-value pair, ending with NULL
+	* next is the pointer to the next set of key-value pair stored in extr_key_val structure
+	*/
 } extr_key_val;
 
 /* NP NODE STRUCTURE */
@@ -40,7 +44,12 @@ typedef struct extr_key_val {
 typedef struct np_node {
 	char *name;
 	struct np_node *next;
-	struct extr_key_val *key_val_ptr;	/* The pointer to the list of structures containing pointers to the key-values */
+	struct extr_key_val *key_val_ptr;
+	/*
+	* name is to store name of NP
+	* next is the pointer to the node of same type
+	* key_val_ptr is a pointer to the list of structures containing pointers to the key-values
+	*/
 } np_node;
 
 /* APPLICATION NODE STRUCTURE */
@@ -51,6 +60,13 @@ typedef struct app_node {
 	struct app_node *next;
 	np_node *np_list_head;
 	int np_count;
+	/*
+	* data is to store name of APP
+	* prev is a pointer to the previous node of same type
+	* next is a pointer to the next node of same type
+	* np_list_head is the pointer to the trailing list of NPs, APP registered with
+	* np_count is the number of NPs, APP registered with
+	*/
 } app_node;
 
 /* APPLICATION LIST STRUCTURE */
@@ -58,17 +74,21 @@ typedef struct app_node {
 typedef struct app_dcll {
 	app_node *head;
 	int count;
+	/*
+	* head is the pointer to the first node in App List
+	* count is the number of applications registered with NJ
+	*/
 } app_dcll;
 
-void init_app(app_dcll * l);
-int addapp_node(app_dcll * l, char *val);
-void print_app(app_dcll * l);
-app_node *search_app(app_dcll * l, char *val);
+void initApp(app_dcll * l);
+int addAppNode(app_dcll * l, char *val);
+void printApp(app_dcll * l);
+app_node *searchApp(app_dcll * l, char *val);
 int searchReg(app_dcll * l, char *appname, char *npname);
 np_node *getReg(app_dcll *, char *appname, char *npname);
-int del_app(app_dcll * l, char *val);
-int add_np_to_app(app_dcll * l, char *aval, char *nval);
-int del_np_from_app(app_dcll * l, char *aval, char *nval);
+int delApp(app_dcll * l, char *val);
+int addNpToApp(app_dcll * l, char *aval, char *nval);
+int delNpFromApp(app_dcll * l, char *aval, char *nval);
 void printNpKeyVal(app_node * temp);
 
 #endif				/*app_dcll.h */

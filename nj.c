@@ -54,13 +54,13 @@ void force_logs(void) {
 }
  
 /* FUNCTION TO PRINT STATISTICS OF NJ */
-void print_stat()
+void printStat()
 {
 	pthread_mutex_lock(&np_list_mutex);
-	print_np(&npList);
+	printNp(&npList);
 	pthread_mutex_unlock(&np_list_mutex);
 	pthread_mutex_lock(&app_list_mutex);
-	print_app(&appList);
+	printApp(&appList);
 	pthread_mutex_unlock(&app_list_mutex);
 }
 
@@ -85,7 +85,7 @@ void sigintHandler(int signum)
 }
 
 /*TO REGISTER APP with NJ*/
-int register_app(char *buff)
+int registerApp(char *buff)
 {
 	char app_name[32], np_name[32], delim[3] = "::";
 	char *s;
@@ -101,17 +101,17 @@ int register_app(char *buff)
     	
     	if(np_name != NULL) {
     		/*Check if NP provided is registered or not */
-		if (search_np(&npList, np_name) == NULL) {				/* NP is not registerd */
+		if (searchNp(&npList, np_name) == NULL) {				/* NP is not registerd */
 			printf("NJ.C   :  NJ : Np not registered. Register NP first.\n");
 			return -1;
 		}
 		
 		/*Check if app is already registered */
-		if (search_app(&appList, app_name) == NULL) {				/* Registering app for the first time */
-			addapp_node(&appList, app_name);
+		if (searchApp(&appList, app_name) == NULL) {				/* Registering app for the first time */
+			addAppNode(&appList, app_name);
 			printf("Added for the first time\n");
-			add_np_to_app(&appList, app_name, np_name);                               
-			incr_np_app_cnt(&npList, np_name);
+			addNpToApp(&appList, app_name, np_name);                               
+			incrNpAppCnt(&npList, np_name);
 		}
 		else {									/* Adding NP registration to already */
 											/* existing App */
@@ -121,21 +121,21 @@ int register_app(char *buff)
 				return -2;
 			}
 			else {	 
-				add_np_to_app(&appList, app_name, np_name);                               
-				incr_np_app_cnt(&npList, np_name);
+				addNpToApp(&appList, app_name, np_name);                               
+				incrNpAppCnt(&npList, np_name);
 			}
 		}
 	
 	}
 	else {
-		addapp_node(&appList, app_name);
+		addAppNode(&appList, app_name);
 		printf("Only app is added successfully.\n");
 	}
 	
 	printf("NJ.C   : AppList:\n");
-	print_app(&appList);
+	printApp(&appList);
 	printf("NJ.C   : NPList:\n");
-	print_np(&npList);
+	printNp(&npList);
 	
 	pthread_mutex_unlock(&np_list_mutex);
     	pthread_mutex_unlock(&app_list_mutex);
@@ -144,7 +144,7 @@ int register_app(char *buff)
 }
 
 /*FUNCTION TO UNREISTER AN APP*/
-int unregister_app(char *buff)
+int unregisterApp(char *buff)
 {
 	char app_name[32], np_name[32], delim[3] = "::";
 	char *np_ptr;
@@ -164,9 +164,9 @@ int unregister_app(char *buff)
 
 	if (np_ptr == NULL) {
 		printf("NJ.C   : np_name == NULL case in unregister app\n");
-		if(search_app(&appList, app_name) != NULL) {
-			del_app(&appList, app_name);		
-			dec_all_np_counts(&appList, &npList, app_name);
+		if(searchApp(&appList, app_name) != NULL) {
+			delApp(&appList, app_name);		
+			decAllNpCounts(&appList, &npList, app_name);
 			printf("NJ.C : Unregistration done\n");
 		}
 		else {
@@ -179,8 +179,8 @@ int unregister_app(char *buff)
 	else {
 	    	if (searchReg(&appList, app_name, np_name) == -1) {
 			printf("NJ.C   : NJ : REGISTRATION FOUND.\n");
-			del_np_from_app(&appList, app_name, np_name);
-			decr_np_app_cnt(&npList, np_name);
+			delNpFromApp(&appList, app_name, np_name);
+			decrNpAppCnt(&npList, np_name);
 		}
 		else {
 			printf("NJ : Invalid argument to app_unregister : Registration not found\n");
@@ -189,9 +189,9 @@ int unregister_app(char *buff)
 	}
 	
 	printf("NJ.C   : AppList:\n");
-	print_app(&appList);
+	printApp(&appList);
 	printf("NJ.C   : NPList:\n");
-	print_np(&npList);	
+	printNp(&npList);	
 	
 	pthread_mutex_unlock(&np_list_mutex);
   	pthread_mutex_unlock(&app_list_mutex);
@@ -200,7 +200,7 @@ int unregister_app(char *buff)
 }
 
 /*FUNCTION TO REGISTER AN NP*/
-int register_np(char *buff)
+int registerNp(char *buff)
 {
 	char np_name[32], usage[512], delimusage[3] = "==";
 	char *s;
@@ -218,14 +218,14 @@ int register_np(char *buff)
 	strcpy(usage, s);
 	extractKeyVal(usage, &keyVal);
 	pthread_mutex_lock(&np_list_mutex);	
-	new = search_np(&npList, np_name);					/* Search for already existing registration */
+	new = searchNp(&npList, np_name);					/* Search for already existing registration */
 	
 	if(new != NULL) {
-		del_np(&npList, np_name);					/* Delete already existing registration to modify */ 											/* parameters */
+		delNp(&npList, np_name);					/* Delete already existing registration to modify */ 											/* parameters */
 	}
 	
-	add_np(&npList, np_name, usage, &keyVal);
-	print_np(&npList);
+	addNp(&npList, np_name, usage, &keyVal);
+	printNp(&npList);
 	pthread_mutex_unlock(&np_list_mutex);
 	
 	return 1;
@@ -281,7 +281,7 @@ int countArgs(char *myString, char *delim) {
 }
 
 /*FUNCTION TO UNREGISTER AN NP*/
-int unregister_np(char *buff)
+int unregisterNp(char *buff)
 {
 	char np_name[32];
 	char delim[3] = "::";
@@ -296,7 +296,7 @@ int unregister_np(char *buff)
 
 
 	app_cnt = appList.count;
-    	if(search_np(&npList, np_name) != NULL) {
+    	if(searchNp(&npList, np_name) != NULL) {
 		while(app_cnt != 0) {
 			printf("App::%s\n", aptr->data);
 			printf("Before searchReg\n");
@@ -334,7 +334,7 @@ int unregister_np(char *buff)
 			aptr = aptr->next;
 			app_cnt--;	   	
     		}
-    		del_np(&npList, np_name);
+    		delNp(&npList, np_name);
 	
 	}
 	else {
@@ -342,8 +342,8 @@ int unregister_np(char *buff)
 		return -1;
 	}
 	
-	print_np(&npList);
-	print_app(&appList);
+	printNp(&npList);
+	printApp(&appList);
     	pthread_mutex_unlock(&np_list_mutex);
     	pthread_mutex_unlock(&app_list_mutex);
     	
@@ -351,17 +351,17 @@ int unregister_np(char *buff)
 }
 
 /*FUNCTION TO GET NOTIFICATION FOR APP*/
-char *getnotify_app(char *buff)
+char *getnotifyApp(char *buff)
 {	
 	char *notification;
-	struct getnotify_threadArgs *arguments;
+	struct getnotify_thread_args *arguments;
 	pthread_t tid_app_np_gn;
 	
 	fprintf(logfd, "6. buf is %s \n", buff);
 	force_logs();
 
 	notification = (char *)malloc(1024 * sizeof(char));
-	arguments = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs));
+	arguments = (struct getnotify_thread_args *)malloc(sizeof(struct getnotify_thread_args));
 	strcpy(arguments->argssend, buff);
 
 
@@ -389,7 +389,7 @@ char *getnotify_app(char *buff)
 int main()
 {
 	sigset_t mask;
-	struct threadArgs stat, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
+	struct thread_args stat, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
 	pthread_t tid_stat, tid_app_reg, tid_app_unreg, tid_np_reg, tid_np_unreg, tid_app_getnotify;
 	
 	if (!(logfd = fopen("Logs", "a+"))) {
@@ -442,12 +442,12 @@ int main()
 	
 	/*Initialize NP List */
 	pthread_mutex_lock(&np_list_mutex);
-	init_np(&npList);
+	initNp(&npList);
 	pthread_mutex_unlock(&np_list_mutex);	
 	
 	/*Initialize APP List */
 	pthread_mutex_lock(&app_list_mutex);
-	init_app(&appList);
+	initApp(&appList);
 	pthread_mutex_unlock(&app_list_mutex);
 	
 	/* CREATE SOCKET FOR STAT */
@@ -578,7 +578,7 @@ int main()
 /* APP REGISTER METHOD THAT WILL RUN IN THREAD FORKED FOR APP REGISTRATION*/
 void *PrintStat(void *arguments)
 {
-	struct threadArgs *args = arguments;
+	struct thread_args *args = arguments;
 	
 	printf("In STAT\n");
 	printf("args -> msgsock - %d\n", args->msgsock);
@@ -595,7 +595,7 @@ void *PrintStat(void *arguments)
 					perror("reading stream message");
 				else if (args->rval == 0) {
 					printf("\nPrinting Statistics :\n");
-					print_stat();
+					printStat();
 				}
 			} while (args->rval > 0);
 
@@ -612,7 +612,7 @@ void *PrintStat(void *arguments)
 
 void *AppRegMethod(void *arguments)
 {
-	struct threadArgs *args = arguments;
+	struct thread_args *args = arguments;
 	
 	printf("NJ.C   : In Reg\n");
 	printf("NJ.C   : args -> msgsock - %d\n", args->msgsock);
@@ -632,7 +632,7 @@ void *AppRegMethod(void *arguments)
 					printf("NJ.C   : Ending connection\n");
 				else {	/*code to register application ie add entry in list */
 					printf("NJ.C   : -->%s\n", args->buf);
-					i = register_app(args->buf);
+					i = registerApp(args->buf);
 					if (i < 0) {
 						printf("NJ.C   : Error in registering, try again\n");
 					}
@@ -653,7 +653,7 @@ void *AppRegMethod(void *arguments)
 /*APP UNREGISTER METHOD THAT WILL RUN IN THREAD FORKED FOR UNREGISTRATION*/
 void *AppUnRegMethod(void *arguments)
 {
-	struct threadArgs *args = arguments;
+	struct thread_args *args = arguments;
 	
 	printf("NJ.C   : In UnReg\n");
 	printf("NJ.C   : args -> msgsock - %d\n", args->msgsock);
@@ -674,7 +674,7 @@ void *AppUnRegMethod(void *arguments)
 				else if (args->rval == 0)
 					printf("NJ.C   : Ending connection\n");
 				else {
-					i = unregister_app(args->buf);
+					i = unregisterApp(args->buf);
 					printf("NJ.C   : -->%s\n", args->buf);
 
 					if (i < 0)
@@ -697,7 +697,7 @@ void *AppUnRegMethod(void *arguments)
 /*NP REGISTER METHOD THAT WILL RUN IN THREAD FORKED FOR NP REGISTRATION*/
 void *NpRegMethod(void *arguments)
 {
-	struct threadArgs *args = arguments;
+	struct thread_args *args = arguments;
 	
 	printf("NJ.C   : In NpReg\n");
 	printf("NJ.C   : args -> msgsock - %d\n", args->msgsock);
@@ -719,7 +719,7 @@ void *NpRegMethod(void *arguments)
 					printf("NJ.C   : Ending connection\n");
 				else {	/*code to register application ie add entry in list */
 					printf("NJ.C   : -->%s\n", args->buf);
-					i = register_np(args->buf);
+					i = registerNp(args->buf);
 					if (i < 0)
 						printf("NJ.C   : Error in registering\n");
 					break;
@@ -739,7 +739,7 @@ void *NpRegMethod(void *arguments)
 /*NP UNREGISTER METHOD THAT WILL RUN IN THREAD FORKED FOR NP UNREGISTRATION*/
 void *NpUnRegMethod(void *arguments)
 {
-	struct threadArgs *args = arguments;
+	struct thread_args *args = arguments;
 	printf("NJ.C   : In NpUnReg\n");
 	printf("NJ.C   : args -> msgsock - %d\n", args->msgsock);
 
@@ -758,7 +758,7 @@ void *NpUnRegMethod(void *arguments)
 				else if (args->rval == 0)
 					printf("NJ.C   : Ending connection\n");
 				else {
-					i = unregister_np(args->buf);
+					i = unregisterNp(args->buf);
 					printf("NJ.C   : -->%s\n", args->buf);
 
 					if (i < 0)
@@ -781,8 +781,8 @@ void *NpUnRegMethod(void *arguments)
 /*APP GET NOTIFY METHOD THAT WILL RUN IN THREAD FOR GET NOTIFICATION*/
 void *AppGetNotifyMethod(void *arguments)
 {
-	struct threadArgs *args = arguments;
-	struct proceedGetnThreadArgs *sendargs;
+	struct thread_args *args = arguments;
+	struct proceed_getn_thread_args *sendargs;
 	struct sockaddr_un server;
 	int i = 0;
 	
@@ -806,7 +806,7 @@ void *AppGetNotifyMethod(void *arguments)
 		else
 			do {
 				pthread_mutex_lock(&getnotify_socket_mutex);
-				sendargs = (struct proceedGetnThreadArgs *)malloc(sizeof(struct proceedGetnThreadArgs));
+				sendargs = (struct proceed_getn_thread_args *)malloc(sizeof(struct proceed_getn_thread_args));
 			
 				bzero(args->buf, sizeof(args->buf));
 				args->rval = read(args->msgsock, args->buf, 1024);
@@ -859,7 +859,7 @@ void *NpGetNotifyMethod(void *arguments)
 	char *error, *countkey, *filename;
 	char **pointer;    	
     	int j, filefd, al, count = -1, k, x;
-	struct getnotify_threadArgs *bargs, *args; 
+	struct getnotify_thread_args *bargs, *args; 
 	struct extr_key_val *temp, *m, *p;
  	np_node *nptr;
  	main_np_node *np_node;	
@@ -867,8 +867,8 @@ void *NpGetNotifyMethod(void *arguments)
  	pthread_mutex_lock(&app_list_mutex);
  	pthread_mutex_lock(&np_list_mutex);
 
-	bargs = (struct getnotify_threadArgs *)arguments;
-	args = (struct getnotify_threadArgs *)malloc(sizeof(struct getnotify_threadArgs)); 
+	bargs = (struct getnotify_thread_args *)arguments;
+	args = (struct getnotify_thread_args *)malloc(sizeof(struct getnotify_thread_args)); 
 
 
 
@@ -877,7 +877,7 @@ for now I am sending the received strig directly as notificationstring for now I
 	*args = *bargs;
 
 	fprintf(logfd, "8. buf is %s \n", args->argssend);
-	void (*getnotify) (struct getnotify_threadArgs *);
+	void (*getnotify) (struct getnotify_thread_args *);
 	
 	
 	printf("1. args->argssend is %s\n", args->argssend);
@@ -887,7 +887,7 @@ for now I am sending the received strig directly as notificationstring for now I
     	strcpy(args_send_copy_2, args->argssend);
 
     	fprintf(logfd, "9. buf is %s \n", args->argssend);
-    	filename = getfilename(args_send_copy_2);
+    	filename = getFilename(args_send_copy_2);
     	fprintf(logfd, "10. buf is %s \n", args->argssend);
     	
 	force_logs();
@@ -954,8 +954,8 @@ for now I am sending the received strig directly as notificationstring for now I
 
    
 	extractKeyVal(args->argssend, &pointer);
-	np_node = search_np(&npList, np_name);
-	k = compare_array(&(np_node->key_val_arr), &pointer);
+	np_node = searchNp(&npList, np_name);
+	k = compareArray(&(np_node->key_val_arr), &pointer);
 	
     	if(k == 0)
         	printf("Array matched..\n");
@@ -964,18 +964,18 @@ for now I am sending the received strig directly as notificationstring for now I
         	return NULL;
 	}
 	temp->key_val_arr = pointer;
-	print_app(&appList);
+	printApp(&appList);
 	printf("PRINTING AFTER EXTRACT\n");
-    	forward_convert(&(np_node->key_val_arr),&pointer, args->argssend);
+    	forwardConvert(&(np_node->key_val_arr),&pointer, args->argssend);
 
 	/* HANDLE NO NAME AND STUFF */
  	
- 	countkey = get_val_from_args(args->argssend, "count");
-    	count = atoi(extract_val(countkey));
+ 	countkey = getValFromArgs(args->argssend, "count");
+    	count = atoi(extractVal(countkey));
     	printf("count is %d!\n", count);
     	fprintf(logfd, "99. count is %d! for buf %s!\n", count, args->argssend);
 	
- 	x = get_np_app_cnt(&npList, np_name);
+ 	x = getNpAppCnt(&npList, np_name);
 	printf("NJ.C   : App Count = %d for NP = %s\n", x, np_name);
 
 	/* App count will be 0 initially. App can call getnotify only after NP has registered, and doing App_getnotify for the first time increments the count to 1. Therefore compare count with 1 to do dlopen() for the first time */
@@ -1058,7 +1058,7 @@ for now I am sending the received strig directly as notificationstring for now I
 	/* Functions have to be written such that the argument will be the address of struct args */
 }
 
-void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
+void decAllNpCounts(app_dcll * appList, np_dcll * npList, char *app_name)
 {
 
 	app_node *ptrapp;
@@ -1067,7 +1067,7 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 	
 	// Find the app in the list. If it is found, for every np in its trailing list; visit the np_dcll and decrement its count.
 	printf("All nps deleted, since np_name was passed NULL\n");
-	ptrapp = search_app(appList, app_name);
+	ptrapp = searchApp(appList, app_name);
 	if (ptrapp != NULL) {	// App found
 
 		cnt = ptrapp->np_count;
@@ -1076,7 +1076,7 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 		printf("NPs are \n");
 		while (cnt) {
 			printf("\t%s\t", ptrnp->name);
-			decr_np_app_cnt(npList, ptrnp->name);
+			decrNpAppCnt(npList, ptrnp->name);
 			ptrnp = ptrnp->next;
 			cnt--;
 		}
@@ -1092,7 +1092,7 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 void *ProceedGetnotifyMethod(void *arguments)
 {
 	char *received, *buf;
-	struct proceedGetnThreadArgs *temparguments, *args;
+	struct proceed_getn_thread_args *temparguments, *args;
 	//int pid;
 	char rough[1024];
 	char spid[32];
@@ -1102,8 +1102,8 @@ void *ProceedGetnotifyMethod(void *arguments)
 	char filename[64], filename1[64];
 	
 	
-	temparguments = (struct proceedGetnThreadArgs *)arguments;
-	args = (struct proceedGetnThreadArgs *)malloc(sizeof(struct proceedGetnThreadArgs));
+	temparguments = (struct proceed_getn_thread_args *)arguments;
+	args = (struct proceed_getn_thread_args *)malloc(sizeof(struct proceed_getn_thread_args));
 
 	*args = *temparguments;
 	printf("ARGS SENDING TO PROCEEDGETN PROCEEDGETNOTIFY are %s\n\n\n", args->buf);
@@ -1147,12 +1147,12 @@ void *ProceedGetnotifyMethod(void *arguments)
  
 	buf = (char *)malloc(sizeof(char) * (strlen(args->buf) + 1 )); 
  	strcpy(buf, args->buf);
-	received = getnotify_app(buf);
+	received = getnotifyApp(buf);
 	while(received == NULL) {
 	        pthread_exit(NULL);
 	}
 	       
-	fprintf(logfd, "4. Notification received from getnotify_app is %s \n", received); 
+	fprintf(logfd, "4. Notification received from getnotifyApp is %s \n", received); 
 	force_logs();
 	
 	if (choice == 'N') {
@@ -1183,7 +1183,7 @@ void *ProceedGetnotifyMethod(void *arguments)
 }
 
 
-char* extract_key(char *key_val) {
+char* extractKey(char *key_val) {
      	char *key, *ptr;
     	char temp[128];
     	
@@ -1194,7 +1194,7 @@ char* extract_key(char *key_val) {
 	return key;
 }
 
-char* extract_val(char *key_val) {
+char* extractVal(char *key_val) {
     
     	char *ptr, *val;
     	char temp[128] ;
@@ -1208,17 +1208,17 @@ char* extract_val(char *key_val) {
     	return val;
 }
 
-int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr) {
+int compareArray(char *** np_key_val_arr, char *** getn_key_val_arr) {
       	char **one, **two, *key_one, *key_two;
       	int found = 0;
       	
         one = *getn_key_val_arr;
         while(*one != NULL) {
             	found = 0;
-            	key_one = extract_key(*one);
+            	key_one = extractKey(*one);
             	two = *np_key_val_arr;
             	while(*two != NULL) {
-                	key_two = extract_key(*two);
+                	key_two = extractKey(*two);
                 	if(!(strcmp(key_one, key_two))) {
                     		found = 1;
                     		break;
@@ -1238,7 +1238,7 @@ int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr) {
         return 0;
 }
 
-void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr , char * fillit) {
+void forwardConvert(char ***np_key_val_arr,char ***getn_key_val_arr , char * fillit) {
     	char **one, **two, *key_one, *key_two;
     	int found = 0;
     	char ret_string[512];
@@ -1248,10 +1248,10 @@ void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr , char * fi
     	while(*two != NULL) {
         	printf("In loop of forward conbert \n");
         	found = 0;
-        	key_two = extract_key(*two);
+        	key_two = extractKey(*two);
         	one = *getn_key_val_arr;
         	while(*one != NULL) {
-            		key_one = extract_key(*one);
+            		key_one = extractKey(*one);
             		printf("%s is in one\n", *one);
             		if(!(strcmp(key_one, key_two))) {
                     		strcat(ret_string, *one);
@@ -1273,7 +1273,7 @@ void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr , char * fi
 }
 
 
-char* get_val_from_args(char *usage, char* key) {   
+char* getValFromArgs(char *usage, char* key) {   
     	char *occ, keycopy[128], *retstr, localkeyval[256];
     	int i = 0;
     
@@ -1293,7 +1293,7 @@ char* get_val_from_args(char *usage, char* key) {
     	return retstr;
 }
     
-char *getfilename(char *argsbuf) {
+char *getFilename(char *argsbuf) {
 
 	char rough[1024], *retstr;
 	char spid[32], filename[64];
