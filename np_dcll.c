@@ -52,7 +52,7 @@ int addNp(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 	new = searchNp(l, val);
 
 	if (new != NULL) {
-		printf("NP_DCLL : Existing NP\n");
+		printf("> %s %d addNp() :NP_DCLL : Existing NP\n", __FILE__, __LINE__);
 		new->data = (char *)malloc(sizeof(val) + 1);
 		new->usage = usage;
 		new->key_val_arr = *key_val_arr;
@@ -119,20 +119,20 @@ void printNp(np_dcll * l)
 	char **kptr;
 
 	if (l->count == 0) {
-		printf("NP_DCLL  : Nothing to print_np\n");
+		printf("> %s %d printNp() : NP_DCLL  : Nothing to print_np\n", __FILE__, __LINE__);
 		return;
 	}
 
-	printf("\nTotal number of NPs : %d\n", l->count);
+	printf("\n> %s %d printNp() : Total number of NPs : %d\n", __FILE__, __LINE__, l->count);
 	
 	ptr = l->head;
 	kptr = ptr->key_val_arr;
 
-	printf("\nNP\t\t\tApp_Count\t\t\tKeyValue");
+	printf("\n> %s %d printNp() : NP\t\t\tApp_Count\t\t\tKeyValue", __FILE__, __LINE__);
 	printf("\n==================================================\n");
 
 	while (i) {
-		printf("%s   ", ptr->data);
+		printf("> %s %d printNp() : %s   ", __FILE__, __LINE__, ptr->data);
 		printf("\t\t\t%d\n", ptr->app_count);
 		
 		while (*kptr) {
@@ -144,8 +144,6 @@ void printNp(np_dcll * l)
 		ptr = ptr->next;
 		i--;
 	}
-
-	printf("\nKey-Value ");
 
 }
 
@@ -176,7 +174,6 @@ main_np_node *searchNp(np_dcll * l, char *val)
 	}
 
 	if (found == 0) {
-		//printf("NP_DCLL  : Not found %s\n", val);
 		return NULL;
 	}
 
@@ -194,7 +191,6 @@ int delNp(np_dcll * l, char *val)
 	temp = searchNp(l, val);
 
 	if (temp == NULL) {
-		//printf("NP_DCLL  : Not found %s\n", val);
 		return NOTFND;
 	}
 
@@ -267,7 +263,7 @@ void decrNpAppCnt(np_dcll * l, char *nval)
 		return;
 
 	temp->app_count--;
-	printf("\t%d\n", temp->app_count);
+	printf("> %s %d decrNpAppCnt() :\t%d\n", __FILE__, __LINE__, temp->app_count);
 }
 
 int checkKeyValidity(np_dcll * npList, char * key_to_check) {
