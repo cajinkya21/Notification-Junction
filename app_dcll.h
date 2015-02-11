@@ -81,15 +81,15 @@ typedef struct app_dcll {
 	*/
 } app_dcll;
 
-void initApp(app_dcll * l);
-int addAppNode(app_dcll * l, char *val);
-void printApp(app_dcll * l);
-app_node *searchApp(app_dcll * l, char *val);
-int searchReg(app_dcll * l, char *appname, char *npname);
-np_node *getReg(app_dcll *, char *appname, char *npname);
-int delApp(app_dcll * l, char *val);
-int addNpToApp(app_dcll * l, char *aval, char *nval);
-int delNpFromApp(app_dcll * l, char *aval, char *nval);
-void printNpKeyVal(app_node * temp);
+void init_app(app_dcll * l);
+int add_app_node(app_dcll * l, char *val);
+void print_app(app_dcll * l);
+app_node *search_app(app_dcll * l, char *val);
+int search_reg(app_dcll * l, char *appname, char *npname);
+np_node *get_reg(app_dcll *, char *appname, char *npname);
+int del_app(app_dcll * l, char *val);
+int add_np_to_app(app_dcll * l, char *aval, char *nval);
+int del_np_from_app(app_dcll * l, char *aval, char *nval);
+void print_np_key_val(app_node * temp);
 
 #endif /*app_dcll.h */

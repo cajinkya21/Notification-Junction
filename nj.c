@@ -57,10 +57,10 @@ void force_logs(void) {
 void printStat()
 {
 	pthread_mutex_lock(&np_list_mutex);
-	printNp(&npList);
+	print_np(&npList);
 	pthread_mutex_unlock(&np_list_mutex);
 	pthread_mutex_lock(&app_list_mutex);
-	printApp(&appList);
+	print_app(&appList);
 	pthread_mutex_unlock(&app_list_mutex);
 }
 
@@ -101,34 +101,34 @@ int register_app(char *buff)
     	
     	if(np_name != NULL) {
     		/*Check if NP provided is registered or not */
-		if (searchNp(&npList, np_name) == NULL) {				/* NP is not registerd */
+		if (search_np(&npList, np_name) == NULL) {				/* NP is not registerd */
 			PRINTF("> %s %d register_app NJ.C Np not registered. Register NP first.\n", __FILE__ , __LINE__);
 			return -1;
 		}
 		
 		/*Check if app is already registered */
-		if (searchApp(&appList, app_name) == NULL) {				/* Registering app for the first time */
-			addAppNode(&appList, app_name);
+		if (search_app(&appList, app_name) == NULL) {				/* Registering app for the first time */
+			add_app_node(&appList, app_name);
 			PRINTF("> %s %d register_app: Added for the first time\n", __FILE__ , __LINE__);
-			addNpToApp(&appList, app_name, np_name);                               
-			incrNpAppCnt(&npList, np_name);
+			add_np_to_app(&appList, app_name, np_name);                               
+			incr_np_app_cnt(&npList, np_name);
 		}
 		else {									/* Adding NP registration to already */
 											/* existing App */
-			retval = searchReg(&appList, app_name, np_name);
+			retval = search_reg(&appList, app_name, np_name);
 			if (retval == -1) {
 				PRINTF("> %s %d register_app : EXISTING REGISTRATION\n", __FILE__ , __LINE__);
 				return -2;
 			}
 			else {	 
-				addNpToApp(&appList, app_name, np_name);                               
-				incrNpAppCnt(&npList, np_name);
+				add_np_to_app(&appList, app_name, np_name);                               
+				incr_np_app_cnt(&npList, np_name);
 			}
 		}
 	
 	}
 	else {
-		addAppNode(&appList, app_name);
+		add_app_node(&appList, app_name);
 		PRINTF("> %s %d register_app :Only app is added successfully.\n", __FILE__ , __LINE__);
 	}
 	
@@ -158,8 +158,8 @@ int unregister_app(char *buff)
 
 	if (np_ptr == NULL) {
 		PRINTF("> %s %d unregister_app :np_name == NULL case in unregister app\n", __FILE__ , __LINE__);
-		if(searchApp(&appList, app_name) != NULL) {
-			delApp(&appList, app_name);		
+		if(search_app(&appList, app_name) != NULL) {
+			del_app(&appList, app_name);		
 			dec_all_np_counts(&appList, &npList, app_name);
 			PRINTF("NJ.C : Unregistration done\n");
 		}
@@ -171,10 +171,10 @@ int unregister_app(char *buff)
 	}
 	
 	else {
-	    	if (searchReg(&appList, app_name, np_name) == -1) {
+	    	if (search_reg(&appList, app_name, np_name) == -1) {
 			PRINTF("> %s %d unregister_app: REGISTRATION FOUND.\n", __FILE__ , __LINE__);
-			delNpFromApp(&appList, app_name, np_name);
-			decrNpAppCnt(&npList, np_name);
+			del_np_from_app(&appList, app_name, np_name);
+			decr_np_app_cnt(&npList, np_name);
 		}
 		else {
 			PRINTF("NJ : Invalid argument to app_unregister : Registration not found\n");
@@ -208,14 +208,14 @@ int register_np(char *buff)
 	strcpy(usage, s);
 	extract_key_val(usage, &keyVal);
 	pthread_mutex_lock(&np_list_mutex);	
-	new = searchNp(&npList, np_name);					/* Search for already existing registration */
+	new = search_np(&npList, np_name);					/* Search for already existing registration */
 	
 	if(new != NULL) {
-		delNp(&npList, np_name);					/* Delete already existing registration to modify */ 											/* parameters */
+		del_np(&npList, np_name);					/* Delete already existing registration to modify */ 											/* parameters */
 	}
 	
-	addNp(&npList, np_name, usage, &keyVal);
-	printNp(&npList);
+	add_np(&npList, np_name, usage, &keyVal);
+	print_np(&npList);
 	pthread_mutex_unlock(&np_list_mutex);
 	
 	return 1;
@@ -278,9 +278,9 @@ int unregister_np(char *buff)
 
 
 	app_cnt = appList.count;
-    	if(searchNp(&npList, np_name) != NULL) {
+    	if(search_np(&npList, np_name) != NULL) {
 		while(app_cnt != 0) {
-		 	if(searchReg(&appList, aptr->data, np_name) == -1) {
+		 	if(search_reg(&appList, aptr->data, np_name) == -1) {
 		 		p = aptr->np_list_head;
 		 		while(p != NULL) {
 		 			q = p;
@@ -311,7 +311,7 @@ int unregister_np(char *buff)
 			aptr = aptr->next;
 			app_cnt--;	   	
     		}
-    		delNp(&npList, np_name);
+    		del_np(&npList, np_name);
 	
 	}
 	else {
@@ -319,8 +319,8 @@ int unregister_np(char *buff)
 		return -1;
 	}
 	
-	printNp(&npList);
-	printApp(&appList);
+	print_np(&npList);
+	print_app(&appList);
     	pthread_mutex_unlock(&np_list_mutex);
     	pthread_mutex_unlock(&app_list_mutex);
     	
@@ -413,12 +413,12 @@ int main()
 	
 	/*Initialize NP List */
 	pthread_mutex_lock(&np_list_mutex);
-	initNp(&npList);
+	init_np(&npList);
 	pthread_mutex_unlock(&np_list_mutex);	
 	
 	/*Initialize APP List */
 	pthread_mutex_lock(&app_list_mutex);
-	initApp(&appList);
+	init_app(&appList);
 	pthread_mutex_unlock(&app_list_mutex);
 	
 	/* CREATE SOCKET FOR STAT */
@@ -852,7 +852,7 @@ for now I am sending the received strig directly as notificationstring for now I
 
 	/* Get the reg, Malloc space for a getn registration key_val  */
 
-	nptr = getReg(&appList, appname, np_name);
+	nptr = get_reg(&appList, appname, np_name);
 	
 	if (nptr) {
 		PRINTF("\n> %s %d np_getnotify_method: RETURNED nptr->name = %s\n",__FILE__ , __LINE__, nptr->name);
@@ -887,7 +887,7 @@ for now I am sending the received strig directly as notificationstring for now I
 
    
 	extract_key_val(args->argssend, &pointer);
-	np_node = searchNp(&npList, np_name);
+	np_node = search_np(&npList, np_name);
 	k = compare_array(&(np_node->key_val_arr), &pointer);
 	
     	if(k == 0)
@@ -897,7 +897,7 @@ for now I am sending the received strig directly as notificationstring for now I
         	return NULL;
 	}
 	temp->key_val_arr = pointer;
-//	printApp(&appList);
+//	print_app(&appList);
     	forward_convert(&(np_node->key_val_arr),&pointer, args->argssend);
 
 	/* handle no name and stuff */
@@ -906,7 +906,7 @@ for now I am sending the received strig directly as notificationstring for now I
     	count = atoi(extract_val(countkey));
     	fprintf(logfd, ">%s %d np_getnotify_method :99. count is %d! for buf %s!\n",__FILE__ , __LINE__, count, args->argssend);
 	
- 	x = getNpAppCnt(&npList, np_name);
+ 	x = get_np_app_cnt(&npList, np_name);
 
 	/* App count will be 0 initially. App can call getnotify only after NP has registered, and doing App_getnotify for the first time increments the count to 1. Therefore compare count with 1 to do dlopen() for the first time */
 	if (x == 1) {
@@ -995,13 +995,13 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 	
 	// Find the app in the list. If it is found, for every np in its trailing list; visit the np_dcll and decrement its count.
 	PRINTF("> %s %d dec_all_np_counts :All nps deleted, since np_name was passed NULL\n",__FILE__ , __LINE__);
-	ptrapp = searchApp(appList, app_name);
+	ptrapp = search_app(appList, app_name);
 	if (ptrapp != NULL) {	// App found
 
 		cnt = ptrapp->np_count;
 		ptrnp = ptrapp->np_list_head;
 		while (cnt) {
-			decrNpAppCnt(npList, ptrnp->name);
+			decr_np_app_cnt(npList, ptrnp->name);
 			ptrnp = ptrnp->next;
 			cnt--;
 		}

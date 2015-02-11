@@ -35,7 +35,7 @@
 
 /* INITIALISE APPLICATION LIST */
 
-void initApp(app_dcll * l)
+void init_app(app_dcll * l)
 {
 	l->head = NULL;
 	l->count = 0;
@@ -43,25 +43,25 @@ void initApp(app_dcll * l)
 
 /* APPEND NEW APPLICATION-NODE TO THE LIST */
 
-int addAppNode(app_dcll * l, char *val)
+int add_app_node(app_dcll * l, char *val)
 {
 	
 	app_node *new, *tmp;
 	
-	tmp = searchApp(l, val);	/* Search a app_node in app_list if it already exists */
+	tmp = search_app(l, val);	/* Search a app_node in app_list if it already exists */
 	if (tmp != NULL)
 		return ALREXST;	/* If node already exists, it returns ALREXST error */
 	new = (app_node *) malloc(sizeof(app_node));
 
 	if (new == NULL) {
-		perror("> app_dcll.c addAppNode() : ERROR IN MALLOC");
+		perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
 		exit(1);
 	}
 
 	new->data =(char *)malloc((strlen(val) + 1) * sizeof(char));
 
 	if (new->data == NULL) {
-		perror("> app_dcll.c addAppNode() : ERROR IN MALLOC");
+		perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
 		exit(1);
 	}
 
@@ -102,7 +102,7 @@ int addAppNode(app_dcll * l, char *val)
 
 /* PRINT LIST */
 
-void printApp(app_dcll * l)
+void print_app(app_dcll * l)
 {
 
 	int i = l->count;
@@ -110,21 +110,21 @@ void printApp(app_dcll * l)
 	np_node *np;
 	
 	if (l->count == 0) {
-		printf("> app_dcll.c printApp() : NO APPS TO PRINT\n");
+		printf("> app_dcll.c print_app() : NO APPS TO PRINT\n");
 		return;
 	}
 	
 	ptr = l->head;
 	
-	printf("\n> %s %d printApp() : Total number of applications : %d\n",__FILE__, __LINE__, l->count);
-	printf("\n> %s %d printApp() :App\t\t\tNp_Count", __FILE__, __LINE__);
+	printf("\n> %s %d print_app() : Total number of applications : %d\n",__FILE__, __LINE__, l->count);
+	printf("\n> %s %d print_app() :App\t\t\tNp_Count", __FILE__, __LINE__);
 	printf("\n===================================\n");
 	
 	while (i) {		/* Printing list in forward direction */
 
 		printf("%s\t\t\t", ptr->data);
 		printf("%d\n", ptr->np_count);
-		printNpKeyVal(ptr);
+		print_np_key_val(ptr);
 		printf("\n\n\n");
 		ptr = ptr->next;
 		i--;
@@ -135,7 +135,7 @@ void printApp(app_dcll * l)
 	i = l->count;
 	ptr = l->head;
 	if (i != 0) {
-		printf("\n> %s %d printApp() :App\t\t\tRegistered with", __FILE__, __LINE__);
+		printf("\n> %s %d print_app() :App\t\t\tRegistered with", __FILE__, __LINE__);
 		printf("\n===================================\n");
 	}
 
@@ -155,7 +155,7 @@ void printApp(app_dcll * l)
 
 }
 
-void printNpKeyVal(app_node * temp)
+void print_np_key_val(app_node * temp)
 {
 
 	np_node *head = temp->np_list_head;
@@ -164,17 +164,17 @@ void printNpKeyVal(app_node * temp)
 	
 
 	if (!head) {
-		printf("\n> %s %d printNpKeyVal() : No head in temp list\n\n", __FILE__, __LINE__);
+		printf("\n> %s %d print_np_key_val() : No head in temp list\n\n", __FILE__, __LINE__);
 		return;
 	}
 
-	printf("> %s %d printNpKeyVal() : HEAD DATA = %s\n", __FILE__, __LINE__, head->name);
+	printf("> %s %d print_np_key_val() : HEAD DATA = %s\n", __FILE__, __LINE__, head->name);
 	
 	while (head) {
 		vptr = head->key_val_ptr;
 		
 		if (vptr == NULL) {
-			printf("> %s %d printNpKeyVal() : VPTR IS NULL\n", __FILE__, __LINE__);
+			printf("> %s %d print_np_key_val() : VPTR IS NULL\n", __FILE__, __LINE__);
 			head = head->next;
 			continue;
 		}
@@ -183,11 +183,11 @@ void printNpKeyVal(app_node * temp)
 			kptr = vptr->key_val_arr;
 			
 			if (kptr == NULL) {
-				printf("> %s %d printNpKeyVal() : The key_val_arr is NULL\n\n", __FILE__, __LINE__);
+				printf("> %s %d print_np_key_val() : The key_val_arr is NULL\n\n", __FILE__, __LINE__);
 				return;
 			}
 			
-			printf("> %s %d printNpKeyVal() : *KPTR is %s\n",__FILE__, __LINE__, *kptr);
+			printf("> %s %d print_np_key_val() : *KPTR is %s\n",__FILE__, __LINE__, *kptr);
 
 			while (*kptr) {
 				printf("\t\t\t\t%s\n", *kptr);
@@ -203,7 +203,7 @@ void printNpKeyVal(app_node * temp)
 
 /* SEARCH APP, RETURN POINTER TO NODE */
 
-app_node *searchApp(app_dcll * l, char *val)
+app_node *search_app(app_dcll * l, char *val)
 {
 
 	int i = l->count;
@@ -232,27 +232,27 @@ app_node *searchApp(app_dcll * l, char *val)
 		return ptr;
 }
 
-int searchReg(app_dcll * l, char *appname, char *npname)
+int search_reg(app_dcll * l, char *appname, char *npname)
 {
 
 	app_node *ptr;
 	np_node *nptr;
 	
-	ptr = searchApp(l, appname);
+	ptr = search_app(l, appname);
 
-	printf("\n> %s %d searchReg() : Searching Registration\n", __FILE__, __LINE__);
+	printf("\n> %s %d search_reg() : Searching Registration\n", __FILE__, __LINE__);
 
 	if (ptr == NULL)
 		return 0;
 
 	if (ptr != NULL) {
 
-		printf("> %s %d searchReg() : App %s has been found. Checking np %s in app's list\n",__FILE__, __LINE__, appname, npname);
+		printf("> %s %d search_reg() : App %s has been found. Checking np %s in app's list\n",__FILE__, __LINE__, appname, npname);
 		nptr = ptr->np_list_head;
 
 		while (nptr != NULL) {          /* Code for checking NP existance */
 			if (!strcmp(npname, nptr->name)) {
-				printf("> %s %d searchReg() : Duplicate Registration Detected", __FILE__, __LINE__);
+				printf("> %s %d search_reg() : Duplicate Registration Detected", __FILE__, __LINE__);
 				return -1;
 			}
 			nptr = nptr->next;
@@ -263,20 +263,20 @@ int searchReg(app_dcll * l, char *appname, char *npname)
 	return 0;
 }
 
-np_node *getReg(app_dcll * l, char *appname, char *npname)
+np_node *get_reg(app_dcll * l, char *appname, char *npname)
 {
 
 	app_node *ptr;
 	np_node *nptr;
 	
-	ptr = searchApp(l, appname);
+	ptr = search_app(l, appname);
 
 	if (ptr == NULL)
 		return 0;
 
 	if (ptr != NULL) {
 
-		printf("> %s %d getReg() : App %s has been found. Checking np %s in app's list\n",__FILE__, __LINE__, appname, npname);
+		printf("> %s %d get_reg() : App %s has been found. Checking np %s in app's list\n",__FILE__, __LINE__, appname, npname);
 		nptr = ptr->np_list_head;
 
 		/* CODE FOR CHECKING NP EXISTANCE */
@@ -295,7 +295,7 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 
 /* DELETE APP */
 
-int delApp(app_dcll * l, char *val)
+int del_app(app_dcll * l, char *val)
 {
 	char **np_key_val_arr;
 	int i = 0;
@@ -303,7 +303,7 @@ int delApp(app_dcll * l, char *val)
 	app_node *p, *temp, *q;
 	struct extr_key_val *extr_kv, *extr_kv_temp;
 
-	temp = searchApp(l, val);
+	temp = search_app(l, val);
 	
 	if (temp == NULL) {
 		return NOTFND;
@@ -357,13 +357,13 @@ int delApp(app_dcll * l, char *val)
 }
 
 
-int addNpToApp(app_dcll * l, char *aval, char *nval)
+int add_np_to_app(app_dcll * l, char *aval, char *nval)
 {
 
 	app_node *temp;
 	np_node *n, *m, *b;
 
-    temp = searchApp(l, aval);
+    temp = search_app(l, aval);
 
 	if (temp == NULL) {
 		return NOTFND;
@@ -412,7 +412,7 @@ int addNpToApp(app_dcll * l, char *aval, char *nval)
 
 /* DELETE NP FROM APPLICATION */
 
-int delNpFromApp(app_dcll * l, char *aval, char *nval)
+int del_np_from_app(app_dcll * l, char *aval, char *nval)
 {
 	char **np_key_val_arr;
 	int i = 0;
@@ -420,7 +420,7 @@ int delNpFromApp(app_dcll * l, char *aval, char *nval)
 	struct extr_key_val *extr_kv, *extr_kv_temp;
 	
 	int flag = 0;
-	app_node *temp = searchApp(l, aval);
+	app_node *temp = search_app(l, aval);
 	np_node *n, *m, *b;
 
 	if (l->count == 0)
@@ -438,7 +438,7 @@ int delNpFromApp(app_dcll * l, char *aval, char *nval)
 		m = temp->np_list_head;
 		temp->np_list_head = m->next;
 		temp->np_count--;
-		printf("\n> %s %d delNpFromApp() : temp->np_count = %d\n", __FILE__, __LINE__, temp->np_count);
+		printf("\n> %s %d del_np_from_app() : temp->np_count = %d\n", __FILE__, __LINE__, temp->np_count);
 		flag = 1;
 	} 
 	
@@ -447,7 +447,7 @@ int delNpFromApp(app_dcll * l, char *aval, char *nval)
 		n = m->next;
 		temp->np_list_head = n;
 		temp->np_count--;
-		printf("\n> %s %d delNpFromApp() : temp->np_count = %d\n",__FILE__, __LINE__, temp->np_count);
+		printf("\n> %s %d del_np_from_app() : temp->np_count = %d\n",__FILE__, __LINE__, temp->np_count);
 		flag = 1;
 	} 
 	
@@ -458,7 +458,7 @@ int delNpFromApp(app_dcll * l, char *aval, char *nval)
 		if (temp->np_list_head == m && m->name == nval) {
 			temp->np_list_head = m->next;
 			temp->np_count--;
-			printf("\n> %s %d delNpFromApp() : temp->np_count = %d\n",__FILE__, __LINE__, temp->np_count);
+			printf("\n> %s %d del_np_from_app() : temp->np_count = %d\n",__FILE__, __LINE__, temp->np_count);
 			flag = 1;
 		}
 		m = m->next;
@@ -468,7 +468,7 @@ int delNpFromApp(app_dcll * l, char *aval, char *nval)
 			if (strcmp(m->name, nval) == 0) {
 				b->next = m->next;
 				temp->np_count--;
-				printf("\n> %s %d delNpFromApp() : temp->np_count = %d\n",__FILE__, __LINE__, temp->np_count);
+				printf("\n> %s %d del_np_from_app() : temp->np_count = %d\n",__FILE__, __LINE__, temp->np_count);
 				flag = 1;
 				break;
 			}
@@ -504,40 +504,40 @@ int delNpFromApp(app_dcll * l, char *aval, char *nval)
 
 	app_dcll l;
 	char val[25], aval[25], nval[25];
-	initApp(&l);
+	init_app(&l);
 	
 	int ch;
 	while(1) {
-		//printf("APP_DCLL : Enter Choice :\n0 - printApp\n1 - Add App\n2 - searchApp App\n3 - Delete App\n4 - Add NP to App\n5 - Delete NP from App\n");
+		//printf("APP_DCLL : Enter Choice :\n0 - printApp\n1 - Add App\n2 - search_app App\n3 - Delete App\n4 - Add NP to App\n5 - Delete NP from App\n");
 		scanf("%d", &ch);
 		switch(ch) {
 	
-			case 0 :	printApp(&l);
+			case 0 :	print_app(&l);
 					break;
 			case 1 :	//printf("APP_DCLL : Enter Val :\n");
 					scanf(" %s", val);
-					addAppNode(&l, val);
-					printApp(&l);
+					add_app_node(&l, val);
+					print_app(&l);
 					break;
 			case 2 : 	//printf("APP_DCLL : Enter Val :\n");
 					scanf(" %s", val);
-					searchApp(&l, val);
+					search_app(&l, val);
 					break;
 			case 3 :	//printf("APP_DCLL : Enter Val :\n");
 					scanf(" %s", val);
-					delApp(&l, val);
-					printApp(&l);
+					del_app(&l, val);
+					print_app(&l);
 					break;
 			case 4 :	//printf("APP_DCLL : Enter Val for App and NP:\n");
 					scanf(" %s %s", aval, nval);
 					//printf("APP_DCLL : Aval - %s| and nval - %s|\n", aval, nval);
-					addNpToApp(&l, aval, nval);
-					printApp(&l);
+					add_np_to_app(&l, aval, nval);
+					print_app(&l);
 					break;
 			case 5 :	//printf("APP_DCLL : Enter Val for App and NP:\n");
 					scanf(" %s %s", aval, nval);
-					delNpFromApp(&l, aval, nval);
-					printApp(&l);
+					del_np_from_app(&l, aval, nval);
+					print_app(&l);
 					break;
 		}
 	}
