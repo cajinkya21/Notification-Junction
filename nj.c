@@ -772,7 +772,7 @@ void *AppGetNotifyMethod(void *arguments)
 				}
 
 			} while (args->rval > 0);
-		       args->rval);
+		       
 		close(args->msgsock);
 	}
 	while (i >= 0) {
