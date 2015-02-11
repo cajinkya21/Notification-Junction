@@ -1,15 +1,30 @@
 /* The file contains code for dummy application that registers with NJ, request for notification and then unregisters from NJ using non-block library. */
 
 #include "lib.h"
-	char str[512];
+char str[512];
+int times,i;
+FILE* pidfd;	
+char pidfilename[64];
+char filebuffer[128];
 	
 /* SIGNAL HANDLER FOR SIGUSR1 SINGAL THAT IS SENT FORM NJ WHEN NOTIFICATION ARRIVES  */
 void sigusrhandler(int signum)
 {
 	if (signum == SIGUSR1) {
-		printf("received SIGUSR1\n\n\n");
-		appUnregister(str);	/* Application unregisters with inotify */
-			exit(0);
+		times++;
+		if(times == 1) {
+			if (!(pidfd = fopen(pidfilename, "r+"))) {
+				perror("dummyapp2.C   : not able to open  dummyapp file\n");
+				return;
+			}
+		}
+		printf("received SIGUSR1 %d \n\n\n",times);
+		i = 0;
+		fgets(filebuffer, 128,  pidfd );
+		
+		printf("Signalhandler Notification is %s \n",filebuffer);
+		return;
+	    //exit(0);		
     }
 
 }
@@ -19,7 +34,7 @@ int main(int argc, char *argv[])
 	struct stat s;
 	int pid;
 	char arr[512];
-	
+		times = 0;
 	if (argc < 2) {
 		printf("Kindly enter the directory\n");
 		exit(0);
@@ -48,6 +63,9 @@ int main(int argc, char *argv[])
 	strcat(arr, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY##count::2");
 	printf("Arr is %s\n", arr);
 	pid = getpid();
+	sprintf(str, "%d", pid );
+	strcpy(pidfilename,str);
+	strcat(pidfilename, ".txt");
 	signal(SIGUSR1, sigusrhandler);
 	sigset_t mask;
 	sigemptyset(&mask);

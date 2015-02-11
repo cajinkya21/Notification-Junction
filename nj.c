@@ -982,7 +982,7 @@ for now I am sending the received strig directly as notificationstring for now I
 	if (x == 1) {
 		/* Do dlopen() */
 		printf("NJ.C   : Opening\n....\n");
-		handle = dlopen("./libinotify.so", RTLD_LAZY);
+		handle = dlopen("./libnpinotify.so", RTLD_LAZY);
 		if (!handle) {
 			perror("NJ.C   : Problem with dlopen :");
 			exit(1);

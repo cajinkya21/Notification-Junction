@@ -292,7 +292,7 @@ char* getValFromArgs(char *usage, char* key) {
     	}
     	localkeyval[i] = '\0';
 
-    	retstr = (char *)malloc(sizeof(char) * i);
+    	retstr = (char *)malloc(sizeof(char) * (i+1));
 
     	strcpy(retstr, localkeyval);
     	printf("Retstr is %s!\n", retstr);

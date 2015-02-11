@@ -20,7 +20,7 @@ np_dcll.o:	np_dcll.c np_dcll.h
 clean: 
 	rm  *.o
 	rm nj
-	rm libinotify.so
+	rm libnpinotify.so
 	rm dummyapp
 	rm np_register
 	rm stat
@@ -40,29 +40,29 @@ clean:
     
  #Target 3
 libinotify: inotify.o
-	$(CC) -Wall -g inotify.o -shared -o libinotify.so
+	$(CC) -Wall -g inotify.o -shared -o libnpinotify.so
 
 inotify.o: inotify.c inotify.h
 	$(CC) -Wall -g -c -fPIC inotify.c -o inotify.o
 
 #Target 4
 np_register: 
-	$(CC) -Wall -g np_reg.c -o np_register
+	$(CC) -Wall -g np_register.c -o np_register
 
 
 #Target 4 
-dummyapp: dummyapp.o nonblocklib.o
-	$(CC) -Wall -g dummyapp.o nonblocklib.o -o dummyapp
+dummyapp: dummyapp.o nj_nonblocklib.o
+	$(CC) -Wall -g dummyapp.o nj_nonblocklib.o -o dummyapp
 
 dummyapp.o: dummyapp.c
 	$(CC) -Wall -c -g dummyapp.c -o dummyapp.o
 
-nonblocklib.o: nonblocklib.c lib.h
-	$(CC) -Wall -c -g nonblocklib.c -o nonblocklib.o 
+nj_nonblocklib.o: nj_nonblocklib.c lib.h
+	$(CC) -Wall -c -g nj_nonblocklib.c -o nj_nonblocklib.o 
 	
 #Target 5
-dummyapp2: dummyapp2.o nonblocklib.o
-	$(CC) -Wall -g  dummyapp2.c nonblocklib.o -o dummyapp2
+dummyapp2: dummyapp2.o nj_nonblocklib.o
+	$(CC) -Wall -g  dummyapp2.c nj_nonblocklib.o -o dummyapp2
 
 dummyapp2.o:dummyapp2.c 
 	$(CC) -Wall -g -c dummyapp2.c -o dummyapp2.o
@@ -76,16 +76,16 @@ stat.o:
 
 
 #Target 6
-app_register: app_reg.c 
-	$(CC) -Wall -g app_reg.c -o app_register
+app_register: app_register.c 
+	$(CC) -Wall -g app_register.c -o app_register
 
 #Target 7
-app_unregister: app_unreg.c
-	$(CC) -Wall -g app_unreg.c -o app_unregister
+app_unregister: app_unregister.c
+	$(CC) -Wall -g app_unregister.c -o app_unregister
 
 #Target 8
-np_unregister: np_unreg.c
-	$(CC) -Wall -g np_unreg.c -o np_unregister
+np_unregister: np_unregister.c
+	$(CC) -Wall -g np_unregister.c -o np_unregister
 
 #Target 9
 app_getnotify: app_getnotify.c
