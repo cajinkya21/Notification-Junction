@@ -37,7 +37,7 @@
 #define NOTFND -2
 #define ERROR -1
 #define SUCCESS 1
-
+#define PRINTF printf 
 #include "app_dcll.h"
 #include "np_dcll.h"
 
