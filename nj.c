@@ -41,7 +41,7 @@ FILE* logfd;						/* File pointer of log file */
 app_dcll appList;					/* Head of global APP List */
 int fd_pidnames;					/* FD of file used for storing PID filenames */
 void *handle;						/* Handle of the function in shared library */
-pthread_mutex_t app_list_mutex, np_list_mutex, app_list_count_mutex, np_list_count_mutex, getnotify_socket_mutex, malloc_mutex;
+pthread_mutex_t app_list_mutex, np_list_mutex,  getnotify_socket_mutex;
 							/*Mutexes to be used for synchronizing list*/
 
 /* FUNCTION TO FORCEFULLY WRITING TO LOG FILE */
@@ -423,22 +423,12 @@ int main()
 		printf("NJ.C   : \n mutex init failed\n");
 		return 1;
 	}
-	if (pthread_mutex_init(&app_list_count_mutex, NULL) != 0) {
-		printf("NJ.C   : \n mutex init failed\n");
-		return 1;
-	}
-	if (pthread_mutex_init(&np_list_count_mutex, NULL) != 0) {
-		printf("NJ.C   : \n mutex init failed\n");
-		return 1;
-	}
+	
 	if (pthread_mutex_init(&getnotify_socket_mutex, NULL) != 0) {
 		printf("NJ.C   : \n mutex init failed\n");
 		return 1;
 	}
-	if (pthread_mutex_init(&malloc_mutex, NULL) != 0) {
-		printf("NJ.C   : \n mutex init failed\n");
-		return 1;
-	}
+	
 	
 	/*Initialize NP List */
 	pthread_mutex_lock(&np_list_mutex);
@@ -569,8 +559,7 @@ int main()
 
 	pthread_mutex_destroy(&app_list_mutex);
 	pthread_mutex_destroy(&np_list_mutex);
-	pthread_mutex_destroy(&app_list_count_mutex);
-	pthread_mutex_destroy(&np_list_count_mutex);
+	
 	return 0;
 
 }

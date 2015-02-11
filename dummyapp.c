@@ -11,6 +11,7 @@ char filebuffer[128];
 void sigusrhandler(int signum)
 {
 	if (signum == SIGUSR1) {
+	
 		times++;
 		if(times == 1) {
 			if (!(pidfd = fopen(pidfilename, "r+"))) {
