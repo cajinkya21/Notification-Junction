@@ -40,7 +40,9 @@
 #define PRINTF printf 
 #include "app_dcll.h"
 #include "np_dcll.h"
-
+#define NONBLOCKING 'N'
+#define BLOCKING 'B'
+#define LOGS "logs"
 /* Create 2 sockets - app_reg, app_unreg*/
 /* Fork 2 threads - app_reg, app_unreg*/
 #define AppGetnotify "app_getn"
@@ -62,14 +64,14 @@ typedef struct thread_args {
 	* msgsock //
 	* rval is to store return value of read() on the socket
 	* server // 
-	* buf is to send key_val pair argument to ProceedGetnotifyMethod thread
+	* buf is to send key_val pair argument to proceed_getnotify_method thread
 	*/	
 } thread_args;
 
 typedef struct proceed_getn_thread_args	 {
 	char buf[1024];
 	/*
-	* buf is to send key_val pair argument to ProceedGetnotifyMethod thread
+	* buf is to send key_val pair argument to proceed_getnotify_method thread
 	*/
 } proceed_getn_thread_args;
 
@@ -84,48 +86,48 @@ typedef struct getnotify_thread_args {
 } getnotify_thread_args;
 
 /* function returns negative value if error in registering app This function will add node in the app list  for first registration of app with particular NP*/
-int registerApp(char *buff);
+int register_app(char *buff);
 
 /*function returns negative value if error in registering np this function will add node in the np list for np registration of np */
-int registerNp(char *buff);
+int register_np(char *buff);
 
 /* function returns negative value if error in unregistering app eg(app not found in list)*/
-int unregisterApp(char *buff);
+int unregister_app(char *buff);
 
 /*function returns negative valuse if error in unregistering np eg(np not found in list)*/
 int unregister_np(char *buff);
 
 /*function to get notification */
-char *getnotifyApp(char *buff);
+char *getnotify_app(char *buff);
 
-/*FUNCTION DECLARATIONS*/
+/*Function declarations*/
 
-void *PrintStat(void *arguments);
-void *AppRegMethod(void *arguments);
-void *AppUnRegMethod(void *arguments);
-void *NpRegMethod(void *arguments);
-void *NpUnRegMethod(void *arguments);
-void *AppGetNotifyMethod(void *arguments);
-void *NpGetNotifyMethod(void *arguments);
-void *ProceedGetnotifyMethod(void *arguments);
-void decAllNpCounts(app_dcll * appList, np_dcll * npList, char *app_name);
+void *print_stat(void *arguments);
+void *app_reg_method(void *arguments);
+void *app_unreg_method(void *arguments);
+void *np_reg_method(void *arguments);
+void *np_unreg_method(void *arguments);
+void *app_getnotify_method(void *arguments);
+void *np_getnotify_method(void *arguments);
+void *proceed_getnotify_method(void *arguments);
+void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name);
 
-void sigintHandler(int signum);
+void sigint_handler(int signum);
 
-void extractKeyVal(char *usage, char ***keyVal);
+void extract_key_val(char *usage, char ***keyVal);
 
-char* extractKey(char *key_val);
+char* extract_key(char *key_val);
 
-char* extractVal(char *key_val);
+char* extract_val(char *key_val);
 
-int compareArray(char *** np_key_val_arr, char *** getn_key_val_arr);
+int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr);
 
-void forwardConvert(char ***np_key_val_arr,char ***getn_key_val_arr, char * fillit);
+void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr, char * fillit);
 
-char *getValFromArgs(char *usage, char* key);
+char *get_val_from_args(char *usage, char* key);
 
-char *getFilename(char *argsbuf);
+char *get_filename(char *argsbuf);
 
-int countArgs(char *usage, char *count_occurence_of);
-
+int count_args(char *usage, char *count_occurence_of);
+void nj_exit(void); /*function called whenever NJ exits*/
 #endif				/*nj.h */
