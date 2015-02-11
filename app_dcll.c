@@ -1,20 +1,20 @@
 /*  
-    Notification-Junction is an interface between multiple applications and multiple Notification Providers.
-    Copyright (C) 2015      Navroop Kaur<watwanichitra@gmail.com>, 
-                            Shivani Marathe<maratheshivani94@gmail.com>, 
-                            Kaveri Sangale<sangale.kaveri9@gmail.com>
-	All Rights Reserved.
-	
-    This program is //free software; you can redistribute it and/or modify it under the terms of the 
-    GNU General Public License as published by the //free Software Foundation; either version 3 of the
-    License, or (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
-    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
-    See the GNU General Public License for more details.
-       
-    You should have received a copy of the GNU General Public License along with this program; if not, write to the 
-    //free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+*    Notification-Junction is an interface between multiple applications and multiple Notification Providers.
+*    Copyright (C) 2015      Navroop Kaur<watwanichitra@gmail.com>, 
+*                            Shivani Marathe<maratheshivani94@gmail.com>, 
+*                            Kaveri Sangale<sangale.kaveri9@gmail.com>
+*	 All Rights Reserved.
+*	
+*    This program is free software; you can redistribute it and/or modify it under the terms of the 
+*    GNU General Public License as published by the free Software Foundation; either version 3 of the
+*    License, or (at your option) any later version.
+*
+*    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+*    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+*    See the GNU General Public License for more details.
+*       
+*    You should have received a copy of the GNU General Public License along with this program; if not, write to the 
+*    free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
 /* 
@@ -27,13 +27,12 @@
 *	Adding a np to app_node, 
 *	Deleting a np from app_node
 *
-*
 *	At the end of this file is the commented code to test the linked list
 */
 
 #include "app_dcll.h"
 
-/* INITIALISE APPLICATION LIST */
+/* Initialise the application list */
 
 void initApp(app_dcll * l)
 {
@@ -41,32 +40,33 @@ void initApp(app_dcll * l)
 	l->count = 0;
 }
 
-/* APPEND NEW APPLICATION-NODE TO THE LIST */
+/* Append a new application "val" to the list */
 
 int addAppNode(app_dcll * l, char *val)
 {
-	
-	app_node *new, *tmp;
-	
-	tmp = searchApp(l, val);	/* Search a app_node in app_list if it already exists */
-	if (tmp != NULL)
-		return ALREXST;	/* If node already exists, it returns ALREXST error */
-	new = (app_node *) malloc(sizeof(app_node));
 
+	app_node *new, *tmp;
+
+
+	/* Search if the application exists; if it doesn't, return error ALREXST */
+	tmp = searchApp(l, val);	
+	if (tmp != NULL)
+		return ALREXST;	
+
+	/* Create and set values for the new node */
+	new = (app_node *) malloc(sizeof(app_node));
 	if (new == NULL) {
 		perror("APP_DCLL : ERROR IN MALLOC");
 		exit(1);
 	}
-
-	new->data =(char *)malloc((strlen(val) + 1) * sizeof(char));
-
+	new->data = (char *)malloc((strlen(val) + 1) * sizeof(char));
 	if (new->data == NULL) {
 		perror("APP_DCLL : ERROR IN MALLOC");
 		exit(1);
 	}
-
 	new->np_count = 0;
 
+	/* When there is no application in the list */
 	if (l->count == 0) {
 		l->head = new;
 		new->prev = new;
@@ -77,6 +77,7 @@ int addAppNode(app_dcll * l, char *val)
 		return 0;
 	}
 
+	/* When there is only one existing application in the list */
 	else if (l->count == 1) {
 		l->head->prev = new;
 		l->head->next = new;
@@ -88,6 +89,7 @@ int addAppNode(app_dcll * l, char *val)
 		return 0;
 	}
 
+	/* More than two applications in the list */
 	else {
 		l->head->prev->next = new;
 		new->prev = l->head->prev;
@@ -100,7 +102,7 @@ int addAppNode(app_dcll * l, char *val)
 	}
 }
 
-/* PRINT LIST */
+/* Print the list */
 
 void printApp(app_dcll * l)
 {
@@ -108,19 +110,20 @@ void printApp(app_dcll * l)
 	int i = l->count;
 	app_node *ptr;
 	np_node *np;
-	
+
 	if (l->count == 0) {
 		printf("APP_DCLL : NO APPS TO PRINT\n");
 		return;
 	}
-	
+
 	ptr = l->head;
-	
+
 	printf("\nTotal number of applications : %d\n", l->count);
 	printf("\nApp\t\t\tNp_Count");
 	printf("\n===================================\n");
-	
-	while (i) {		/* Printing list in forward direction */
+
+	/* While applications in the list are being traversed, print the contents of each application node */
+	while (i) {		
 
 		printf("%s\t\t\t", ptr->data);
 		printf("%d\n", ptr->np_count);
@@ -130,19 +133,22 @@ void printApp(app_dcll * l)
 		i--;
 	}
 
-// Printing registrations
+	/* Print the registrations of each application */
 
 	i = l->count;
 	ptr = l->head;
+
 	if (i != 0) {
 		printf("\nApp\t\t\tRegistered with");
 		printf("\n===================================\n");
 	}
 
+	/* While each application is being traversed */
 	while (i) {
 		np = ptr->np_list_head;
 		printf("\n%s\t\t\t", ptr->data);
 		
+		/* While it's trailing np list is being traversed */
 		while (np != NULL) {
 			printf("%s\n", np->name);
 			np = np->next;
@@ -155,13 +161,14 @@ void printApp(app_dcll * l)
 
 }
 
+/* Print the Key-Value strings of each getnotify instance associated with each registration of the given application */
+
 void printNpKeyVal(app_node * temp)
 {
 
 	np_node *head = temp->np_list_head;
 	extr_key_val *vptr;
 	char **kptr;
-	
 
 	if (!head) {
 		printf("No head in temp list\n\n");
@@ -169,27 +176,28 @@ void printNpKeyVal(app_node * temp)
 	}
 
 	printf("HEAD DATA = %s\n", head->name);
-	
+
 	while (head) {
 		vptr = head->key_val_ptr;
-		
+
 		if (vptr == NULL) {
 			printf("VPTR IS NULL\n");
 			head = head->next;
 			continue;
 		}
-		
+
 		while (vptr) {
 			kptr = vptr->key_val_arr;
-			
+
 			if (kptr == NULL) {
 				printf("The key_val_arr is NULL\n\n");
 				return;
 			}
-			
+
 			printf("VPTR->KEYVALARR is %s\n", *(vptr->key_val_arr));
 
-			printf("\n==================================================\n");
+			printf
+			    ("\n==================================================\n");
 
 			printf("*KPTR is %s\n", *kptr);
 
@@ -197,7 +205,7 @@ void printNpKeyVal(app_node * temp)
 				printf("\t\t\t\t%s\n", *kptr);
 				kptr++;
 			}
-			
+
 			vptr = vptr->next;
 			printf("VPTR PROGRESSED\n\n");
 		}
@@ -206,7 +214,7 @@ void printNpKeyVal(app_node * temp)
 	return;
 }
 
-/* SEARCH APP, RETURN POINTER TO NODE */
+/* Search the application and return a pointer to it's node; return NULL if not found */
 
 app_node *searchApp(app_dcll * l, char *val)
 {
@@ -238,12 +246,14 @@ app_node *searchApp(app_dcll * l, char *val)
 		return ptr;
 }
 
+/* Search a registration in the Application List, for the given appname and npname and return -1 if found, otherwise return 0 */
+
 int searchReg(app_dcll * l, char *appname, char *npname)
 {
 
 	app_node *ptr;
 	np_node *nptr;
-	
+
 	ptr = searchApp(l, appname);
 
 	printf("Searching Registration\n");
@@ -253,10 +263,11 @@ int searchReg(app_dcll * l, char *appname, char *npname)
 
 	if (ptr != NULL) {
 
-		printf("App %s has been found. Checking np %s in app's list\n", appname, npname);
+		printf("App %s has been found. Checking np %s in app's list\n",
+		       appname, npname);
 		nptr = ptr->np_list_head;
 
-		while (nptr != NULL) {          /* Code for checking NP existance */
+		while (nptr != NULL) {	/* Code for checking NP existance */
 			if (!strcmp(npname, nptr->name)) {
 				printf("Duplicate Registration Detected");
 				return -1;
@@ -268,6 +279,9 @@ int searchReg(app_dcll * l, char *appname, char *npname)
 
 	return 0;
 }
+
+/* Search a registration in the Application List, for the given appname and npname and return a pointer to the npnode in the trailing list if found, otherwise return NULL */
+
 
 np_node *getReg(app_dcll * l, char *appname, char *npname)
 {
@@ -282,13 +296,13 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 
 	if (ptr != NULL) {
 
-		printf("App %s has been found. Checking np %s in app's list\n",appname, npname);
+		printf("App %s has been found. Checking np %s in app's list\n",
+		       appname, npname);
 		nptr = ptr->np_list_head;
 
-		/* CODE FOR CHECKING NP EXISTANCE */
+		/* Check the existance of the np in the trailing list */
 		while (nptr != NULL) {
 			if (!strcmp(npname, nptr->name)) {
-				//printf("Duplicate Registration Detected");
 				return nptr;
 			}
 			nptr = nptr->next;
@@ -300,7 +314,7 @@ np_node *getReg(app_dcll * l, char *appname, char *npname)
 
 }
 
-/* DELETE APP */
+/* Delete application with given name */
 
 int delApp(app_dcll * l, char *val)
 {
@@ -310,12 +324,14 @@ int delApp(app_dcll * l, char *val)
 	app_node *p, *temp, *q;
 	struct extr_key_val *extr_kv, *extr_kv_temp;
 
-	temp = searchApp(l, val);
-	
+/* Check whether the requested application exists */
+	temp = searchApp(l, val);				
+
 	if (temp == NULL) {
 		return NOTFND;
 	}
 
+/* If it is at the head of the list and the only application registered */
 	else if (temp == l->head && l->count == 1) {
 
 		l->head->prev = NULL;
@@ -323,6 +339,7 @@ int delApp(app_dcll * l, char *val)
 		l->head = NULL;
 	}
 
+/* If it is at the head of the list and there are more applications */
 	else if (temp == l->head && l->count > 1) {
 
 		l->head = temp->next;
@@ -330,21 +347,29 @@ int delApp(app_dcll * l, char *val)
 		(temp->next)->prev = p;
 		p->next = temp->next;
 	} 
+
+/* Any other case */
 	else {
 		p = temp->prev;
 		q = temp->next;
 		p->next = q;
 		q->prev = p;
 	}
-	
+
 	np_tail = temp->np_list_head;
-	
-	while(np_tail != NULL) {
+
+/* Free the memory associated with the application */
+
+/* While the trailing np list is being traversed */
+	while (np_tail != NULL) {
 		extr_kv = np_tail->key_val_ptr;
-		while(extr_kv != NULL) {
+		
+/* While the key-value pairs are saved */
+		while (extr_kv != NULL) {
 			np_key_val_arr = (extr_kv)->key_val_arr;
-		 	i = 0;
-			while(np_key_val_arr[i++] != NULL) {
+			i = 0;
+/* While each key value pair exists */
+			while (np_key_val_arr[i++] != NULL) {
 				free(np_key_val_arr[i]);
 			}
 			extr_kv_temp = extr_kv;
@@ -356,13 +381,14 @@ int delApp(app_dcll * l, char *val)
 		free(np_temp->name);
 		free(np_temp);
 	}
-	
+
 	free(temp->data);
 	free(temp);
 	l->count--;
-	return 0;	
+	return 0;
 }
 
+/* Add to the trailing list of the application "aval" the np "nval" */
 
 int addNpToApp(app_dcll * l, char *aval, char *nval)
 {
@@ -370,18 +396,15 @@ int addNpToApp(app_dcll * l, char *aval, char *nval)
 	app_node *temp;
 	np_node *n, *m, *b;
 
+/* Search if the application even exists */
+
     temp = searchApp(l, aval);
 
 	if (temp == NULL) {
-		//printf("APP_DCLL : NOT FOUND %s\n", aval);
 		return NOTFND;
 	}
 
-	else {
-		//printf("APP_DCLL : FOUND AND ADDING TO %s\n", temp->data);    
-	}
-
-	n = (np_node *)malloc(sizeof(np_node));
+	n = (np_node *) malloc(sizeof(np_node));
 
 	if (n == NULL) {
 		perror("APP_DCLL :  ERROR IN MALLOC");
@@ -424,7 +447,7 @@ int addNpToApp(app_dcll * l, char *aval, char *nval)
 	return 0;
 }
 
-/* DELETE NP FROM APPLICATION */
+/* Delete the np "nval" from the trailing list of the application "aval" */
 
 int delNpFromApp(app_dcll * l, char *aval, char *nval)
 {
@@ -432,30 +455,30 @@ int delNpFromApp(app_dcll * l, char *aval, char *nval)
 	int i = 0;
 	np_node *np_tail;
 	struct extr_key_val *extr_kv, *extr_kv_temp;
-	
+
 	int flag = 0;
 	app_node *temp = searchApp(l, aval);
 	np_node *n, *m, *b;
 
 	if (l->count == 0)
 		return NOTFND;
-		
+
 	if (temp == NULL) {
 		return NOTFND;
 	}
-	
+
 	if (temp->np_list_head == NULL) {
 		return 0;
 	}
-	
+
 	if (temp->np_list_head->next == NULL) {
 		m = temp->np_list_head;
 		temp->np_list_head = m->next;
 		temp->np_count--;
 		printf("temp->np_count = %d\n", temp->np_count);
 		flag = 1;
-	} 
-	
+	}
+
 	else if (!strcmp(temp->np_list_head->name, nval)) {
 		m = temp->np_list_head;
 		n = m->next;
@@ -463,12 +486,12 @@ int delNpFromApp(app_dcll * l, char *aval, char *nval)
 		temp->np_count--;
 		printf("temp->np_count = %d\n", temp->np_count);
 		flag = 1;
-	} 
-	
+	}
+
 	else {
 		m = temp->np_list_head;
 		b = m;
-		
+
 		if (temp->np_list_head == m && m->name == nval) {
 			temp->np_list_head = m->next;
 			temp->np_count--;
@@ -476,9 +499,9 @@ int delNpFromApp(app_dcll * l, char *aval, char *nval)
 			flag = 1;
 		}
 		m = m->next;
-		
+
 		while (m != NULL) {
-		
+
 			if (strcmp(m->name, nval) == 0) {
 				b->next = m->next;
 				temp->np_count--;
@@ -490,16 +513,18 @@ int delNpFromApp(app_dcll * l, char *aval, char *nval)
 			m = m->next;
 		}
 	}
-	if(flag == 0)
+	if (flag == 0)
 		return -1;
-	
+
+/* Logic for freeing the memory associated with the registration */
+
 	np_tail = m;
-		
+
 	extr_kv = np_tail->key_val_ptr;
-	while(extr_kv != NULL) {
+	while (extr_kv != NULL) {
 		np_key_val_arr = (extr_kv)->key_val_arr;
-	 	i = 0;
-		while(np_key_val_arr[i++] != NULL) {
+		i = 0;
+		while (np_key_val_arr[i++] != NULL) {
 			free(np_key_val_arr[i]);
 		}
 		extr_kv_temp = extr_kv;
@@ -507,8 +532,8 @@ int delNpFromApp(app_dcll * l, char *aval, char *nval)
 		free(extr_kv_temp);
 	}
 	free(np_tail->name);
-	free(np_tail);	
-		
+	free(np_tail);
+
 	return 0;
 }
 

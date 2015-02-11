@@ -21,6 +21,9 @@
 #ifndef _NJ_H
 #define _NJ_H	1
 
+/*Macro*/
+#define PRINTF printf 
+
 #include<sys/types.h>
 #include<signal.h>
 #include<sys/socket.h>
@@ -37,7 +40,6 @@
 #define NOTFND -2
 #define ERROR -1
 #define SUCCESS 1
-#define PRINTF printf 
 #include "app_dcll.h"
 #include "np_dcll.h"
 #define NONBLOCKING 'N'

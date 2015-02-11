@@ -51,26 +51,24 @@ void getnotify(struct getnotify_thread_args *args)
 
     char buffer[EVENT_BUF_LEN], pathname[256], mask[512];
 	char retStr[1024];
-	char *expt1, *expt2, *expt3;
+	char *expt2, *expt3;
 	
-	expt1 = getValFromArgs(args->argssend, "npname");
 	expt2 = getValFromArgs(args->argssend, "dir");
 	expt3 = getValFromArgs(args->argssend, "flags");
 
-	printf("=========================================NPNAME- %s, DIR - %s, FLAGS - %s\n============================", expt1, expt2, expt3);
-
-    printf("Args received in getnotify - %s!\n", args->argssend);
+    printf("> %s %d getnotify() : Args received in getnotify - %s.\n", __FILE__, __LINE__, args->argssend);
 
 	strcpy(pathname, extractVal(expt2));
 	strcpy(mask, extractVal(expt3));
 
-	printf("--------------------------pathname - %s. and mask is %s.------------\n", pathname, mask);
+	printf("> %s %d getnotify() : pathname - %s. and mask is %s.\n", __FILE__, __LINE__, pathname, mask);
 
 	getmask(&maskval, mask);
-	printf("mask val in main is %llu\n", maskval);
+	printf("> %s %d getnotify() : mask value is %llu.\n", __FILE__, __LINE__, maskval);
 
 	fd = inotify_init();
-	printf("fd:%d\n", fd);
+	printf("> %s %d getnotify() : fd is %d.\n", __FILE__, __LINE__, fd);
+
 
 	if (fd < 0) {
 		perror("inotify_init");
@@ -88,7 +86,6 @@ void getnotify(struct getnotify_thread_args *args)
 
 	if (length < 0) {
 		perror("read");
-		 printf("Couldn't read\n");
 		 return;
 	}
 
@@ -234,14 +231,7 @@ void getmask(long long unsigned int *maskval, char *mask)
 	
 	strcpy(copy, mask);
 	
-	printf("Mask is %s\n", mask);
-	
-	printf("Mask copy is %s\n", copy);
-
-	printf("PRINTING ALL TOKENS\n");
-
 	ptr = strtok(copy, "*");
-	printf("TOKEN - %s\n", ptr);
 	
 	while (ptr != NULL) {
 		strcpy(p, ptr);
@@ -250,16 +240,12 @@ void getmask(long long unsigned int *maskval, char *mask)
 
 			if (!strcmp(p, flags[i])) {
 				index = i;
-				printf("INDEX %d\n", index);
 				*maskval = *maskval | values[index];
-				printf("Value %llu\n", values[index]);
-				printf("Maskval = %llu\n", *maskval);
 				break;
 			}
 
 		}
 
-		printf("TOKEN - %s\n", ptr);
 		ptr = strtok(NULL, "*");
 	}
 
@@ -273,7 +259,7 @@ char* extractVal(char *key_val) {
     	strcpy(temp, key_val);
     	ptr = strtok(temp, "::");
     	ptr = (key_val + strlen(ptr) + 2);
-    	if(!ptr) printf("RETURNED NULL");
+    	if(!ptr) printf("> %s %d extractVal() : Returned NULL\n", __FILE__, __LINE__);
     	val = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
     	strcpy(val, ptr);
     	return val;
@@ -295,7 +281,6 @@ char* getValFromArgs(char *usage, char* key) {
     	retstr = (char *)malloc(sizeof(char) * (i+1));
 
     	strcpy(retstr, localkeyval);
-    	printf("Retstr is %s!\n", retstr);
     	return retstr;
 }
 
