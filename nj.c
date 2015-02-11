@@ -417,7 +417,7 @@ int main()
 	
 	/* CREATE SOCKET FOR STAT */
 	stat.sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	PRINTF("Socket stat created\n");
+	PRINTF("> %s %d main :Socket stat created\n",__FILE__ , __LINE__);
 	if (stat.sock < 0) {
 		perror("opening stream socket");
 		exit(1);
@@ -428,11 +428,10 @@ int main()
 		perror("binding stream socket");
 		exit(1);
 	}
-	PRINTF("Socket has name %s\n", stat.server.sun_path);
 
 	/* CREATE SOCKET FOR APPLICATION REGISTRATION */
 	app_reg.sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	PRINTF("NJ.C   : Socket app_reg created\n");
+	PRINTF("> %s %d main : Socket app_reg created\n",__FILE__ , __LINE__);
 	if (app_reg.sock < 0) {
 		perror("NJ.C   : opening stream socket");
 		exit(1);
@@ -443,7 +442,6 @@ int main()
 		perror("NJ.C   : binding stream socket");
 		exit(1);
 	}
-	PRINTF("NJ.C   : Socket has name %s\n", app_reg.server.sun_path);
 
 	/* CREATE SOCKET FOR APPLICATION UNREGISTRATION */
 	app_unreg.sock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -458,11 +456,9 @@ int main()
 		perror("NJ.C   : binding stream socket");
 		exit(1);
 	}
-	PRINTF("NJ.C   : Socket has name %s\n", app_unreg.server.sun_path);
 
 	/* SOCKET FOR NP REGISTRATION */
 	np_reg.sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	PRINTF("NJ.C   : Socket np_reg created\n");
 	if (np_reg.sock < 0) {
 		perror("NJ.C   : opening stream socket");
 		exit(1);
@@ -473,11 +469,9 @@ int main()
 		perror("NJ.C   : binding stream socket");
 		exit(1);
 	}
-	PRINTF("NJ.C   : Socket has name %s\n", np_reg.server.sun_path);
 
 	/* SOCKET FOR NP UNREGISTRATION */
 	np_unreg.sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	PRINTF("NJ.C   : Socket np_unreg created\n");
 	if (np_unreg.sock < 0) {
 		perror("NJ.C   : opening stream socket");
 		exit(1);
@@ -488,7 +482,6 @@ int main()
 		perror("NJ.C   : binding stream socket");
 		exit(1);
 	}
-	PRINTF("NJ.C   : Socket has name %s\n", np_unreg.server.sun_path);
 	
 	/* CREATE SOCKET for APP SIDE GETNOTIFY */
 	app_getnotify.sock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -502,27 +495,26 @@ int main()
 		perror("NJ.C   : binding stream socket");
 		exit(1);
 	}
-	PRINTF("NJ.C   : Socket has name %s\n", app_getnotify.server.sun_path);
 
 	/* FORK THREADS TO LISTEN  AND ACCEPT */
 	if (pthread_create(&tid_stat, NULL, &PrintStat, (void *)&stat) == 0) {
-		PRINTF("Pthread_Creation successful for stat\n");
+		PRINTF("> %s %d main: Pthread_Creation successful for stat\n",__FILE__ , __LINE__);
 	}
 	
 	if (pthread_create(&tid_app_reg, NULL, &AppRegMethod, (void *)&app_reg) == 0) {
-		PRINTF("NJ.C   : Pthread_Creation successful\n");
+		PRINTF(">%s %d main : Pthread_Creation successful for AppRegMethod \n",__FILE__ , __LINE__);
 	}
 	if (pthread_create(&tid_app_unreg, NULL, &AppUnRegMethod, (void *)&app_unreg) == 0) {
-		PRINTF("NJ.C   : Pthread_Creation successful\n");
+		PRINTF("> %s %d main    : Pthread_Creation successful for AppUnRegMethod\n",__FILE__ , __LINE__);
 	}
 	if (pthread_create(&tid_np_reg, NULL, &NpRegMethod, (void *)&np_reg) == 0) {
-		PRINTF("NJ.C   : Pthread_Creation successful\n");
+		PRINTF("> %s %d main : Pthread_Creation successful NpRegMethod\n",__FILE__ , __LINE__);
 	}
 	if (pthread_create(&tid_np_unreg, NULL, &NpUnRegMethod, (void *)&np_unreg) == 0) {
-		PRINTF("NJ.C   : Pthread_Creation successful\n");
+		PRINTF("> %s %d : Pthread_Creation successful NpUnRegMethod\n",__FILE__ , __LINE__);
 	}
 	if (pthread_create(&tid_app_getnotify, NULL, &AppGetNotifyMethod, (void *)&app_getnotify) == 0) {
-		PRINTF("NJ.C   : Pthread_creation of getnotify thread successful\n");
+		PRINTF(">%s %d: Pthread_creation of getnotify thread successful AppGetNotifyMethod\n",__FILE__ , __LINE__);
 	}
 
 	/*Join all the threads */
@@ -544,8 +536,6 @@ void *PrintStat(void *arguments)
 {
 	struct thread_args *args = arguments;
 	
-	PRINTF("In STAT\n");
-	PRINTF("args -> msgsock - %d\n", args->msgsock);
 
 	listen(args->sock, QLEN);
 	for (;;) {
@@ -558,7 +548,7 @@ void *PrintStat(void *arguments)
 				if ((args->rval = read(args->msgsock, args->buf, 1024)) < 0)
 					perror("reading stream message");
 				else if (args->rval == 0) {
-					PRINTF("\nPrinting Statistics :\n");
+					PRINTF("\n>%s %d PrintStat :Printing Statistics :\n",__FILE__ , __LINE__);
 					printStat();
 				}
 			} while (args->rval > 0);
@@ -578,8 +568,6 @@ void *AppRegMethod(void *arguments)
 {
 	struct thread_args *args = arguments;
 	
-	PRINTF("NJ.C   : In Reg\n");
-	PRINTF("NJ.C   : args -> msgsock - %d\n", args->msgsock);
 
 	listen(args->sock, QLEN);
 	int i = 0;
@@ -593,12 +581,11 @@ void *AppRegMethod(void *arguments)
 				if ((args->rval = read(args->msgsock, args->buf, 1024)) < 0)
 					perror("NJ.C   : reading stream message");
 				else if (args->rval == 0)
-					PRINTF("NJ.C   : Ending connection\n");
+					PRINTF("> %s %d AppRegMethod   : Ending connection\n",__FILE__ , __LINE__);
 				else {	/*code to register application ie add entry in list */
-					PRINTF("NJ.C   : -->%s\n", args->buf);
 					i = registerApp(args->buf);
 					if (i < 0) {
-						PRINTF("NJ.C   : Error in registering, try again\n");
+						PRINTF("> %s %d: Error in registering, try again\n",__FILE__ , __LINE__);
 					}
 					break;
 				}
@@ -619,8 +606,6 @@ void *AppUnRegMethod(void *arguments)
 {
 	struct thread_args *args = arguments;
 	
-	PRINTF("NJ.C   : In UnReg\n");
-	PRINTF("NJ.C   : args -> msgsock - %d\n", args->msgsock);
 
 	listen(args->sock, QLEN);
 	int i = 0;
@@ -636,13 +621,12 @@ void *AppUnRegMethod(void *arguments)
 					perror
 					    ("NJ.C   : reading stream message");
 				else if (args->rval == 0)
-					PRINTF("NJ.C   : Ending connection\n");
+					PRINTF(">%s %d AppUnRegMethod  : Ending connection\n",__FILE__ , __LINE__);
 				else {
 					i = unregisterApp(args->buf);
-					PRINTF("NJ.C   : -->%s\n", args->buf);
 
 					if (i < 0)
-						PRINTF("NJ.C   : Error in registering\n");
+						PRINTF("> %s %d AppUnRegMehod: Error in registering\n",__FILE__ , __LINE__);
 
 					break;
 				}
@@ -663,8 +647,6 @@ void *NpRegMethod(void *arguments)
 {
 	struct thread_args *args = arguments;
 	
-	PRINTF("NJ.C   : In NpReg\n");
-	PRINTF("NJ.C   : args -> msgsock - %d\n", args->msgsock);
 
 	listen(args->sock, QLEN);
 	int i = 0;
@@ -680,12 +662,11 @@ void *NpRegMethod(void *arguments)
 					perror
 					    ("NJ.C   : reading stream message");
 				else if (args->rval == 0)
-					PRINTF("NJ.C   : Ending connection\n");
+					PRINTF("> %s %d NpRegMethod: Ending connection\n",__FILE__ , __LINE__);
 				else {	/*code to register application ie add entry in list */
-					PRINTF("NJ.C   : -->%s\n", args->buf);
 					i = registerNp(args->buf);
 					if (i < 0)
-						PRINTF("NJ.C   : Error in registering\n");
+						PRINTF(">%s %d NpRegMethod: Error in registering\n",__FILE__ , __LINE__);
 					break;
 				}
 			} while (args->rval > 0);
@@ -704,8 +685,6 @@ void *NpRegMethod(void *arguments)
 void *NpUnRegMethod(void *arguments)
 {
 	struct thread_args *args = arguments;
-	PRINTF("NJ.C   : In NpUnReg\n");
-	PRINTF("NJ.C   : args -> msgsock - %d\n", args->msgsock);
 
 	listen(args->sock, QLEN);
 	int i = 0;
@@ -720,13 +699,12 @@ void *NpUnRegMethod(void *arguments)
 				     read(args->msgsock, args->buf, 1024)) < 0)
 					perror("NJ.C   : reading stream message");
 				else if (args->rval == 0)
-					PRINTF("NJ.C   : Ending connection\n");
+					PRINTF(">%s %d NpUnRegMethod: Ending connection\n",__FILE__ , __LINE__);
 				else {
 					i = unregisterNp(args->buf);
-					PRINTF("NJ.C   : -->%s\n", args->buf);
 
 					if (i < 0)
-						PRINTF("NJ.C   : Error in registering\n");
+						PRINTF("> %s %d NpUnRegMethod: Error in registering\n",__FILE__ , __LINE__);
 
 					break;
 				}
@@ -751,11 +729,9 @@ void *AppGetNotifyMethod(void *arguments)
 	int i = 0;
 	
 		
-	PRINTF("NJ.C   : In AppGetNotify\n");
-	PRINTF("NJ.C   : args -> msgsock - %d\n", args->msgsock);
 	
-	fprintf(logfd,"NJ.C   : In AppGetNotify\n");
-	fprintf(logfd,"NJ.C   : args -> msgsock - %d\n", args->msgsock);
+	fprintf(logfd,"> %s %d AppGetNotifyMethod: In AppGetNotify\n",__FILE__ , __LINE__);
+	fprintf(logfd,"> %s %d AppGetNotifyMehod: args -> msgsock - %d\n",__FILE__ , __LINE__, args->msgsock);
 
 	listen(args->sock, QLEN);
 
@@ -775,21 +751,18 @@ void *AppGetNotifyMethod(void *arguments)
 				bzero(args->buf, sizeof(args->buf));
 				args->rval = read(args->msgsock, args->buf, 1024);
 				strcpy(sendargs->buf, args->buf);
-				PRINTF("\n\n\nsendargs has buf = %s\n", sendargs->buf);
-			   	fprintf(logfd, "1. buf is %s \n",sendargs->buf);
+			   	fprintf(logfd, ">%s %d AppGetNotifyMethod : 1. buf is %s \n",__FILE__ , __LINE__,sendargs->buf);
 				if (args->rval < 0) {
 					perror("NJ.C   : reading stream message");
 					    
 					     pthread_mutex_unlock(&getnotify_socket_mutex);
 					}    
 				else if (args->rval == 0) {
-					PRINTF("NJ.C   : Ending connection\n");
+					PRINTF("> %s %d : Ending connection\n",__FILE__ , __LINE__);
 					 pthread_mutex_unlock(&getnotify_socket_mutex);
 			}
 				else {
-					PRINTF("ARGS SENDING TO PROCEEDGETN are %s\n\n\n", args->buf);
-					PRINTF("%d is i in ProcerdGetnotify \n",
-					       i);
+					PRINTF("> %s %d AppGetNofifyMethod %d is i in ProcerdGetnotify \n",__FILE__ ,__LINE__,i);
 					if (pthread_create(&threadarr[i++], NULL, &ProceedGetnotifyMethod, (void *)sendargs) == 0) {
 						perror("NJ.C   : Pthread_Creations for ProceedgetnotifyMethod\n");
 					}
@@ -799,7 +772,6 @@ void *AppGetNotifyMethod(void *arguments)
 				}
 
 			} while (args->rval > 0);
-		PRINTF("NJ.C   :  after exit ing args->rval is %d\n",
 		       args->rval);
 		close(args->msgsock);
 	}
@@ -840,27 +812,25 @@ void *NpGetNotifyMethod(void *arguments)
 for now I am sending the received strig directly as notificationstring for now I have simply returned the string receive1::value1 */
 	*args = *bargs;
 
-	fprintf(logfd, "8. buf is %s \n", args->argssend);
+	fprintf(logfd, "> %s %d NpGetNotifyMethod : 8. buf is %s \n",__FILE__ , __LINE__, args->argssend);
 	void (*getnotify) (struct getnotify_thread_args *);
 	
 	
-	PRINTF("1. args->argssend is %s\n", args->argssend);
+	PRINTF("> %s %d NpGetNotifyMethod started args->argssend is %s\n",__FILE__ , __LINE__, args->argssend);
 	strcpy(rough, args->argssend);
 	strcpy(r, rough);
 
     	strcpy(args_send_copy_2, args->argssend);
 
-    	fprintf(logfd, "9. buf is %s \n", args->argssend);
+    	fprintf(logfd, "> %s %d NpGetNotifyMethod:9. buf is %s \n",__FILE__ , __LINE__, args->argssend);
     	filename = getFilename(args_send_copy_2);
-    	fprintf(logfd, "10. buf is %s \n", args->argssend);
+    	fprintf(logfd, "> %s %d NpGetNotifyMehod:10. buf is %s \n",__FILE__ , __LINE__, args->argssend);
     	
 	force_logs();
-    	PRINTF("FILENAME obtained is %s\n", filename);
     
     
 	/* INOTIFY needs npname::<npname>##pathname::<pathname>##flags::<flags> */
 
-	PRINTF("NJ.C   : Args received by getnotify - %s\n", args->argssend);
 
 
 	strtok(r, delimattr);
@@ -870,28 +840,25 @@ for now I am sending the received strig directly as notificationstring for now I
 	strcpy(args->argssend, r);
 
 	strcpy(appname, strtok(rough, delimattr));
-	PRINTF("N.C : appname = %s\n", appname);
 	pid = atoi(appname);
-	fprintf(logfd, "77. pid is %d \n", pid);
+	fprintf(logfd, "> %s %d NpGetNotifyMethod:77. pid is %d \n",__FILE__ , __LINE__, pid);
 	strcpy(one, strtok(NULL, delimattr));
 	strtok(one, delimval);	/* HERE */
 	strcpy(np_name, strtok(NULL, delimval));
 
-	PRINTF("N.C : npname = %s\n", np_name);
 	/* Get the reg, Malloc space for a getn registration key_val  */
 
 	nptr = getReg(&appList, appname, np_name);
 	
 	if (nptr) {
-		PRINTF("\nRETURNED nptr->name = %s\n", nptr->name);
+		PRINTF("\n> %s %d NpGetNotifyMethod: RETURNED nptr->name = %s\n",__FILE__ , __LINE__, nptr->name);
 	}
 	else {
 	
-	    PRINTF("------Regitration not found---------\n\n");
+	    PRINTF(">%s %d NpGetNotifyMethod:Regitration not found---------\n\n",__FILE__ , __LINE__);
 	
 	}
 
-	PRINTF("NJ : ARGSSEND BEFORE EXTRACT : %s\n", args->argssend);
 
 	temp = (struct extr_key_val *)malloc(sizeof(struct extr_key_val));
 
@@ -905,7 +872,6 @@ for now I am sending the received strig directly as notificationstring for now I
 	if (m == NULL) {
 		nptr->key_val_ptr = temp;
 	} else {
-		PRINTF("EXTRAct : Next case else \n");
 		while (m != NULL) {
             		p = m; 
 			m = m->next;
@@ -914,7 +880,6 @@ for now I am sending the received strig directly as notificationstring for now I
 		temp->next = NULL;  
 	}
 
-	PRINTF("PRINTING BEFORE EXTRACT\n");
 
    
 	extractKeyVal(args->argssend, &pointer);
@@ -922,37 +887,34 @@ for now I am sending the received strig directly as notificationstring for now I
 	k = compareArray(&(np_node->key_val_arr), &pointer);
 	
     	if(k == 0)
-        	PRINTF("Array matched..\n");
+		;
     	else {
-        	PRINTF("Array not matched..\n");	
+        	PRINTF(">%s %d NpGetNotifyMethod:Array not matched..\n",__FILE__ , __LINE__);	
         	return NULL;
 	}
 	temp->key_val_arr = pointer;
-	printApp(&appList);
-	PRINTF("PRINTING AFTER EXTRACT\n");
+//	printApp(&appList);
     	forwardConvert(&(np_node->key_val_arr),&pointer, args->argssend);
 
 	/* HANDLE NO NAME AND STUFF */
  	
  	countkey = getValFromArgs(args->argssend, "count");
     	count = atoi(extractVal(countkey));
-    	PRINTF("count is %d!\n", count);
-    	fprintf(logfd, "99. count is %d! for buf %s!\n", count, args->argssend);
+    	fprintf(logfd, ">%s %d NpGetNotifyMethod :99. count is %d! for buf %s!\n",__FILE__ , __LINE__, count, args->argssend);
 	
  	x = getNpAppCnt(&npList, np_name);
-	PRINTF("NJ.C   : App Count = %d for NP = %s\n", x, np_name);
 
 	/* App count will be 0 initially. App can call getnotify only after NP has registered, and doing App_getnotify for the first time increments the count to 1. Therefore compare count with 1 to do dlopen() for the first time */
 	if (x == 1) {
 		/* Do dlopen() */
-		PRINTF("NJ.C   : Opening\n....\n");
+		PRINTF(">%s %d NpGetNotifyMethod: Opening library.\n",__FILE__ , __LINE__);
 		handle = dlopen("./libnpinotify.so", RTLD_LAZY);
 		if (!handle) {
 			perror("NJ.C   : Problem with dlopen :");
 			exit(1);
 		}
 
-		PRINTF("NJ.C   : dlopen successful\n");
+		PRINTF("> %s %d NpGetNotifyMethod : dlopen successful\n",__FILE__ , __LINE__);
 
 	}
 	/* Do dlsym() for getnotify() */
@@ -963,7 +925,7 @@ for now I am sending the received strig directly as notificationstring for now I
 			exit(1);
 		}
 
-		PRINTF("NJ.C   : Handle Successful\n");
+	//	PRINTF("NJ.C   : Handle Successful\n");
 		
 		strcpy(args_send_copy, args->argssend);	
 	for(;count != 0; count--) {
@@ -975,23 +937,21 @@ for now I am sending the received strig directly as notificationstring for now I
 			    return NULL;
 		    }
 	    
-		PRINTF("count = %d \n",count);
-			fprintf(logfd, "11 %d. buf is %s \n", count, args->argssend);
+			fprintf(logfd, ">%s %d NpGetNotifyMethod :11 %d. buf is %s \n",__FILE__ , __LINE__, count, args->argssend);
 			
 	force_logs();
 		(*getnotify) (args);
-		PRINTF("NJ.C   : In NPMethod, Recd = %s\n", args->argsrecv);
+		PRINTF(">%s %d NpGetNotifyMethod: Recd = %s\n",__FILE__ , __LINE__, args->argsrecv);
 		
 		//write
 		al = write((int)filefd, args->argsrecv, strlen(args->argsrecv));
 	    if (al < 0)
 		    perror("NJ.C   : Fwrite failed");
 	    else
-		    PRINTF("NJ.C   : %s madhe %d bytes WRITTEN\n", filename, al);
+		    PRINTF(">%s %d NpGetNotifyMethod : %s written  %d bytes WRITTEN\n",__FILE__ , __LINE__, filename, al);
 		
 		strcpy(args->argssend, args_send_copy);
 		//send signal call kill pid 
-		PRINTF("NJ.C   : Before Sig, %d sending to pid = %d \n", getpid(), pid);
 		if (kill(pid, SIGUSR1) == -1) {
 			perror("Error in kill :\n");
 			    // CHANGE TO PRINTF LATER
@@ -1006,7 +966,7 @@ for now I am sending the received strig directly as notificationstring for now I
 	/* dlclose(handle); */
 	/*HANDLE CLOSING PROPERLY. WHEN TO CLOSE */
 
-	PRINTF("NJ.C   : ARGSRECV IN THREAD HANDLER = %s\n", args->argsrecv);
+	PRINTF("> %s %d NpGetNotify: ARGSRECV IN THREAD HANDLER = %s\n",__FILE__ , __LINE__, args->argsrecv);
 	strcpy(bargs->argsrecv, args->argsrecv);
 	
 	
@@ -1030,16 +990,13 @@ void decAllNpCounts(app_dcll * appList, np_dcll * npList, char *app_name)
 	int cnt;
 	
 	// Find the app in the list. If it is found, for every np in its trailing list; visit the np_dcll and decrement its count.
-	PRINTF("All nps deleted, since np_name was passed NULL\n");
+	PRINTF("> %s %d decAllNpCounts :All nps deleted, since np_name was passed NULL\n",__FILE__ , __LINE__);
 	ptrapp = searchApp(appList, app_name);
 	if (ptrapp != NULL) {	// App found
 
 		cnt = ptrapp->np_count;
 		ptrnp = ptrapp->np_list_head;
-		PRINTF("Application %s found\n", ptrapp->data);
-		PRINTF("NPs are \n");
 		while (cnt) {
-			PRINTF("\t%s\t", ptrnp->name);
 			decrNpAppCnt(npList, ptrnp->name);
 			ptrnp = ptrnp->next;
 			cnt--;
@@ -1047,7 +1004,7 @@ void decAllNpCounts(app_dcll * appList, np_dcll * npList, char *app_name)
 
 	} else {
 
-		PRINTF("Error : NJ : Asked to delete non-existent application\n");
+		PRINTF("> %s %d decAllNpCounts:Error Asked to delete non-existent application\n",__FILE__ , __LINE__);
 
 	}
 
@@ -1070,19 +1027,16 @@ void *ProceedGetnotifyMethod(void *arguments)
 	args = (struct proceed_getn_thread_args *)malloc(sizeof(struct proceed_getn_thread_args));
 
 	*args = *temparguments;
-	PRINTF("ARGS SENDING TO PROCEEDGETN PROCEEDGETNOTIFY are %s\n\n\n", args->buf);
-	fprintf(logfd, "2. buf is %s \n", args->buf);
+	fprintf(logfd, "> %s %d ProceedGetNotifyMethod2. buf is %s \n",__FILE__ , __LINE__, args->buf);
 	
-	PRINTF("Writing to log file\n\n");
 	
 	force_logs();
 	
 	strcpy(rough, args->buf);
 	
 	if(args->buf == NULL)
-		PRINTF("args->buf is NULL\n\n");
+		PRINTF("> %s %d ProceedGetnotifyMethod args->buf is NULL\n\n",__FILE__ , __LINE__);
 	
-	PRINTF("NJ.C   :  %s  args-.buf received PROCEEDGETNOTIFY from library call\n", args->buf);
 	len = strlen(rough);
 	choice = rough[len - 1];
 
@@ -1096,7 +1050,6 @@ void *ProceedGetnotifyMethod(void *arguments)
 
 	j = strlen(rough);
 	
-	PRINTF("NJ.C   : Received args->buf is %s\n", args->buf);
 
 	strcpy(filename, "./");
 	strcat(filename, spid);
@@ -1104,9 +1057,8 @@ void *ProceedGetnotifyMethod(void *arguments)
 	strcat(filename, ".txt");
 	strcat(filename1, ".txt");
 	strcat(filename1, "\n");
-	PRINTF("NJ.C   : Filename:%s\n\n", filename);
 	   
-	fprintf(logfd, "3. buf is %s \n", args->buf);  
+	fprintf(logfd, "> %s %d ProceedGetnotifyMethod :3. buf is %s \n",__FILE__ , __LINE__, args->buf);  
 	force_logs();
  
 	buf = (char *)malloc(sizeof(char) * (strlen(args->buf) + 1 )); 
@@ -1116,24 +1068,21 @@ void *ProceedGetnotifyMethod(void *arguments)
 	        pthread_exit(NULL);
 	}
 	       
-	fprintf(logfd, "4. Notification received from getnotifyApp is %s \n", received); 
+	fprintf(logfd, "> %s %d ProceedGetnotifyMethod :4. Notification received from getnotifyApp is %s \n",__FILE__ , __LINE__, received); 
 	force_logs();
 	
 	if (choice == 'N') {
 		force_logs();
-		PRINTF("NJ.C   : %s \n", received);
 		strcat(received, "\n");
 		write((int)fd_pidnames, filename1, strlen(filename1));
-		PRINTF("\n\nPID filename is written successfully.....\n\n");
+		PRINTF("> %s %d ProceedGetnotifyMehod: PID filename is written successfully.....\n",__FILE__ , __LINE__);
 		
-		PRINTF("NJ.C   : After Sig \n");
 	}
-	PRINTF("NJ.C   : -->%s\n", args->buf);
 	
 	if (choice == 'B') {
 	    strcat(received, "\n");
 	    write((int)fd_pidnames, filename1, strlen(filename1));
-	    PRINTF("\n\nPID filename is written successfully.....\n\n");
+	    PRINTF("> %s %d ProceedGetnotifyMethod: PID filename is written successfully.....\n",__FILE__ , __LINE__);
 	}
 	
 	free(received);
@@ -1166,7 +1115,8 @@ char* extractVal(char *key_val) {
     	strcpy(temp, key_val);
     	ptr = strtok(temp, "::");
     	ptr = (key_val + strlen(ptr) + 2);
-    	if(!ptr) PRINTF("RETURNED NULL");
+    	if(!ptr) 
+		PRINTF(">%s %d extractVal:RETURNED NULL",__FILE__ , __LINE__);
     	val = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
     	strcpy(val, ptr);
     	return val;
@@ -1190,7 +1140,7 @@ int compareArray(char *** np_key_val_arr, char *** getn_key_val_arr) {
                 	two++;
             	}
             	if(found == 0) {
-                	PRINTF("ERROR : NJ : NP cannot process key %s\n", key_one);
+                	PRINTF("> %s %d compareArray:ERROR NP cannot process key %s\n",__FILE__ , __LINE__, key_one);
                 	free(key_one);
                 	free(key_two);
                 	return -1;
@@ -1210,13 +1160,11 @@ void forwardConvert(char ***np_key_val_arr,char ***getn_key_val_arr , char * fil
     	strcpy(ret_string,"\0");
     	two = *np_key_val_arr;
     	while(*two != NULL) {
-        	PRINTF("In loop of forward conbert \n");
         	found = 0;
         	key_two = extractKey(*two);
         	one = *getn_key_val_arr;
         	while(*one != NULL) {
             		key_one = extractKey(*one);
-            		PRINTF("%s is in one\n", *one);
             		if(!(strcmp(key_one, key_two))) {
                     		strcat(ret_string, *one);
                     		strcat(ret_string, "##");
@@ -1253,7 +1201,6 @@ char* getValFromArgs(char *usage, char* key) {
     	retstr = (char *)malloc(sizeof(char) * i);
 
     	strcpy(retstr, localkeyval);
-    	PRINTF("Retstr is %s!\n", retstr);
     	return retstr;
 }
     
@@ -1263,13 +1210,11 @@ char *getFilename(char *argsbuf) {
 	char spid[32], filename[64];
 
 	strcpy(rough, argsbuf);
-	PRINTF("NJ.C   :  %s  args-.buf received from library call\n", argsbuf);
 	strcpy(spid, strtok(rough, "##"));
-	PRINTF("NJ.C   : Received args->buf IN FILENAME FUNCTION %s\n", argsbuf);
 	strcpy(filename, "./");
 	strcat(filename, spid);
 	strcat(filename, ".txt");
-	PRINTF("NJ.C   : Filename:%s\n\n", filename);
+	PRINTF("> %s %d getFilename: Filename:%s\n\n",__FILE__ , __LINE__, filename);
 	retstr = (char*)malloc(sizeof(char) * (strlen(filename) + 1));
 	strcpy(retstr, filename);
     	return retstr;
