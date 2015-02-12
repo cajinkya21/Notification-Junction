@@ -21,9 +21,7 @@ void sigusrhandler(int signum) {
 		printf("received SIGUSR1 %d \n\n\n",times);
 		i = 0;
 		fgets(filebuffer, 128,  pidfd );
-		/*do {
-			frea(filebuffer + i,sizeof(char),1,pidfd);
-		} while((filebuffer[i] != '\n'));*/
+		
 		printf("Signalhandler Notification is %s \n",filebuffer);
 		return;
 	    //exit(0);			/* Application unregisters with inotify */

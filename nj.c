@@ -43,6 +43,8 @@ int fd_pidnames;					/* FD of file used for storing PID filenames */
 void *handle;						/* Handle of the function in shared library */
 pthread_mutex_t app_list_mutex, np_list_mutex,  getnotify_socket_mutex;
 							/*Mutexes to be used for synchronizing list*/
+pthread_t tid_stat, tid_app_reg, tid_app_unreg, tid_np_reg, tid_np_unreg, tid_app_getnotify;
+
 
 /* Function to forcefully write to log file */
 void force_logs(void) {
@@ -363,9 +365,32 @@ char *getnotify_app(char *buff)
 }
 void nj_exit(void) {
 	PRINTF(">%s %d nj_exit : NJ exiting \n",__FILE__, __LINE__);
+	/*pthread_cancel(tid_stat);
+	pthread_cancel(tid_app_reg);
+	pthread_cancel(tid_app_unreg);
+	pthread_cancel(tid_np_reg); 
+	pthread_cancel(tid_np_unreg);
+	pthread_cancel(tid_app_getnotify);
+	*/
+	if(pthread_mutex_trylock(&app_list_mutex) == EBUSY) {
+		printf("Already locked applist\n");
+	pthread_mutex_unlock(&app_list_mutex);		
+	}
+	//pthread_mutex_lock(&app_list_mutex);
+	empty_app_list(&appList);
+	//pthread_mutex_unlock(&app_list_mutex);
+	/*
+	if(pthread_mutex_trylock(&np_list_mutex) == EBUSY) {
+		printf("Already locked nplist\n");
+		pthread_mutex_unlock(&np_list_mutex);	
+	}
+	//pthread_mutex_lock(&np_list_mutex);
+	empty_np_list(&npList);	
+	//pthread_mutex_unlock(&np_list_mutex);
+	*/
 	pthread_mutex_destroy(&app_list_mutex);
 	pthread_mutex_destroy(&np_list_mutex);
-	/*write calls to unregister all apps and nps and free both the app_list and np_list*/
+
 	
 }
 /* main code */
@@ -373,7 +398,6 @@ int main()
 {
 	sigset_t mask;
 	struct thread_args stat, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
-	pthread_t tid_stat, tid_app_reg, tid_app_unreg, tid_np_reg, tid_np_unreg, tid_app_getnotify;
 	atexit(nj_exit);
 	if (!(logfd = fopen("LOGS", "a+"))) {
 		perror("NJ.C   : not able to open  Log file\n");
@@ -421,7 +445,7 @@ int main()
 	init_app(&appList);
 	pthread_mutex_unlock(&app_list_mutex);
 	
-	/* CREATE SOCKET FOR STAT */
+	/* create socket for stat */
 	stat.sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	PRINTF("> %s %d main :Socket stat created\n",__FILE__ , __LINE__);
 	if (stat.sock < 0) {
@@ -531,6 +555,7 @@ int main()
 	pthread_join(tid_app_getnotify, NULL);
 
 	
+	
 	return 0;
 
 }
@@ -565,7 +590,7 @@ void *print_stat(void *arguments)
 	unlink(StatSocket);
 
 	pthread_exit(NULL);
-	return NULL;
+	
 }
 
 void *app_reg_method(void *arguments)
@@ -602,7 +627,7 @@ void *app_reg_method(void *arguments)
 	unlink(AppReg);
 
 	pthread_exit(NULL);
-	return NULL;
+	
 }
 
 /*app unregister method that will run in thread forked for unregistration*/
@@ -643,7 +668,6 @@ void *app_unreg_method(void *arguments)
 	unlink(AppUnReg);
 
 	pthread_exit(NULL);
-	return NULL;
 }
 
 /*np register method that will run in thread forked for np registration*/
@@ -682,7 +706,6 @@ void *np_reg_method(void *arguments)
 	unlink(NpReg);
 
 	pthread_exit(NULL);
-	return NULL;
 }
 
 /*np unregister method that will run in thread forked for np unregistration*/
@@ -721,7 +744,6 @@ void *np_unreg_method(void *arguments)
 	unlink(NpUnReg);
 
 	pthread_exit(NULL);
-	return NULL;
 }
 
 /*app get notify method that will run in thread for get notification*/
@@ -768,7 +790,7 @@ void *app_getnotify_method(void *arguments)
 				else {
 					PRINTF("> %s %d AppGetNofifyMethod %d is i in ProcerdGetnotify \n",__FILE__ ,__LINE__,i);
 					if (pthread_create(&threadarr[i++], NULL, &proceed_getnotify_method, (void *)sendargs) == 0) {
-						perror("NJ.C   : Pthread_Creations for proceed_getnotify_method\n");
+						perror("NJ.C   : Pthread_Creations for proceed_getnotify_method ");
 					}
 					pthread_mutex_unlock(&getnotify_socket_mutex);
 					//proceed_getnotify_method(arguments);
@@ -788,7 +810,6 @@ void *app_getnotify_method(void *arguments)
 	unlink(AppUnReg);
 
 	pthread_exit(NULL);
-	return NULL;
 }
 
 /*np get notify method that will run np get notify thread*/

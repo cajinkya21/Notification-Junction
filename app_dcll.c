@@ -5,8 +5,8 @@
                             Kaveri Sangale<sangale.kaveri9@gmail.com>
 	All Rights Reserved.
 	
-    This program is //free software; you can redistribute it and/or modify it under the terms of the 
-    GNU General Public License as published by the //free Software Foundation; either version 3 of the
+    This program is free software; you can redistribute it and/or modify it under the terms of the 
+    GNU General Public License as published by the free Software Foundation; either version 3 of the
     License, or (at your option) any later version.
 
     This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
@@ -14,7 +14,7 @@
     See the GNU General Public License for more details.
        
     You should have received a copy of the GNU General Public License along with this program; if not, write to the 
-    //free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+    free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
 /* 
@@ -337,21 +337,28 @@ int del_app(app_dcll * l, char *val)
 		while(extr_kv != NULL) {
 			np_key_val_arr = (extr_kv)->key_val_arr;
 		 	i = 0;
-			while(np_key_val_arr[i++] != NULL) {
+			while(np_key_val_arr[i] != NULL) {
 				free(np_key_val_arr[i]);
+				np_key_val_arr[i] = NULL;
+				i++;
 			}
 			extr_kv_temp = extr_kv;
 			extr_kv = extr_kv->next;
 			free(extr_kv_temp);
+			extr_kv_temp = NULL;
 		}
 		np_temp = np_tail;
 		np_tail = np_tail->next;
 		free(np_temp->name);
+		np_temp->name = NULL;
 		free(np_temp);
+		np_temp = NULL;
 	}
 	
 	free(temp->data);
+	temp->data = NULL;
 	free(temp);
+	temp = NULL;
 	l->count--;
 	return 0;	
 }
@@ -485,18 +492,38 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 	while(extr_kv != NULL) {
 		np_key_val_arr = (extr_kv)->key_val_arr;
 	 	i = 0;
-		while(np_key_val_arr[i++] != NULL) {
+		while(np_key_val_arr[i] != NULL) {
 			free(np_key_val_arr[i]);
+			np_key_val_arr[i] = NULL;
+			i++;
 		}
 		extr_kv_temp = extr_kv;
 		extr_kv = extr_kv->next;
 		free(extr_kv_temp);
+		extr_kv_temp = NULL;
 	}
 	free(np_tail->name);
+	np_tail->name = NULL;
 	free(np_tail);	
-		
+	np_tail = NULL;
 	return 0;
 }
+void empty_app_list(app_dcll * l) {
+	
+	int i = l->count;
+	struct app_node *temp;
+	
+	temp = l->head;
+	
+	
+	for(; i != 0;i--) {
+		del_app( l, temp->data);
+		temp = temp->next;
+	}
+	printf(">%s %d empty_app_list : App List deleted completely  %d \n ",__FILE__ , __LINE__, l->count);
+	return ;
+}
+
 
 /* Below is the code to test the list */
 

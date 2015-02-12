@@ -187,10 +187,34 @@ int del_np(np_dcll * l, char *val)
 {
 	char **np_key_val_arr;
 	int i = 0;
-	main_np_node *p, *temp;
+	main_np_node *p, *temp, *q;
 	temp = search_np(l, val);
-
 	if (temp == NULL) {
+		return NOTFND;
+	}
+
+	else if (temp == l->head && l->count == 1) {
+
+		l->head->prev = NULL;
+		l->head->next = NULL;
+		l->head = NULL;
+	}
+
+	else if (temp == l->head && l->count > 1) {
+
+		l->head = temp->next;
+		p = temp->prev;
+		(temp->next)->prev = p;
+		p->next = temp->next;
+	} 
+	else {
+		p = temp->prev;
+		q = temp->next;
+		p->next = q;
+		q->prev = p;
+	}
+
+	/*if (temp == NULL) {
 		return NOTFND;
 	}
 
@@ -212,15 +236,21 @@ int del_np(np_dcll * l, char *val)
 		(temp->next)->prev = p;
 		p->next = temp->next;
 	}
-
+*/
 	np_key_val_arr = temp->key_val_arr;
-	while(np_key_val_arr[i++] != NULL) {
+	i = 0;
+	while(np_key_val_arr[i] != NULL) {
 		free(np_key_val_arr[i]);
+		np_key_val_arr[i] = NULL;
+		i++;
 	}
 	
 	free(temp->usage);
+	temp->usage = NULL;
 	free(temp->data);
+	temp->data = NULL;
 	free(temp);
+	temp = NULL;
 	l->count--;
 	return 0;
 	
@@ -266,8 +296,21 @@ void decr_np_app_cnt(np_dcll * l, char *nval)
 	printf("> %s %d decr_np_app_cnt() :\t%d\n", __FILE__, __LINE__, temp->app_count);
 }
 
-int check_key_validity(np_dcll * npList, char * key_to_check) {
-    return 1;
+void empty_np_list(np_dcll * l) {
+	printf("> %s %d empty_np_list : starting Np list count is %d ",__FILE__, __LINE__, l->count);
+
+	struct main_np_node *temp;
+	
+	temp = l->head;
+	
+	assert(l);
+	while(temp != NULL) {
+		del_np( l, temp->data);
+		temp = temp->next;
+	}
+	assert(l);
+	printf("> %s %d empty_np_list : Np list count is %d ",__FILE__, __LINE__, l->count);
+	return ;
 }
 
 

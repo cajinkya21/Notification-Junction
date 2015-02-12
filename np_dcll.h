@@ -31,6 +31,7 @@
 #include <string.h>
 #define ALREXST -1
 #define NOTFND -2
+#include <assert.h>
 
 /* The node for np(s) */
 
@@ -70,6 +71,6 @@ int del_np(np_dcll * l, char *val);
 void incr_np_app_cnt(np_dcll * l, char *nval);
 void decr_np_app_cnt(np_dcll * l, char *nval);
 int get_np_app_cnt(np_dcll * l, char *nval);
-int check_key_validity(np_dcll *npList, char *key_to_check);
+void empty_np_list(np_dcll * l);
 
 #endif				/*np_dcll.h */

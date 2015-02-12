@@ -36,6 +36,7 @@
 #include<stdlib.h>
 #include<unistd.h>
 #include <dlfcn.h>
+#include<errno.h>
 #define ALREXST -1
 #define NOTFND -2
 #define ERROR -1
