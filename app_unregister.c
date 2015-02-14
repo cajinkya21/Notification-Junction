@@ -1,10 +1,10 @@
 /*  
     Notification-Junction is an interface between multiple applications and multiple Notification Providers.
     Copyright (C) 2015      Navroop Kaur<watwanichitra@gmail.com>, 
-                            Shivani Marathe<maratheshivani94@gmail.com>, 
-                            Kaveri Sangale<sangale.kaveri9@gmail.com>
-	All Rights Reserved.
-	
+    Shivani Marathe<maratheshivani94@gmail.com>, 
+    Kaveri Sangale<sangale.kaveri9@gmail.com>
+    All Rights Reserved.
+
     This program is free software; you can redistribute it and/or modify it under the terms of the 
     GNU General Public License as published by the Free Software Foundation; either version 3 of the
     License, or (at your option) any later version.
@@ -12,14 +12,14 @@
     This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
     without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
     See the GNU General Public License for more details.
-       
+
     You should have received a copy of the GNU General Public License along with this program; if not, write to the 
     Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-*/
+ */
 
 /* 
-*	The file contains code for unregistering the application with NJ 
-*/
+ *	The file contains code for unregistering the application with NJ 
+ */
 
 #include <sys/types.h>
 #include <stdlib.h>
@@ -29,7 +29,7 @@
 #include <unistd.h>
 
 
-#define NAME "./app_unreg"
+#define NAME "./app_unreg_sock"
 
 int main(int argc, char *argv[])
 {
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
 	if (argc < 2) {
 		printf("APP_UNREG : Usage:%s <AppName>::<RegisteredNpName>",
-		       argv[0]);
+				argv[0]);
 		exit(1);
 	}
 
@@ -53,8 +53,8 @@ int main(int argc, char *argv[])
 	strcpy(server.sun_path, NAME);
 
 	if (connect
-	    (sock, (struct sockaddr *)&server,
-	     sizeof(struct sockaddr_un)) < 0) {
+			(sock, (struct sockaddr *)&server,
+			 sizeof(struct sockaddr_un)) < 0) {
 		close(sock);
 		perror("APP_UNREG : Connecting Stream Socket");
 		exit(1);

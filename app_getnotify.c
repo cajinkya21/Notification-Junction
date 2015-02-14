@@ -1,10 +1,10 @@
 /*  
     Notification-Junction is an interface between multiple applications and multiple Notification Providers.
     Copyright (C) 2015      Navroop Kaur<watwanichitra@gmail.com>, 
-                            Shivani Marathe<maratheshivani94@gmail.com>, 
-                            Kaveri Sangale<sangale.kaveri9@gmail.com>
-	All Rights Reserved.
-	
+    Shivani Marathe<maratheshivani94@gmail.com>, 
+    Kaveri Sangale<sangale.kaveri9@gmail.com>
+    All Rights Reserved.
+
     This program is free software; you can redistribute it and/or modify it under the terms of the 
     GNU General Public License as published by the Free Software Foundation; either version 3 of the
     License, or (at your option) any later version.
@@ -12,10 +12,10 @@
     This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
     without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
     See the GNU General Public License for more details.
-       
+
     You should have received a copy of the GNU General Public License along with this program; if not, write to the 
     Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-*/
+ */
 
 /* The file contains code for requesting the specific NP for specific notification by sending parameters in the form of key-value pair. */
 
@@ -27,8 +27,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define NAME "./app_getn"	/* Socket name for sending parametes */
-									/* and for getting notifications in case of BLOCKED getnotify */
+#define NAME "./app_getn_sock"	/* Socket name for sending parametes */
+/* and for getting notifications in case of BLOCKED getnotify */
 
 int main(int argc, char *argv[])
 {
@@ -42,8 +42,8 @@ int main(int argc, char *argv[])
 
 	if (argc < 2) {
 		printf
-		    ("APP_GETNOTIFY : usage : %s NPNAME::<NPNAME>## AND OTHER ARGS",
-		     argv[0]);
+			("APP_GETNOTIFY : usage : %s NPNAME::<NPNAME>## AND OTHER ARGS",
+			 argv[0]);
 		exit(1);
 	}
 
@@ -55,15 +55,15 @@ int main(int argc, char *argv[])
 	server.sun_family = AF_UNIX;
 	strcpy(server.sun_path, NAME);
 	if (connect
-	    (sock, (struct sockaddr *)&server,
-	     sizeof(struct sockaddr_un)) < 0) {
+			(sock, (struct sockaddr *)&server,
+			 sizeof(struct sockaddr_un)) < 0) {
 		close(sock);
 		perror("APP_GETNOTIFY : ERROR CONNECTING STREAM SOCKET :");
 		exit(1);
 	}
 	if (write(sock, data, sizeof(data)) < 0)
 		perror
-		    ("APP_GETNOTIFY : ERROR WRITING COMMAND ON STREAM SOCKET :");
+			("APP_GETNOTIFY : ERROR WRITING COMMAND ON STREAM SOCKET :");
 
 	strcpy(filename, strtok(data, "##"));
 	strcat(filename, ".txt");
@@ -72,11 +72,11 @@ int main(int argc, char *argv[])
 
 	if ((rval = read(fd, buf, 1024)) < 0)
 		perror
-		    ("APP_GETNOTIFY : ERROR READING STREAM SOCKET IN CLIENT \n");
+			("APP_GETNOTIFY : ERROR READING STREAM SOCKET IN CLIENT \n");
 	else
 		printf
-		    ("APP_GETNOTIFY : NOTIFICATION RECEIVED BY GETNOTIFY : %s\n",
-		     buf);
+			("APP_GETNOTIFY : NOTIFICATION RECEIVED BY GETNOTIFY : %s\n",
+			 buf);
 
 	//After reading delete the file (truncate)
 

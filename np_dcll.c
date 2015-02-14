@@ -1,10 +1,10 @@
 /*  
     Notification-Junction is an interface between multiple applications and multiple Notification Providers.
     Copyright (C) 2015      Navroop Kaur<watwanichitra@gmail.com>, 
-                            Shivani Marathe<maratheshivani94@gmail.com>, 
-                            Kaveri Sangale<sangale.kaveri9@gmail.com>
-	All Rights Reserved.
-	
+    Shivani Marathe<maratheshivani94@gmail.com>, 
+    Kaveri Sangale<sangale.kaveri9@gmail.com>
+    All Rights Reserved.
+
     This program is free software; you can redistribute it and/or modify it under the terms of the 
     GNU General Public License as published by the Free Software Foundation; either version 3 of the
     License, or (at your option) any later version.
@@ -12,25 +12,25 @@
     This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
     without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
     See the GNU General Public License for more details.
-       
+
     You should have received a copy of the GNU General Public License along with this program; if not, write to the 
     Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-*/
+ */
 
 /*
-*	This file contains the code for the dcll implementation of 
-*	Initialising,
-*	Adding an np,
-*	Printing the np list,
-*	Searching an np, 
-*	Deleting an np,
-*	Getting the count of tha applications registered with this particular np, and
-*	INcrementing the count of the applications registered with this particular np
-*	DEcrementing the count of the applications registered with this particular np
-*
-*	At the end of this file is the commented code to test the linked list
-*
-*/
+ *	This file contains the code for the dcll implementation of 
+ *	Initialising,
+ *	Adding an np,
+ *	Printing the np list,
+ *	Searching an np, 
+ *	Deleting an np,
+ *	Getting the count of tha applications registered with this particular np, and
+ *	INcrementing the count of the applications registered with this particular np
+ *	DEcrementing the count of the applications registered with this particular np
+ *
+ *	At the end of this file is the commented code to test the linked list
+ *
+ */
 
 #include "np_dcll.h"
 
@@ -48,7 +48,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 {
 
 	main_np_node *new;
-	
+
 	new = search_np(l, val);
 
 	if (new != NULL) {
@@ -124,7 +124,7 @@ void print_np(np_dcll * l)
 	}
 
 	printf("\n> %s %d print_np() : Total number of NPs : %d\n", __FILE__, __LINE__, l->count);
-	
+
 	ptr = l->head;
 	kptr = ptr->key_val_arr;
 
@@ -134,12 +134,12 @@ void print_np(np_dcll * l)
 	while (i) {
 		printf("> %s %d print_np() : %s   ", __FILE__, __LINE__, ptr->data);
 		printf("\t\t\t%d\n", ptr->app_count);
-		
+
 		while (*kptr) {
 			printf("\t\t\t\t%s\n", *kptr);
 			kptr++;
 		}
-		
+
 		printf("\n");
 		ptr = ptr->next;
 		i--;
@@ -215,28 +215,28 @@ int del_np(np_dcll * l, char *val)
 	}
 
 	/*if (temp == NULL) {
-		return NOTFND;
-	}
+	  return NOTFND;
+	  }
 
-	if (l->count == 1) {
-		l->head->prev = NULL;
-		l->head->next = NULL;
-		l->head = NULL;
-	}
+	  if (l->count == 1) {
+	  l->head->prev = NULL;
+	  l->head->next = NULL;
+	  l->head = NULL;
+	  }
 
-	else if (temp == l->head) {
-		l->head = temp->next;
-		p = temp->prev;
-		(temp->next)->prev = p;
-		p->next = temp->next;
-	}
+	  else if (temp == l->head) {
+	  l->head = temp->next;
+	  p = temp->prev;
+	  (temp->next)->prev = p;
+	  p->next = temp->next;
+	  }
 
-	else {
-		p = temp->prev;
-		(temp->next)->prev = p;
-		p->next = temp->next;
-	}
-*/
+	  else {
+	  p = temp->prev;
+	  (temp->next)->prev = p;
+	  p->next = temp->next;
+	  }
+	 */
 	np_key_val_arr = temp->key_val_arr;
 	i = 0;
 	while(np_key_val_arr[i] != NULL) {
@@ -244,7 +244,7 @@ int del_np(np_dcll * l, char *val)
 		np_key_val_arr[i] = NULL;
 		i++;
 	}
-	
+
 	free(temp->usage);
 	temp->usage = NULL;
 	free(temp->data);
@@ -253,7 +253,7 @@ int del_np(np_dcll * l, char *val)
 	temp = NULL;
 	l->count--;
 	return 0;
-	
+
 }
 
 /* For the np with the given name, if found, find the count of the applications that have registered with it */
@@ -261,7 +261,7 @@ int del_np(np_dcll * l, char *val)
 int get_np_app_cnt(np_dcll * l, char *nval)
 {
 	main_np_node *temp;
-	
+
 	temp = search_np(l, nval);
 	if (temp == NULL)
 		return NOTFND;
@@ -274,7 +274,7 @@ void incr_np_app_cnt(np_dcll * l, char *nval)
 {
 
 	main_np_node *temp;
-	
+
 	temp = search_np(l, nval);
 
 	if (temp == NULL)
@@ -300,9 +300,9 @@ void empty_np_list(np_dcll * l) {
 	printf("> %s %d empty_np_list : starting Np list count is %d ",__FILE__, __LINE__, l->count);
 
 	struct main_np_node *temp;
-	
+
 	temp = l->head;
-	
+
 	assert(l);
 	while(temp != NULL) {
 		del_np( l, temp->data);
@@ -316,94 +316,94 @@ void empty_np_list(np_dcll * l) {
 
 
 /*
-* This is the code for testing the list
-*/
+ * This is the code for testing the list
+ */
 
 /*void extractKeyVal(char *usage, char ***keyVal)
-{
-	int cnt = 0, i = 0;
-	char copyusage[512];
-	char *ptr;
-	
-	printf("NJ : EXTRACTVAL : usage is %s\n", usage);
-	
-	strcpy(copyusage, usage);
-	cnt = 4;					 
-	printf("EXTRACT KEYVAL : NJ : The count is %d\n", cnt);
-	
-	*keyVal = (char **)malloc((cnt + 1) * sizeof(char *));
-	ptr = strtok(copyusage, "##");
+  {
+  int cnt = 0, i = 0;
+  char copyusage[512];
+  char *ptr;
 
-	printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
-	(*keyVal)[i] = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+  printf("NJ : EXTRACTVAL : usage is %s\n", usage);
 
-	printf("Before strcpy\n");
-	strcpy((*keyVal)[i], ptr);
-	printf("After strcpy\n");
+  strcpy(copyusage, usage);
+  cnt = 4;					 
+  printf("EXTRACT KEYVAL : NJ : The count is %d\n", cnt);
 
-	for (i = 1; i < cnt; i++) {
-		ptr = strtok(NULL, "##");
-		if (!ptr) {
-			break;
-		}
-		printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
-		if (!((*keyVal)[i] = (char *)malloc(sizeof(char) * 128)))
-			perror("MALLOC IS THE CULPRIT");
-		printf("Before strcpy\n");
-		strcpy((*keyVal)[i], ptr);
-		printf("After strcpy\n");
-	}
-	(*keyVal)[i] = NULL;
-	return;
+ *keyVal = (char **)malloc((cnt + 1) * sizeof(char *));
+ ptr = strtok(copyusage, "##");
+
+ printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
+ (*keyVal)[i] = (char *)malloc(sizeof(char) * (strlen(ptr) + 1));
+
+ printf("Before strcpy\n");
+ strcpy((*keyVal)[i], ptr);
+ printf("After strcpy\n");
+
+ for (i = 1; i < cnt; i++) {
+ ptr = strtok(NULL, "##");
+ if (!ptr) {
+ break;
+ }
+ printf("EXTRACT : NJ : PTR[%d] is %s\n", i, ptr);
+ if (!((*keyVal)[i] = (char *)malloc(sizeof(char) * 128)))
+ perror("MALLOC IS THE CULPRIT");
+ printf("Before strcpy\n");
+ strcpy((*keyVal)[i], ptr);
+ printf("After strcpy\n");
+ }
+ (*keyVal)[i] = NULL;
+ return;
+ }
+
+ int main() {
+ char **keyVal;
+ np_dcll l;
+ char val[25];
+ initNp(&l);
+ int i;
+ int ch;
+ char *usage = (char *)malloc(sizeof(char) * 128);
+ while(1) {
+ printf("NP_DCLL  : Enter Choice :\n0 - Print\n1 - Add NP\n2 - Search NP\n3 - Delete NP\n4 - Increment app_val\n5 - Get app_val\n\n");
+ scanf("%d", &ch);
+ switch(ch) {
+
+ case 0 :	print_np(&l);
+ break;
+ case 1 :	printf("NP_DCLL  : Enter Val :\n");
+ scanf(" %s", val);
+ printf("Enter key val string:\n");
+ scanf("%s", usage);
+ extractKeyVal(usage, &keyVal);
+ add_np(&l, val, usage, &keyVal);
+ printNp(&l);
+ break;
+ case 2 : 	//printf("NP_DCLL  : Enter Val :\n");
+ scanf(" %s", val);
+ search_np(&l, val);
+ break;
+ case 3 :	//printf("NP_DCLL  : Enter Val :\n");
+ scanf(" %s", val);
+ del_np(&l, val);
+ printNp(&l);
+ break;
+ case 4 :	//printf("NP_DCLL  : Enter Val :\n");
+scanf(" %s", val);
+incr_np_app_cnt(&l, val);
+break;
+case 5 :	//printf("NP_DCLL  : Enter Val :\n");
+scanf(" %s", val);
+i = getNpAppCnt(&l, val);
+printf("NP_DCLL  : app_cnt:%d\n", i);
+break;
+case 6 : 	
+free(usage);
+exit(0);
 }
-
-int main() {
-	char **keyVal;
-	np_dcll l;
-	char val[25];
-	initNp(&l);
-	int i;
-	int ch;
-	char *usage = (char *)malloc(sizeof(char) * 128);
-	while(1) {
-		printf("NP_DCLL  : Enter Choice :\n0 - Print\n1 - Add NP\n2 - Search NP\n3 - Delete NP\n4 - Increment app_val\n5 - Get app_val\n\n");
-		scanf("%d", &ch);
-		switch(ch) {
-	
-			case 0 :	print_np(&l);
-					break;
-			case 1 :	printf("NP_DCLL  : Enter Val :\n");
-					scanf(" %s", val);
-					printf("Enter key val string:\n");
-					scanf("%s", usage);
-					extractKeyVal(usage, &keyVal);
-					add_np(&l, val, usage, &keyVal);
-					printNp(&l);
-					break;
-			case 2 : 	//printf("NP_DCLL  : Enter Val :\n");
-					scanf(" %s", val);
-					search_np(&l, val);
-					break;
-			case 3 :	//printf("NP_DCLL  : Enter Val :\n");
-					scanf(" %s", val);
-					del_np(&l, val);
-					printNp(&l);
-					break;
-			case 4 :	//printf("NP_DCLL  : Enter Val :\n");
-					scanf(" %s", val);
-					incr_np_app_cnt(&l, val);
-					break;
-			case 5 :	//printf("NP_DCLL  : Enter Val :\n");
-					scanf(" %s", val);
-					i = getNpAppCnt(&l, val);
-					printf("NP_DCLL  : app_cnt:%d\n", i);
-					break;
-			case 6 : 	
-					free(usage);
-					exit(0);
-		}
-	}
-	return 0;
+}
+return 0;
 
 }
 */

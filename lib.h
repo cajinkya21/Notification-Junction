@@ -11,9 +11,9 @@
 #include<unistd.h>
 #include<signal.h>
 #include<errno.h>
-#define AppGetnotify "app_getn"
-#define AppReg "app_reg"
-#define AppUnReg "app_unreg"
+#define AppGetnotify "app_getn_sock"
+#define AppReg "app_reg_sock"
+#define AppUnReg "app_unreg_sock"
 
 int appRegister(char *key_val_string);
 int appUnregister(char *key_val_string);
