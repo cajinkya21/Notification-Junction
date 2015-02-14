@@ -46,6 +46,7 @@
 #define NONBLOCKING 'N'
 #define BLOCKING 'B'
 #define LOGS "logs"
+#define PIDFILE "File_PIDS.txt"
 /* Create 2 sockets - app_reg, app_unreg*/
 /* Fork 2 threads - app_reg, app_unreg*/
 #define AppGetnotifySocket "app_getn_sock"
