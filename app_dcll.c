@@ -33,7 +33,7 @@
 
 #include "app_dcll.h"
 
-/* INITIALISE APPLICATION LIST */
+/* Initialise the application list */
 
 void init_app(app_dcll * l)
 {
@@ -41,16 +41,19 @@ void init_app(app_dcll * l)
 	l->count = 0;
 }
 
-/* APPEND NEW APPLICATION-NODE TO THE LIST */
+/* Append a new application "val" to the list */
 
 int add_app_node(app_dcll * l, char *val)
 {
 	
 	app_node *new, *tmp;
-	
-	tmp = search_app(l, val);	/* Search a app_node in app_list if it already exists */
+
+/* Search if the application exists; if it doesn't, return error ALREXST */	
+	tmp = search_app(l, val);	
 	if (tmp != NULL)
-		return ALREXST;	/* If node already exists, it returns ALREXST error */
+		return ALREXST;	
+
+/* Create and set values for the new node */
 	new = (app_node *) malloc(sizeof(app_node));
 
 	if (new == NULL) {
@@ -67,6 +70,7 @@ int add_app_node(app_dcll * l, char *val)
 
 	new->np_count = 0;
 
+	/* When there is no application in the list */
 	if (l->count == 0) {
 		l->head = new;
 		new->prev = new;
@@ -77,6 +81,7 @@ int add_app_node(app_dcll * l, char *val)
 		return 0;
 	}
 
+	/* When there is only one existing application in the list */
 	else if (l->count == 1) {
 		l->head->prev = new;
 		l->head->next = new;
@@ -88,6 +93,7 @@ int add_app_node(app_dcll * l, char *val)
 		return 0;
 	}
 
+	/* More than two applications in the list */
 	else {
 		l->head->prev->next = new;
 		new->prev = l->head->prev;
@@ -100,8 +106,7 @@ int add_app_node(app_dcll * l, char *val)
 	}
 }
 
-/* PRINT LIST */
-
+/* Print the list */
 void print_app(app_dcll * l)
 {
 
@@ -120,8 +125,8 @@ void print_app(app_dcll * l)
 	printf("\n> %s %d print_app() :App\t\t\tNp_Count", __FILE__, __LINE__);
 	printf("\n===================================\n");
 	
-	while (i) {		/* Printing list in forward direction */
-
+/* While applications in the list are being traversed, print the contents of each application node */
+	while (i) {		
 		printf("%s\t\t\t", ptr->data);
 		printf("%d\n", ptr->np_count);
 		print_np_key_val(ptr);
@@ -130,7 +135,8 @@ void print_app(app_dcll * l)
 		i--;
 	}
 
-	// Printing registrations
+	/* Print the registrations of each application */
+
 
 	i = l->count;
 	ptr = l->head;
@@ -139,10 +145,14 @@ void print_app(app_dcll * l)
 		printf("\n===================================\n");
 	}
 
+	/* While each application is being traversed */
+
 	while (i) {
 		np = ptr->np_list_head;
 		printf("\n%s\t\t\t", ptr->data);
 		
+		/* While it's trailing np list is being traversed */
+
 		while (np != NULL) {
 			printf("%s\n", np->name);
 			np = np->next;
@@ -154,6 +164,8 @@ void print_app(app_dcll * l)
 	}
 
 }
+
+/* Print the Key-Value strings of each getnotify instance associated with each registration of the given application */
 
 void print_np_key_val(app_node * temp)
 {
@@ -201,7 +213,7 @@ void print_np_key_val(app_node * temp)
 	return;
 }
 
-/* SEARCH APP, RETURN POINTER TO NODE */
+/* Search the application and return a pointer to it's node; return NULL if not found */
 
 app_node *search_app(app_dcll * l, char *val)
 {
@@ -231,6 +243,8 @@ app_node *search_app(app_dcll * l, char *val)
 	else
 		return ptr;
 }
+
+/* Search a registration in the Application List, for the given appname and npname and return -1 if found, otherwise return 0 */
 
 int search_reg(app_dcll * l, char *appname, char *npname)
 {
@@ -263,6 +277,8 @@ int search_reg(app_dcll * l, char *appname, char *npname)
 	return 0;
 }
 
+/* Search a registration in the Application List, for the given appname and npname and return a pointer to the npnode in the trailing list if found, otherwise return NULL */
+
 np_node *get_reg(app_dcll * l, char *appname, char *npname)
 {
 
@@ -279,7 +295,7 @@ np_node *get_reg(app_dcll * l, char *appname, char *npname)
 		printf("> %s %d get_reg() : App %s has been found. Checking np %s in app's list\n",__FILE__, __LINE__, appname, npname);
 		nptr = ptr->np_list_head;
 
-		/* CODE FOR CHECKING NP EXISTANCE */
+		/* Check the existance of the np in the trailing list */
 		while (nptr != NULL) {
 			if (!strcmp(npname, nptr->name)) {
 				return nptr;
@@ -293,7 +309,7 @@ np_node *get_reg(app_dcll * l, char *appname, char *npname)
 
 }
 
-/* DELETE APP */
+/* Delete application with given name */
 
 int del_app(app_dcll * l, char *val)
 {
@@ -303,12 +319,15 @@ int del_app(app_dcll * l, char *val)
 	app_node *p, *temp, *q;
 	struct extr_key_val *extr_kv, *extr_kv_temp;
 
+/* Check whether the requested application exists */
+
 	temp = search_app(l, val);
 	
 	if (temp == NULL) {
 		return NOTFND;
 	}
 
+/* If it is at the head of the list and the only application registered */
 	else if (temp == l->head && l->count == 1) {
 
 		l->head->prev = NULL;
@@ -316,6 +335,7 @@ int del_app(app_dcll * l, char *val)
 		l->head = NULL;
 	}
 
+/* If it is at the head of the list and there are more applications */
 	else if (temp == l->head && l->count > 1) {
 
 		l->head = temp->next;
@@ -323,6 +343,8 @@ int del_app(app_dcll * l, char *val)
 		(temp->next)->prev = p;
 		p->next = temp->next;
 	} 
+
+/* Any other case */
 	else {
 		p = temp->prev;
 		q = temp->next;
@@ -330,6 +352,8 @@ int del_app(app_dcll * l, char *val)
 		q->prev = p;
 	}
 	
+	/* Free logic */
+
 	np_tail = temp->np_list_head;
 	
 	while(np_tail != NULL) {
@@ -363,12 +387,15 @@ int del_app(app_dcll * l, char *val)
 	return 0;	
 }
 
+/* Add to the trailing list of the application "aval" the np "nval" */
 
 int add_np_to_app(app_dcll * l, char *aval, char *nval)
 {
 
 	app_node *temp;
 	np_node *n, *m, *b;
+
+/* Search if the application even exists */
 
     temp = search_app(l, aval);
 
@@ -417,7 +444,7 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 	return 0;
 }
 
-/* DELETE NP FROM APPLICATION */
+/* Delete the np "nval" from the trailing list of the application "aval" */
 
 int del_np_from_app(app_dcll * l, char *aval, char *nval)
 {
@@ -485,7 +512,9 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 	}
 	if(flag == 0)
 		return -1;
-	
+
+/* Logic for freeing the memory associated with the registration */
+
 	np_tail = m;
 		
 	extr_kv = np_tail->key_val_ptr;
