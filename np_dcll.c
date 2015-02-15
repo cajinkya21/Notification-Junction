@@ -24,9 +24,9 @@
  *	Printing the np list,
  *	Searching an np, 
  *	Deleting an np,
- *	Getting the count of tha applications registered with this particular np, and
- *	INcrementing the count of the applications registered with this particular np
- *	DEcrementing the count of the applications registered with this particular np
+ *	Getting the count of the applications registered with this particular np, and
+ *	Incrementing the count of the applications registered with this particular np
+ *	Decrementing the count of the applications registered with this particular np
  *
  *	At the end of this file is the commented code to test the linked list
  *
@@ -52,10 +52,12 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 	new = search_np(l, val);
 
 	if (new != NULL) {
-		printf("> %s %d add_np() :NP_DCLL : Existing NP\n", __FILE__, __LINE__);
+/*		printf("> %s %d add_np() :NP_DCLL : Existing NP\n", __FILE__, __LINE__);
 		new->data = (char *)malloc(sizeof(val) + 1);
 		new->usage = usage;
 		new->key_val_arr = *key_val_arr;
+*/
+		errno = EEXIST;
 		return ALREXST;
 	}
 
@@ -65,7 +67,6 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 		perror("NP_DCLL : ERROR IN MALLOC");
 		exit(1);
 	}
-	// WRITE AN INIT FUNCTION FOR A NODE
 
 	new->data = (char *)malloc((strlen(val) + 1) * sizeof(char));
 	new->usage = usage;
@@ -157,6 +158,7 @@ main_np_node *search_np(np_dcll * l, char *val)
 	main_np_node *ptr;
 
 	if (l->count == 0) {
+		errno = ENODEV;
 		return NULL;
 	}
 
@@ -174,11 +176,14 @@ main_np_node *search_np(np_dcll * l, char *val)
 	}
 
 	if (found == 0) {
+		errno = ENODEV;
 		return NULL;
 	}
 
-	else
+	else {
+		errno = EEXIST;
 		return ptr;
+	}
 }
 
 /* Delete the np with the given name, if found */
@@ -190,6 +195,7 @@ int del_np(np_dcll * l, char *val)
 	main_np_node *p, *temp, *q;
 	temp = search_np(l, val);
 	if (temp == NULL) {
+		errno = ENODEV;
 		return NOTFND;
 	}
 
@@ -214,29 +220,6 @@ int del_np(np_dcll * l, char *val)
 		q->prev = p;
 	}
 
-	/*if (temp == NULL) {
-	  return NOTFND;
-	  }
-
-	  if (l->count == 1) {
-	  l->head->prev = NULL;
-	  l->head->next = NULL;
-	  l->head = NULL;
-	  }
-
-	  else if (temp == l->head) {
-	  l->head = temp->next;
-	  p = temp->prev;
-	  (temp->next)->prev = p;
-	  p->next = temp->next;
-	  }
-
-	  else {
-	  p = temp->prev;
-	  (temp->next)->prev = p;
-	  p->next = temp->next;
-	  }
-	 */
 	np_key_val_arr = temp->key_val_arr;
 	i = 0;
 	while(np_key_val_arr[i] != NULL) {
@@ -263,8 +246,10 @@ int get_np_app_cnt(np_dcll * l, char *nval)
 	main_np_node *temp;
 
 	temp = search_np(l, nval);
-	if (temp == NULL)
+	if (temp == NULL) {
+		errno = ENODEV;	
 		return NOTFND;
+	}
 	return temp->app_count;
 }
 
@@ -277,8 +262,10 @@ void incr_np_app_cnt(np_dcll * l, char *nval)
 
 	temp = search_np(l, nval);
 
-	if (temp == NULL)
+	if (temp == NULL) {
+		errno = ENODEV;	
 		return;
+	}
 
 	temp->app_count++;
 }
@@ -289,8 +276,10 @@ void decr_np_app_cnt(np_dcll * l, char *nval)
 	main_np_node *temp;
 	temp = search_np(l, nval);
 
-	if (temp == NULL)
+	if (temp == NULL) {
+		errno = ENODEV;	
 		return;
+	}
 
 	temp->app_count--;
 	printf("> %s %d decr_np_app_cnt() :\t%d\n", __FILE__, __LINE__, temp->app_count);

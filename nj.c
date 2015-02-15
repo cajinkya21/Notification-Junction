@@ -101,7 +101,7 @@ int main()
 		perror("Nj.c Applist mutex Lock failed");
 	}
 	init_app(&appList);
-	
+
 	if(pthread_mutex_unlock(&app_list_mutex) != 0) {
 		perror("Nj.c applist mutex unlock failed");
 	}
@@ -188,7 +188,7 @@ int main()
 		perror("NJ.C   : binding stream socket");
 		exit(EXIT_FAILURE);
 	}
-	
+
 	/* fork threads to listen  and accept */
 	if ((ret = pthread_create(&tid_stat, NULL, &print_stat, (void *)&stat)) == 0) {
 		PRINTF("> %s %d main(): Pthread_Creation successful for stat\n",__FILE__ , __LINE__);
@@ -238,7 +238,7 @@ int main()
 	if((ret = pthread_join(tid_np_reg, NULL)) != 0 ) {
 		errno = ret;
 		perror("nj.c : Error in pthread_join joining Np Reg thread:");
-	
+
 	}
 	if((ret = pthread_join(tid_np_unreg, NULL)) != 0) {
 		errno = ret;
@@ -252,7 +252,7 @@ int main()
 		errno = ret;
 		perror("Error in pthread_join joining app Unregister thread");
 	}
-	
+
 	if((ret = pthread_join(tid_app_getnotify, NULL)) != 0 ) {
 		errno = ret;
 		perror("Error in pthread_join joining app_getnotify thread");
@@ -326,6 +326,7 @@ void *app_reg_method(void *arguments)
 					i = register_app(args->buf);
 					if (i < 0) {
 						PRINTF("> %s %d app_reg_method(): Error in registering, try again\n",__FILE__ , __LINE__);
+						perror("Error in app_reg_method() : ");
 					}
 					break;
 				}
@@ -368,8 +369,10 @@ void *app_unreg_method(void *arguments)
 				else {
 					i = unregister_app(args->buf);
 
-					if (i < 0)
+					if (i < 0)	{
 						PRINTF("> %s %d app_unreg_method(): Error in registering\n",__FILE__ , __LINE__);
+						perror("Error in app_reg_method() : ");
+					}					
 
 					break;
 				}
@@ -411,8 +414,11 @@ void *np_reg_method(void *arguments)
 				/*code to register np ie add entry in list */
 				else {	
 					i = register_np(args->buf);
-					if (i < 0)
+					if (i < 0) {
 						PRINTF(">%s %d np_reg_method(): Error in registering\n",__FILE__ , __LINE__);
+						perror("Error in np_reg_method() : ");
+
+					}
 					break;
 				}
 			} while (args->rval > 0);
@@ -452,9 +458,10 @@ void *np_unreg_method(void *arguments)
 				else {
 					i = unregister_np(args->buf);
 
-					if (i < 0)
+					if (i < 0) {
 						PRINTF("> %s %d np_unreg_method(): Error in registering\n",__FILE__ , __LINE__);
-
+						perror("Error in np_unreg_method() : ");
+					}
 					break;
 				}
 			} while (args->rval > 0);
@@ -501,6 +508,8 @@ void *app_getnotify_method(void *arguments)
 				}
 				if((sendargs = (struct proceed_getn_thread_args *)malloc(sizeof(struct proceed_getn_thread_args))) == NULL) {
 					PRINTF("> %s %d app_getnotify_method(): malloc failed\n ",__FILE__, __LINE__);
+					errno = ECANCELED;
+					perror("Malloc failed");
 				}
 
 				bzero(args->buf, sizeof(args->buf));
@@ -524,7 +533,7 @@ void *app_getnotify_method(void *arguments)
 				/* code to fork a thread per getnotify() request and send the arguments to the thread's action */
 				else {
 					PRINTF("> %s %d app_getnotify_method(): %d is i in ProcerdGetnotify \n",__FILE__ ,__LINE__,i);
-					
+
 					if ((ret = pthread_create(&threadarr[i++], NULL, &proceed_getnotify_method, (void *)sendargs)) == 0) {
 						PRINTF("> %s %d app_getnotify_method(): Pthread_Creations for proceed_getnotify_method\n",__FILE__, __LINE__);
 					}
@@ -544,7 +553,7 @@ void *app_getnotify_method(void *arguments)
 		close(args->msgsock);
 	}
 	while (i >= 0) {
-	
+
 		if((ret = pthread_join(threadarr[i], NULL)) != 0) {
 			errno = ret;
 			perror("Error in pthread_join joining threads created by app_getnotify Method:");
@@ -581,6 +590,8 @@ void *np_getnotify_method(void *arguments)
 	bargs = (struct getnotify_thread_args *)arguments;
 	if((args = (struct getnotify_thread_args *)malloc(sizeof(struct getnotify_thread_args))) == NULL) {
 		PRINTF("> %s %d np_getnotify_method() : malloc failed\n", __FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
 	}
 
 	*args = *bargs;
@@ -625,10 +636,16 @@ void *np_getnotify_method(void *arguments)
 
 	else {
 		PRINTF(">%s %d np_getnotify_method():Regitration not found---------\n\n",__FILE__ , __LINE__);
+		perror("Registration doesn't exist - ");
+		//and exit
+		errno = ENODEV;
 	}
 
 	if((temp = (struct extr_key_val *)malloc(sizeof(struct extr_key_val))) == NULL) {
 		PRINTF("> %s %d np_getnotify_method(): malloc failed \n", __FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+		/* For every malloc() handling */
 	}
 
 	temp->next = NULL;
@@ -661,6 +678,7 @@ void *np_getnotify_method(void *arguments)
 
 	else {
 		PRINTF(">%s %d np_getnotify_method() :Array not matched..\n",__FILE__ , __LINE__);	
+		errno = EINVAL;
 		return NULL;
 	}
 
@@ -779,6 +797,7 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 	} else {
 
 		PRINTF("> %s %d dec_all_np_counts():Error Asked to delete non-existent application\n",__FILE__ , __LINE__);
+		perror("App doesn't exist - ");
 
 	}
 
@@ -800,6 +819,9 @@ void *proceed_getnotify_method(void *arguments)
 	temparguments = (struct proceed_getn_thread_args *)arguments;
 	if((args = (struct proceed_getn_thread_args *)malloc(sizeof(struct proceed_getn_thread_args))) == NULL) {
 		PRINTF("> %s %d proceed_getnotify_method(): malloc failed\n",__FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+
 	}
 
 	*args = *temparguments;
@@ -838,6 +860,8 @@ void *proceed_getnotify_method(void *arguments)
 
 	if((buf = (char *)malloc(sizeof(char) * (strlen(args->buf) + 1 ))) == NULL ) {
 		PRINTF("> %s %d proceed_getnotify_method(): malloc failed\n", __FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
 	}
 	strcpy(buf, args->buf);
 
@@ -884,6 +908,9 @@ char* extract_key(char *key_val) {
 	ptr = strtok(temp, "::");
 	if((key = (char *)malloc(sizeof(char) * (strlen(ptr) + 1))) == NULL) {
 		PRINTF("> %s %d extract_key() : malloc failed \n", __FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+
 	}
 	strcpy(key, ptr);
 	return key;
@@ -898,10 +925,16 @@ char* extract_val(char *key_val) {
 	strcpy(temp, key_val);
 	ptr = strtok(temp, "::");
 	ptr = (key_val + strlen(ptr) + 2);
-	if(!ptr) 
+	if(!ptr) {
 		PRINTF(">%s %d extract_val:RETURNED NULL",__FILE__ , __LINE__);
+		errno = ENODEV;
+		return NULL;
+	}
 	if((val = (char *)malloc(sizeof(char) * (strlen(ptr) + 1))) == NULL) {
 		PRINTF("> %s %d extract_val(): malloc failed\n", __FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+
 	}
 	strcpy(val, ptr);
 	return val;
@@ -927,6 +960,7 @@ int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr) {
 		}
 		if(found == 0) {
 			PRINTF("> %s %d compare_array():ERROR NP cannot process key %s\n",__FILE__ , __LINE__, key_one);
+			errno = EINVAL;
 			free(key_one);
 			free(key_two);
 			return -1;
@@ -1007,6 +1041,9 @@ char *get_filename(char *argsbuf) {
 	PRINTF("> %s %d get_filename(): Filename:%s\n\n",__FILE__ , __LINE__, filename);
 	if((retstr = (char*)malloc(sizeof(char) * (strlen(filename) + 1))) == NULL) {
 		PRINTF("> %s %d get_filename(): malloc failed\n",__FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+
 	}
 	strcpy(retstr, filename);
 	return retstr;
@@ -1082,7 +1119,9 @@ int register_app(char *buff)
 	if(np_name != NULL) {
 		/*Check if NP provided is registered or not */
 		if (search_np(&npList, np_name) == NULL) {				/* NP is not registerd */
+			perror("Np not registered - ");
 			PRINTF("> %s %d register_app(): Np not registered. Register NP first.\n", __FILE__ , __LINE__);
+			errno = ENODEV;
 			return -1;
 		}
 
@@ -1098,6 +1137,8 @@ int register_app(char *buff)
 			retval = search_reg(&appList, app_name, np_name);
 			if (retval == -1) {
 				PRINTF("> %s %d register_app() : EXISTING REGISTRATION\n", __FILE__ , __LINE__);
+				perror("Registration exists, printing from perror - ");
+				errno = EEXIST;
 				return -2;
 			}
 			else {	 
@@ -1128,6 +1169,7 @@ int unregister_app(char *buff)
 {
 	char app_name[32], np_name[32], delim[3] = "::";
 	char *np_ptr;
+	int val;
 
 	strcpy(app_name, strtok(buff, delim));
 	np_ptr = strtok(NULL, delim);
@@ -1156,6 +1198,9 @@ int unregister_app(char *buff)
 		/* If the application doesn't exist */
 		else {
 			PRINTF("> %s %d unregister_app(): App not found\n", __FILE__, __LINE__);
+
+			perror("App not found, printing from perror - ");
+			errno = ENODEV;
 			return -3;
 		}
 
@@ -1164,13 +1209,14 @@ int unregister_app(char *buff)
 	/* Given appname::npname */
 	else {
 		/* If the registration exists, delete it */
-		if (search_reg(&appList, app_name, np_name) == -1) {
+		if ((val = search_reg(&appList, app_name, np_name)) == -1) {
 			PRINTF("> %s %d unregister_app(): REGISTRATION FOUND.\n", __FILE__ , __LINE__);
 			del_np_from_app(&appList, app_name, np_name);
 			decr_np_app_cnt(&npList, np_name);
 		}
-		else {
+		else if(val == 0) {
 			PRINTF("> %s %d unregister_app(): Invalid argument to app_unregister : Registration not found\n", __FILE__, __LINE__);
+			perror("App not found, printing from perror - ");
 		}
 
 	}
@@ -1204,13 +1250,13 @@ int register_np(char *buff)
 
 	strcpy(usage, s);
 	extract_key_val(usage, &keyVal);
-	
-	
+
+
 	if(pthread_mutex_lock(&np_list_mutex) != 0) {
 		perror("NJ.C: Np List mutex Lock failed :");
 	};	
-	
-	
+
+
 	new = search_np(&npList, np_name);					/* Search for already existing registration */
 
 	if(new != NULL) {
@@ -1239,11 +1285,17 @@ void extract_key_val(char *usage, char ***keyVal)
 
 	if((*keyVal = (char **)malloc((cnt + 1) * sizeof(char *))) == NULL) {
 		PRINTF(" >%s %d extract_key_val() : malloc failed", __FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+
 	}
 	ptr = strtok(copyusage, "##");
 
 	if(((*keyVal)[i] = (char *)malloc(sizeof(char) * (strlen(ptr) + 1))) == NULL) {
 		PRINTF("> %s %d extract_key_val() : malloc failed ", __FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+
 	}
 
 	strcpy((*keyVal)[i], ptr);
@@ -1254,8 +1306,11 @@ void extract_key_val(char *usage, char ***keyVal)
 		if (!ptr) {
 			break;
 		}
-		if (((*keyVal)[i] = (char *)malloc(sizeof(char) * 128)) == NULL)
+		if (((*keyVal)[i] = (char *)malloc(sizeof(char) * 128)) == NULL) {
 			PRINTF("> %s %d extract_key_val(): Error in malloc", __FILE__, __LINE__);
+			errno = ECANCELED;
+			perror("Malloc failed");
+		}
 		strcpy((*keyVal)[i], ptr);
 	}
 	(*keyVal)[i] = NULL;
@@ -1340,12 +1395,14 @@ int unregister_np(char *buff)
 	}
 	else {
 		PRINTF(">%s %d unregister_np(): Np not registerd.\n", __FILE__ , __LINE__);
+		perror("Not found NP - ");
+		errno = ENODEV;
 		return -1;
 	}
 
 	print_np(&npList);
 	print_app(&appList);
-	
+
 	if(pthread_mutex_unlock(&np_list_mutex) != 0) {
 		perror("NJ.C: Np List mutex unLock failed :");
 	}
@@ -1367,9 +1424,15 @@ char *getnotify_app(char *buff)
 
 	if((notification = (char *)malloc(1024 * sizeof(char))) == NULL) {
 		PRINTF("> %s %d getnotify_app(): malloc failed",__FILE__,__LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+
 	}
 	if((arguments = (struct getnotify_thread_args *)malloc(sizeof(struct getnotify_thread_args))) == NULL) {
 		PRINTF("> %s %d getnotify_app() : malloc failed ", __FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+
 	}
 	strcpy(arguments->argssend, buff);
 
@@ -1384,7 +1447,7 @@ char *getnotify_app(char *buff)
 		errno = ret;
 		perror("Error in pthread_create for np_getnotify_method:");
 	}
-	
+
 	if(( ret = pthread_join(tid_app_np_gn, NULL)) != 0) {
 		perror("Error in joining threads pthread_join created by  getnotify_app(proceed_getnotify_method):");
 	}
@@ -1410,17 +1473,17 @@ void nj_exit(void) {
 	  pthread_cancel(tid_np_reg); 
 	  pthread_cancel(tid_np_unreg);
 	  pthread_cancel(tid_app_getnotify);
-	*/
-	  if(pthread_mutex_trylock(&app_list_mutex) == EBUSY) {
-	  	if(pthread_mutex_unlock(&app_list_mutex) != 0) {
-	  		PRINTF("> %s %d nj_exit(): Error in unlocking app_list_mutex\n", __FILE__, __LINE__);
-	  	}		
-	  }
-	  if(pthread_mutex_trylock(&np_list_mutex) == EBUSY) {
-	  	if(pthread_mutex_unlock(&np_list_mutex) != 0) {
-	  		PRINTF("> %s %d nj_exit(): Error in unlocking Np_list_mutex\n", __FILE__, __LINE__);
-	  	}		
-	  }
+	 */
+	if(pthread_mutex_trylock(&app_list_mutex) == EBUSY) {
+		if(pthread_mutex_unlock(&app_list_mutex) != 0) {
+			PRINTF("> %s %d nj_exit(): Error in unlocking app_list_mutex\n", __FILE__, __LINE__);
+		}		
+	}
+	if(pthread_mutex_trylock(&np_list_mutex) == EBUSY) {
+		if(pthread_mutex_unlock(&np_list_mutex) != 0) {
+			PRINTF("> %s %d nj_exit(): Error in unlocking Np_list_mutex\n", __FILE__, __LINE__);
+		}		
+	}
 	if((pthread_mutex_lock(&app_list_mutex)) != 0) {
 		perror("Error acquiring lock for app list mutex:");
 	}
@@ -1429,15 +1492,15 @@ void nj_exit(void) {
 		perror("Error unlocking appList mutex:");
 	}
 
-	
+
 	/*if((pthread_mutex_lock(&np_list_mutex)) != 0) {
-		perror("Error acquiring npList mutex:");
-	}
-	empty_np_list(&npList);	
-	if((pthread_mutex_unlock(&np_list_mutex)) != 0) {
-		perror("Error unlocking npList mutex:");
-	}*/
-	
+	  perror("Error acquiring npList mutex:");
+	  }
+	  empty_np_list(&npList);	
+	  if((pthread_mutex_unlock(&np_list_mutex)) != 0) {
+	  perror("Error unlocking npList mutex:");
+	  }*/
+
 	if((ret = pthread_mutex_destroy(&app_list_mutex)) != 0) {
 		errno = ret;
 		perror("Error in destroying app_list_mutex:");

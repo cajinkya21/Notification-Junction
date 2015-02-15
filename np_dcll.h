@@ -24,7 +24,7 @@
 
 #ifndef _NPDCLL_H
 #define _NPDCLL_H
-
+#include<errno.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<unistd.h>

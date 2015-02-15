@@ -25,6 +25,7 @@
 #include<stdlib.h>
 #include<unistd.h>
 #include <string.h>
+#include<errno.h>
 #define ALREXST -1
 #define NOTFND -2
 
