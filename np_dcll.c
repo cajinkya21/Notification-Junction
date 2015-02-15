@@ -64,6 +64,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 	new = (main_np_node *) malloc(sizeof(main_np_node));
 
 	if (new == NULL) {
+		errno = ECANCELED;
 		perror("NP_DCLL : ERROR IN MALLOC");
 		exit(1);
 	}
@@ -73,6 +74,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 	new->key_val_arr = *key_val_arr;
 
 	if (new->data == NULL) {
+		errno = ECANCELED;
 		perror("NP_DCLL : ERROR IN MALLOC");
 		exit(1);
 	}

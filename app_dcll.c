@@ -58,6 +58,7 @@ int add_app_node(app_dcll * l, char *val)
 	new = (app_node *) malloc(sizeof(app_node));
 
 	if (new == NULL) {
+		errno = ECANCELED;
 		perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
 		exit(1);
 	}
@@ -65,6 +66,7 @@ int add_app_node(app_dcll * l, char *val)
 	new->data =(char *)malloc((strlen(val) + 1) * sizeof(char));
 
 	if (new->data == NULL) {
+		errno = ECANCELED;
 		perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
 		exit(1);
 	}
@@ -414,6 +416,7 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 	n = (np_node *)malloc(sizeof(np_node));
 
 	if (n == NULL) {
+		errno = ECANCELED;
 		perror("APP_DCLL :  ERROR IN MALLOC");
 		exit(1);
 	}
@@ -422,6 +425,7 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 	n->key_val_ptr = NULL;
 
 	if (n->name == NULL) {
+		errno = ECANCELED;
 		perror("APP_DCLL :  ERROR IN MALLOC");
 		exit(1);
 	}
