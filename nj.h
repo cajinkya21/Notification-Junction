@@ -135,4 +135,5 @@ char *get_filename(char *argsbuf);
 
 int count_args(char *usage, char *count_occurence_of);
 void nj_exit(void); /*function called whenever NJ exits*/
+
 #endif				/*nj.h */

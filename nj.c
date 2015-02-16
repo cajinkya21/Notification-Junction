@@ -1474,6 +1474,8 @@ void nj_exit(void) {
 	  pthread_cancel(tid_np_unreg);
 	  pthread_cancel(tid_app_getnotify);
 	 */
+	 
+	 /*
 	if(pthread_mutex_trylock(&app_list_mutex) == EBUSY) {
 		if(pthread_mutex_unlock(&app_list_mutex) != 0) {
 			PRINTF("> %s %d nj_exit(): Error in unlocking app_list_mutex\n", __FILE__, __LINE__);
@@ -1487,19 +1489,19 @@ void nj_exit(void) {
 	if((pthread_mutex_lock(&app_list_mutex)) != 0) {
 		perror("Error acquiring lock for app list mutex:");
 	}
-	empty_app_list(&appList);
+	//empty_app_list(&appList);
 	if((pthread_mutex_unlock(&app_list_mutex)) != 0) {
 		perror("Error unlocking appList mutex:");
 	}
 
 
-	/*if((pthread_mutex_lock(&np_list_mutex)) != 0) {
+	if((pthread_mutex_lock(&np_list_mutex)) != 0) {
 	  perror("Error acquiring npList mutex:");
 	  }
-	  empty_np_list(&npList);	
+	  //empty_np_list(&npList);	
 	  if((pthread_mutex_unlock(&np_list_mutex)) != 0) {
 	  perror("Error unlocking npList mutex:");
-	  }*/
+	  }
 
 	if((ret = pthread_mutex_destroy(&app_list_mutex)) != 0) {
 		errno = ret;
@@ -1513,6 +1515,62 @@ void nj_exit(void) {
 		errno = ret;
 		perror("Error in destroying getnotify_socket_mutex");
 	}
+*/
+
+
+
+	/* For every np, delete its registration with the app first */
+	int i = appList.count;
+	int j = npList.count;
+	struct app_node *temp;
+	struct main_np_node *temp2;
+
+	temp = appList.head;
+	
+	temp2 = npList.head;
+	/*
+	while(temp2 != NULL) {
+		unregister_np(temp2->data);
+		temp2 = temp2->next;
+	}
+
+	printf("> %s %d empty_np_list : Np list count is %d ",__FILE__, __LINE__, npList.count);
+	*/
+	
+	printf("temp2->data = %s\n", temp2->data);
+
+	
+	for(; i != 0;i--) {
+		unregister_app(temp->data);
+		temp = temp->next;
+	}
+	
+	printf(">%s %d empty_app_list : App List deleted completely  %d \n ",__FILE__ , __LINE__, appList.count);
+	
+	/*
+	for(; j != 0;j--) {
+		del_np(&npList, temp2->data);
+		temp2 = temp2->next;
+	}
+	*/
+	
+	print_app(&appList);
+	
+	print_np(&npList);
+	
+	if((ret = pthread_mutex_destroy(&app_list_mutex)) != 0) {
+		errno = ret;
+		perror("Error in destroying app_list_mutex:");
+	}
+	if((ret = pthread_mutex_destroy(&np_list_mutex)) != 0) {
+		errno = ret;
+		perror("Error in destroying np_list_mutex:");
+	}
+	if((ret = pthread_mutex_destroy(&getnotify_socket_mutex)) != 0) {
+		errno = ret;
+		perror("Error in destroying getnotify_socket_mutex");
+	}
+
 
 }
 

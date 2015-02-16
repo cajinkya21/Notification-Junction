@@ -286,7 +286,7 @@ void decr_np_app_cnt(np_dcll * l, char *nval)
 	temp->app_count--;
 	printf("> %s %d decr_np_app_cnt() :\t%d\n", __FILE__, __LINE__, temp->app_count);
 }
-
+/*
 void empty_np_list(np_dcll * l) {
 	printf("> %s %d empty_np_list : starting Np list count is %d ",__FILE__, __LINE__, l->count);
 
@@ -304,7 +304,7 @@ void empty_np_list(np_dcll * l) {
 	return ;
 }
 
-
+*/
 
 /*
  * This is the code for testing the list

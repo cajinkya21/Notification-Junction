@@ -557,6 +557,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 	np_tail = NULL;
 	return 0;
 }
+/*
 void empty_app_list(app_dcll * l) {
 	
 	int i = l->count;
@@ -572,7 +573,7 @@ void empty_app_list(app_dcll * l) {
 	printf(">%s %d empty_app_list : App List deleted completely  %d \n ",__FILE__ , __LINE__, l->count);
 	return ;
 }
-
+*/
 
 /* Below is the code to test the list */
 

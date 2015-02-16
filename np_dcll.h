@@ -71,6 +71,6 @@ int del_np(np_dcll * l, char *val);
 void incr_np_app_cnt(np_dcll * l, char *nval);
 void decr_np_app_cnt(np_dcll * l, char *nval);
 int get_np_app_cnt(np_dcll * l, char *nval);
-void empty_np_list(np_dcll * l);
+//void empty_np_list(np_dcll * l);
 
 #endif				/*np_dcll.h */

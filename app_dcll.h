@@ -92,5 +92,5 @@ int del_app(app_dcll * l, char *val);
 int add_np_to_app(app_dcll * l, char *aval, char *nval);
 int del_np_from_app(app_dcll * l, char *aval, char *nval);
 void print_np_key_val(app_node * temp);
-void empty_app_list(app_dcll * l); /*function to destroy  and free complete list*/
+//void empty_app_list(app_dcll * l); /*function to destroy  and free complete list*/
 #endif /*app_dcll.h */
