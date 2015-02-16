@@ -1332,6 +1332,9 @@ int count_args(char *myString, char *delim) {
 /*function to unregister an np*/
 int unregister_np(char *buff)
 {
+
+	printf("in unregister\n");
+
 	char np_name[32];
 	char delim[3] = "::";
 	int app_cnt;
@@ -1348,11 +1351,16 @@ int unregister_np(char *buff)
 	};
 	app_cnt = appList.count;
 
+	printf("Looking1\n");
+
 	/* Check if the NP exists */    
 	if(search_np(&npList, np_name) != NULL) {
 		/* For every application it is registered with */
 		while(app_cnt != 0) {
 			/* Search every application's trailing list for a registration with that NP; remove that registration and reduce that application's count by one */			
+			
+			printf("Looking\n");
+			
 			if(search_reg(&appList, aptr->data, np_name) == -1) {
 				p = aptr->np_list_head;
 
@@ -1390,6 +1398,7 @@ int unregister_np(char *buff)
 			aptr = aptr->next;
 			app_cnt--;	   	
 		}
+		printf("here\n");
 		del_np(&npList, np_name);
 
 	}
@@ -1547,12 +1556,28 @@ void nj_exit(void) {
 	
 	printf(">%s %d empty_app_list : App List deleted completely  %d \n ",__FILE__ , __LINE__, appList.count);
 	
-	/*
+	
+	print_app(&appList);
+	
+	print_np(&npList);
+
+	
 	for(; j != 0;j--) {
-		del_np(&npList, temp2->data);
+		
+		printf("IN NP LOOP, before delete\n");
+	
+		temp2->app_count = 0;
+	
+		unregister_np(temp2->data);
+		
+		printf("Deleting\n");
+		
 		temp2 = temp2->next;
+		
+		printf("next\n");
+	
 	}
-	*/
+	
 	
 	print_app(&appList);
 	

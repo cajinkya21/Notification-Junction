@@ -47,11 +47,11 @@ void init_np(np_dcll * l)
 int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 {
 
-	main_np_node *new;
+	main_np_node *new, *tmp;
 
-	new = search_np(l, val);
+	tmp = search_np(l, val);
 
-	if (new != NULL) {
+	if (tmp != NULL) {
 /*		printf("> %s %d add_np() :NP_DCLL : Existing NP\n", __FILE__, __LINE__);
 		new->data = (char *)malloc(sizeof(val) + 1);
 		new->usage = usage;
@@ -147,7 +147,7 @@ void print_np(np_dcll * l)
 		ptr = ptr->next;
 		i--;
 	}
-
+	printf("====================================xx======================================\n");
 }
 
 /* Search for an np with the given name and return a pointer to that node if found */
