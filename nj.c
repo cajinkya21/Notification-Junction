@@ -1235,11 +1235,11 @@ int unregister_app(char *buff)
 /*function to register an np*/
 int register_np(char *buff)
 {
-	char np_name[32], usage[512], delimusage[3] = "==";
+	char np_name[32], * usage, delimusage[3] = "==";
 	char *s;
 	char **keyVal;
 	main_np_node *new;
-
+	usage = (char * ) malloc (sizeof(char) * 512);
 	strcpy(np_name, strtok(buff, delimusage));
 	s = strtok(NULL, delimusage);
 
@@ -1335,7 +1335,7 @@ int unregister_np(char *buff)
 
 	printf("in unregister\n");
 
-	char np_name[32];
+	char *np_name = (char *) malloc (sizeof(char) * 32);
 	char delim[3] = "::";
 	int app_cnt;
 	app_node *aptr = appList.head;
@@ -1531,8 +1531,9 @@ void nj_exit(void) {
 	/* For every np, delete its registration with the app first */
 	int i = appList.count;
 	int j = npList.count;
-	struct app_node *temp;
-	struct main_np_node *temp2;
+	PRINTF("> %s %d nj_exit(): %d app count \t %d np_count \n",__FILE__, __LINE__,i, j);
+	struct app_node *temp, *temp1;
+	struct main_np_node *temp2,*temp3;
 
 	temp = appList.head;
 	
@@ -1550,8 +1551,10 @@ void nj_exit(void) {
 
 	
 	for(; i != 0;i--) {
+		temp1 = temp->next;
 		unregister_app(temp->data);
-		temp = temp->next;
+		PRINTF("> %s %d nj_exit(): %d app_count \n",__FILE__,__LINE__,appList.count);
+		temp = temp1;
 	}
 	
 	printf(">%s %d empty_app_list : App List deleted completely  %d \n ",__FILE__ , __LINE__, appList.count);
@@ -1564,15 +1567,16 @@ void nj_exit(void) {
 	
 	for(; j != 0;j--) {
 		
-		printf("IN NP LOOP, before delete\n");
-	
+		printf("IN NP LOOP, before delete Unregistering %s \n", temp2->data);
+		temp3 = temp2->next;
+		
 		temp2->app_count = 0;
 	
 		unregister_np(temp2->data);
 		
 		printf("Deleting\n");
 		
-		temp2 = temp2->next;
+		temp2 = temp3;
 		
 		printf("next\n");
 	

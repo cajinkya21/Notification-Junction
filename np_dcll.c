@@ -191,25 +191,24 @@ main_np_node *search_np(np_dcll * l, char *val)
 /* Delete the np with the given name, if found */
 
 int del_np(np_dcll * l, char *val)
-{
+{	
 	char **np_key_val_arr;
 	int i = 0;
 	main_np_node *p, *temp, *q;
 	temp = search_np(l, val);
+	l->count = ( l->count - 1) ;
 	if (temp == NULL) {
 		errno = ENODEV;
 		return NOTFND;
 	}
 
-	else if (temp == l->head && l->count == 1) {
-
+	else if ((temp == (l->head)) && (l->count == 1)) {
 		l->head->prev = NULL;
 		l->head->next = NULL;
 		l->head = NULL;
 	}
 
-	else if (temp == l->head && l->count > 1) {
-
+	else if ((temp == (l->head)) && (l->count > 1)) {
 		l->head = temp->next;
 		p = temp->prev;
 		(temp->next)->prev = p;
@@ -219,9 +218,8 @@ int del_np(np_dcll * l, char *val)
 		p = temp->prev;
 		q = temp->next;
 		p->next = q;
-		q->prev = p;
+	 	q->prev = p;
 	}
-
 	np_key_val_arr = temp->key_val_arr;
 	i = 0;
 	while(np_key_val_arr[i] != NULL) {
@@ -229,14 +227,13 @@ int del_np(np_dcll * l, char *val)
 		np_key_val_arr[i] = NULL;
 		i++;
 	}
-
 	free(temp->usage);
 	temp->usage = NULL;
 	free(temp->data);
 	temp->data = NULL;
 	free(temp);
 	temp = NULL;
-	l->count--;
+	
 	return 0;
 
 }
@@ -283,7 +280,7 @@ void decr_np_app_cnt(np_dcll * l, char *nval)
 		return;
 	}
 
-	temp->app_count--;
+	temp->app_count = (temp->app_count - 1);
 	printf("> %s %d decr_np_app_cnt() :\t%d\n", __FILE__, __LINE__, temp->app_count);
 }
 /*
