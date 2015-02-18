@@ -1,7 +1,7 @@
 #CC variable contains the compiler that we want to use
 CC=gcc
 
-all: nj libinotify np_register dummyapp  app_register app_unregister np_unregister app_getnotify dummyapp2
+all: nj libinotify np_register dummyapp stats app_register app_unregister np_unregister app_getnotify dummyapp2
 
 nj:	nj.o app_dcll.o np_dcll.o 
 	$(CC) -g -Wall nj.o app_dcll.o np_dcll.o -lpthread -o nj -ldl
@@ -24,7 +24,7 @@ clean:
 	rm libnpinotify.so
 	rm dummyapp
 	rm np_register
-	
+	rm stats
 	rm app_getnotify
 	rm app_register
 	rm app_unregister
@@ -70,6 +70,12 @@ dummyapp2.o:dummyapp2.c
 	$(CC) -Wall -g -c dummyapp2.c -o dummyapp2.o
 
 #Target 5
+stats: stats.o
+	$(CC) -g  stats.o -o stats
+
+stat.o:
+	$(CC) -g -c stats.c -o stats.o 
+
 
 #Target 6
 app_register: app_register.c 
