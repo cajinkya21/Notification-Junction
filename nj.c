@@ -1531,23 +1531,13 @@ void nj_exit(void) {
 	/* For every np, delete its registration with the app first */
 	int i = appList.count;
 	int j = npList.count;
-	PRINTF("> %s %d nj_exit(): %d app count \t %d np_count \n",__FILE__, __LINE__,i, j);
 	struct app_node *temp, *temp1;
 	struct main_np_node *temp2,*temp3;
 
 	temp = appList.head;
 	
 	temp2 = npList.head;
-	/*
-	while(temp2 != NULL) {
-		unregister_np(temp2->data);
-		temp2 = temp2->next;
-	}
-
-	printf("> %s %d empty_np_list : Np list count is %d ",__FILE__, __LINE__, npList.count);
-	*/
 	
-	printf("temp2->data = %s\n", temp2->data);
 
 	
 	for(; i != 0;i--) {

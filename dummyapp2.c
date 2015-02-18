@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
 		}
 	} 	else {
 		if(S_ISDIR(s.st_mode)) {
-			printf("%s is a directoryj\t Proceeding for NJ \n",argv[1]);
+			printf("%s is a directory\t Proceeding for NJ \n",argv[1]);
 			/* it's a dir */
 		} else {
 			printf("%s is not a directory \n", argv[1]);
