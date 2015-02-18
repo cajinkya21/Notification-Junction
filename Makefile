@@ -73,7 +73,7 @@ dummyapp2.o:dummyapp2.c
 stats: stats.o
 	$(CC) -g  stats.o -o stats
 
-stat.o:
+stats.o:
 	$(CC) -g -c stats.c -o stats.o 
 
 
