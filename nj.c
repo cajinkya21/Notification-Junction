@@ -51,7 +51,7 @@ int main()
 	struct thread_args stat, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
 	pthread_t tid_stat, tid_app_reg, tid_app_unreg, tid_np_reg, tid_np_unreg, tid_app_getnotify;
 	atexit(nj_exit);
-	if (!(logfd = fopen("LOGS", "a+"))) {
+	if (!(logfd = fopen(LOGS, "a+"))) {
 		perror("NJ.C   : not able to open  Log file\n");
 		return 1;
 	}
