@@ -46,27 +46,56 @@ void init_np(np_dcll * l)
 
 int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 {
+	char **np_key_val_arr;
+	int i = 0;
+	main_np_node *new, *temp, *p, *q;
+	
+	temp = search_np(l, val);
+	
 
-	main_np_node *new, *tmp;
+	if (temp != NULL) { /* case when np already exists */
+		/*action is to del_np and make new entry for that np*/
+		
+		if ((temp == (l->head)) && (l->count == 1)) {
+			l->head->prev = NULL;
+			l->head->next = NULL;
+			l->head = NULL;
+		}
 
-	tmp = search_np(l, val);
-
-	if (tmp != NULL) {
-/*		printf("> %s %d add_np() :NP_DCLL : Existing NP\n", __FILE__, __LINE__);
-		new->data = (char *)malloc(sizeof(val) + 1);
-		new->usage = usage;
-		new->key_val_arr = *key_val_arr;
-*/
-		errno = EEXIST;
-		return ALREXST;
+		else if ((temp == (l->head)) && (l->count > 1)) {
+			l->head = temp->next;
+			p = temp->prev;
+			(temp->next)->prev = p;
+			p->next = temp->next;
+		} 
+		else {
+			p = temp->prev;
+			q = temp->next;
+			p->next = q;
+		 	q->prev = p;
+		}
+		np_key_val_arr = temp->key_val_arr;
+		i = 0;
+		while(np_key_val_arr[i] != NULL) {
+			free(np_key_val_arr[i]);
+			np_key_val_arr[i] = NULL;
+			i++;
+		}
+		free(temp->usage);
+		temp->usage = NULL;
+		free(temp->data);
+		temp->data = NULL;
+		free(temp);
+		temp = NULL;
+		l->count = l->count - 1;
 	}
-
+	
 	new = (main_np_node *) malloc(sizeof(main_np_node));
 
 	if (new == NULL) {
 		errno = ECANCELED;
 		perror("NP_DCLL : ERROR IN MALLOC");
-		exit(1);
+		return -1;
 	}
 
 	new->data = (char *)malloc((strlen(val) + 1) * sizeof(char));
@@ -188,6 +217,51 @@ main_np_node *search_np(np_dcll * l, char *val)
 	}
 }
 
+/*Delete the main_np_node whose pointer is passed as argument*/
+int del_np_node(np_dcll * l, main_np_node * np_to_del) {
+	char **np_key_val_arr;
+	int i = 0;
+	main_np_node *p,*temp, *q;
+	temp = np_to_del;
+	
+	if ((temp == (l->head)) && (l->count == 1)) {
+		l->head->prev = NULL;
+		l->head->next = NULL;
+		l->head = NULL;
+	}
+
+	else if ((temp == (l->head)) && (l->count > 1)) {
+		l->head = temp->next;
+		p = temp->prev;
+		(temp->next)->prev = p;
+		p->next = temp->next;
+	} 
+	else {
+		p = temp->prev;
+		q = temp->next;
+		p->next = q;
+	 	q->prev = p;
+	}
+	np_key_val_arr = temp->key_val_arr;
+	i = 0;
+	while(np_key_val_arr[i] != NULL) {
+		free(np_key_val_arr[i]);
+		np_key_val_arr[i] = NULL;
+		i++;
+	}
+	free(temp->usage);
+	temp->usage = NULL;
+	free(temp->data);
+	temp->data = NULL;
+	free(temp);
+	temp = NULL;
+	
+
+
+	l->count = (l->count - 1);
+	return 0;
+
+}
 /* Delete the np with the given name, if found */
 
 int del_np(np_dcll * l, char *val)
