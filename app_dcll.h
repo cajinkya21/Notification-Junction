@@ -38,6 +38,7 @@
 
 typedef struct extr_key_val {
 	char **key_val_arr;
+	// add thread id of get notify
 	struct extr_key_val *next;	
 } extr_key_val;
 
@@ -92,5 +93,6 @@ int del_app(app_dcll * l, char *val);
 int add_np_to_app(app_dcll * l, char *aval, char *nval);
 int del_np_from_app(app_dcll * l, char *aval, char *nval);
 void print_np_key_val(app_node * temp);
+int del_app_ref(app_dcll* l, struct app_node *, char* app_name, char* np_name);
 //void empty_app_list(app_dcll * l); /*function to destroy  and free complete list*/
 #endif /*app_dcll.h */

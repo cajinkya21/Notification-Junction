@@ -50,14 +50,14 @@ int add_app_node(app_dcll * l, char *val)
 
 /* Search if the application exists; if it doesn't, return error ALREXST */	
 	tmp = search_app(l, val);	
-	if (tmp != NULL)	{
+	if(tmp != NULL)	{
 		errno = EEXIST;
 		return -1;
 	}
 /* Create and set values for the new node */
 	new = (app_node *) malloc(sizeof(app_node));
 
-	if (new == NULL) {
+	if(new == NULL) {
 		errno = ECANCELED;
 		perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
 		exit(1);
@@ -65,7 +65,7 @@ int add_app_node(app_dcll * l, char *val)
 
 	new->data =(char *)malloc((strlen(val) + 1) * sizeof(char));
 
-	if (new->data == NULL) {
+	if(new->data == NULL) {
 		errno = ECANCELED;
 		perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
 		exit(1);
@@ -74,7 +74,7 @@ int add_app_node(app_dcll * l, char *val)
 	new->np_count = 0;
 
 	/* When there is no application in the list */
-	if (l->count == 0) {
+	if(l->count == 0) {
 		l->head = new;
 		new->prev = new;
 		new->next = new;
@@ -85,7 +85,7 @@ int add_app_node(app_dcll * l, char *val)
 	}
 
 	/* When there is only one existing application in the list */
-	else if (l->count == 1) {
+	else if(l->count == 1) {
 		l->head->prev = new;
 		l->head->next = new;
 		new->prev = l->head;
@@ -117,7 +117,7 @@ void print_app(app_dcll * l)
 	app_node *ptr;
 	np_node *np;
 	
-	if (l->count == 0) {
+	if(l->count == 0) {
 		printf("> app_dcll.c print_app() : NO APPS TO PRINT\n");
 		return;
 	}
@@ -143,7 +143,7 @@ void print_app(app_dcll * l)
 
 	i = l->count;
 	ptr = l->head;
-	if (i != 0) {
+	if(i != 0) {
 		printf("\n> %s %d print_app() :App\t\t\tRegistered with", __FILE__, __LINE__);
 		printf("\n===================================\n");
 	}
@@ -178,8 +178,9 @@ void print_np_key_val(app_node * temp)
 	char **kptr;
 	
 
-	if (!head) {
+	if(!head) {
 		printf("\n> %s %d print_np_key_val() : No head in temp list\n\n", __FILE__, __LINE__);
+		return;
 	}
 
 	printf("> %s %d print_np_key_val() : HEAD DATA = %s\n", __FILE__, __LINE__, head->name);
@@ -187,7 +188,7 @@ void print_np_key_val(app_node * temp)
 	while (head) {
 		vptr = head->key_val_ptr;
 		
-		if (vptr == NULL) {
+		if(vptr == NULL) {
 			printf("> %s %d print_np_key_val() : VPTR IS NULL\n", __FILE__, __LINE__);
 			head = head->next;
 			continue;
@@ -196,7 +197,7 @@ void print_np_key_val(app_node * temp)
 		while (vptr) {
 			kptr = vptr->key_val_arr;
 			
-			if (kptr == NULL) {
+			if(kptr == NULL) {
 				printf("> %s %d print_np_key_val() : The key_val_arr is NULL\n\n", __FILE__, __LINE__);
 				return;
 			}
@@ -224,13 +225,13 @@ app_node *search_app(app_dcll * l, char *val)
 	int found = 0;
 	app_node *ptr;
 
-	if (l->count == 0)
+	if(l->count == 0)
 		return NULL;
 
 	ptr = l->head;
 
 	while (i) {
-		if (strcmp(ptr->data, val) == 0) {
+		if(strcmp(ptr->data, val) == 0) {
 			found = 1;
 			break;
 		}
@@ -238,7 +239,7 @@ app_node *search_app(app_dcll * l, char *val)
 		ptr = ptr->next;
 	}
 
-	if (found == 0) {
+	if(found == 0) {
 		errno = EEXIST;
 		return NULL;
 	}
@@ -261,16 +262,16 @@ int search_reg(app_dcll * l, char *appname, char *npname)
 
 	printf("\n> %s %d search_reg() : Searching Registration\n", __FILE__, __LINE__);
 
-	if (ptr == NULL)
+	if(ptr == NULL)
 		return 0;
 
-	if (ptr != NULL) {
+	if(ptr != NULL) {
 
 		printf("> %s %d search_reg() : App %s has been found. Checking np %s in app's list\n",__FILE__, __LINE__, appname, npname);
 		nptr = ptr->np_list_head;
 
 		while (nptr != NULL) {          /* Code for checking NP existance */
-			if (!strcmp(npname, nptr->name)) {
+			if(!strcmp(npname, nptr->name)) {
 				printf("> %s %d search_reg() : Duplicate Registration Detected", __FILE__, __LINE__);
 				errno = EEXIST;
 				return -1;
@@ -294,17 +295,17 @@ np_node *get_reg(app_dcll * l, char *appname, char *npname)
 	
 	ptr = search_app(l, appname);
 
-	if (ptr == NULL)
+	if(ptr == NULL)
 		return 0;
 
-	if (ptr != NULL) {
+	if(ptr != NULL) {
 
 		printf("> %s %d get_reg() : App %s has been found. Checking np %s in app's list\n",__FILE__, __LINE__, appname, npname);
 		nptr = ptr->np_list_head;
 
 		/* Check the existance of the np in the trailing list */
 		while (nptr != NULL) {
-			if (!strcmp(npname, nptr->name)) {
+			if(!strcmp(npname, nptr->name)) {
 				errno = EEXIST;
 				return nptr;
 			}
@@ -331,13 +332,13 @@ int del_app(app_dcll * l, char *val)
 
 	temp = search_app(l, val);
 	
-	if (temp == NULL) {
+	if(temp == NULL) {
 		errno = ENODEV;
 		return -2;
 	}
 
 /* If it is at the head of the list and the only application registered */
-	else if (temp == l->head && l->count == 1) {
+	else if(temp == l->head && l->count == 1) {
 
 		l->head->prev = NULL;
 		l->head->next = NULL;
@@ -345,7 +346,7 @@ int del_app(app_dcll * l, char *val)
 	}
 
 /* If it is at the head of the list and there are more applications */
-	else if (temp == l->head && l->count > 1) {
+	else if(temp == l->head && l->count > 1) {
 
 		l->head = temp->next;
 		p = temp->prev;
@@ -408,14 +409,14 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 
     temp = search_app(l, aval);
 
-	if (temp == NULL) {
+	if(temp == NULL) {
 		errno = ENODEV;
 		return -2;
 	}
 
 	n = (np_node *)malloc(sizeof(np_node));
 
-	if (n == NULL) {
+	if(n == NULL) {
 		errno = ECANCELED;
 		perror("APP_DCLL :  ERROR IN MALLOC");
 		exit(1);
@@ -424,7 +425,7 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 	n->name = (char *)malloc((strlen(nval) + 1) * sizeof(char));
 	n->key_val_ptr = NULL;
 
-	if (n->name == NULL) {
+	if(n->name == NULL) {
 		errno = ECANCELED;
 		perror("APP_DCLL :  ERROR IN MALLOC");
 		exit(1);
@@ -432,21 +433,21 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 
 	n->next = NULL;
 	strcpy(n->name, nval);
-	if (temp->np_list_head == NULL) {
+	if(temp->np_list_head == NULL) {
 		temp->np_list_head = n;
 		temp->np_count++;
 		return 0;
 	} else {
 		m = temp->np_list_head;
 		b = m;
-		if (m->name == nval) {
+		if(m->name == nval) {
 			errno = EEXIST;
 			return ALREXST;
 		}
 		b = m;
 		m = m->next;
 		while (m != NULL) {
-			if (m->name == nval) {
+			if(m->name == nval) {
 				errno = EEXIST;
 				return -1;
 			}
@@ -472,21 +473,21 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 	app_node *temp = search_app(l, aval);
 	np_node *n, *m, *b;
 
-	if (l->count == 0) {
+	if(l->count == 0) {
 		errno = ENODEV;
 		return NOTFND;
 	}
 		
-	if (temp == NULL) {
+	if(temp == NULL) {
 		errno = ENODEV;
 		return NOTFND;
 	}
 	
-	if (temp->np_list_head == NULL) {
+	if(temp->np_list_head == NULL) {
 		return 0;
 	}
 	
-	if (temp->np_list_head->next == NULL) {
+	if(temp->np_list_head->next == NULL) {
 		m = temp->np_list_head;
 		temp->np_list_head = m->next;
 		temp->np_count--;
@@ -494,7 +495,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		flag = 1;
 	} 
 	
-	else if (!strcmp(temp->np_list_head->name, nval)) {
+	else if(!strcmp(temp->np_list_head->name, nval)) {
 		m = temp->np_list_head;
 		n = m->next;
 		temp->np_list_head = n;
@@ -507,7 +508,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		m = temp->np_list_head;
 		b = m;
 		
-		if (temp->np_list_head == m && m->name == nval) {
+		if(temp->np_list_head == m && m->name == nval) {
 			temp->np_list_head = m->next;
 			temp->np_count--;
 			printf("\n> %s %d del_np_from_app() : temp->np_count = %d\n",__FILE__, __LINE__, temp->np_count);
@@ -517,7 +518,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 		
 		while (m != NULL) {
 		
-			if (strcmp(m->name, nval) == 0) {
+			if(strcmp(m->name, nval) == 0) {
 				b->next = m->next;
 				temp->np_count--;
 				printf("\n> %s %d del_np_from_app() : temp->np_count = %d\n",__FILE__, __LINE__, temp->np_count);
@@ -557,6 +558,183 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 	np_tail = NULL;
 	return 0;
 }
+
+ /* ONE list function for app_list which
+    *   a. Searches if the app exists, 
+    *   b. If it doesn't, error
+    *   c. Checks the npname argument,
+    *   d. If not NULL, removes the regustration(decr_np_app_cnt(&npList, np_name))
+     if NULL, removes the app(dec_all_np_counts(&appList, &npList, app_name))
+    */	
+int del_app_ref(app_dcll* l, app_node* temp, char* app_name, char* np_name) {
+
+    app_node *p, *q; 
+    char **np_key_val_arr;
+	int i = 0, flag = 0;
+	np_node *np_tail, *np_temp, *n, *m, *b;
+	struct extr_key_val *extr_kv, *extr_kv_temp;
+	
+    if(np_name == NULL) {
+        
+        /* If it is at the head of the list and the only application registered */
+	    if(temp == l->head && l->count == 1) {
+		    l->head->prev = NULL;
+		    l->head->next = NULL;
+		    l->head = NULL;
+	    }
+
+        /* If it is at the head of the list and there are more applications */
+	    else if(temp == l->head && l->count > 1) {
+
+		    l->head = temp->next;
+		    p = temp->prev;
+		    (temp->next)->prev = p;
+		    p->next = temp->next;
+	    } 
+
+        /* Any other case */
+	    else {
+		    p = temp->prev;
+		    q = temp->next;
+		    p->next = q;
+		    q->prev = p;
+	    }
+	
+	    /* Free logic */
+
+	    np_tail = temp->np_list_head;
+	
+	    while(np_tail != NULL) {
+		    extr_kv = np_tail->key_val_ptr;
+		    
+		    while(extr_kv != NULL) {
+			    np_key_val_arr = (extr_kv)->key_val_arr;
+		     	i = 0;
+			    
+			    while(np_key_val_arr[i] != NULL) {
+				    free(np_key_val_arr[i]);
+				    np_key_val_arr[i] = NULL;
+				    i++;
+			    }
+			    
+			    extr_kv_temp = extr_kv;
+			    extr_kv = extr_kv->next;
+			    free(extr_kv_temp);
+			    extr_kv_temp = NULL;
+		    }
+		    
+		    np_temp = np_tail;
+		    np_tail = np_tail->next;
+		    free(np_temp->name);
+		    np_temp->name = NULL;
+		    free(np_temp);
+		    np_temp = NULL;
+	    }
+	
+	    free(temp->data);
+	    temp->data = NULL;
+	    free(temp);
+	    temp = NULL;
+	    l->count--;
+	    return 0;	
+    }
+        
+    else {
+    
+        if(l->count == 0) {
+		    errno = ENODEV;
+		    return -1;
+	    }
+	    
+	    if(temp->np_list_head == NULL) {
+	        errno = ENODEV;
+		    return -1;
+	    }
+	
+	    if(temp->np_list_head->next == NULL) {
+		    m = temp->np_list_head;
+		    temp->np_list_head = m->next;
+		    temp->np_count--;
+		    printf("\n> %s %d del_np_from_app() : temp->np_count = %d\n", __FILE__, __LINE__, temp->np_count);
+		    flag = 1;
+	    } 
+	
+	    else if(!strcmp(temp->np_list_head->name, np_name)) {
+		    m = temp->np_list_head;
+		    n = m->next;
+		    temp->np_list_head = n;
+		    temp->np_count--;
+		    printf("\n> %s %d del_np_from_app() : temp->np_count = %d\n",__FILE__, __LINE__, temp->np_count);
+		    flag = 1;
+	    } 
+	
+	    else {
+		    m = temp->np_list_head;
+		    b = m;
+		
+		    if(temp->np_list_head == m && m->name == np_name) {
+			    temp->np_list_head = m->next;
+			    temp->np_count--;
+			    printf("\n> %s %d del_np_from_app() : temp->np_count = %d\n",__FILE__, __LINE__, temp->np_count);
+			    flag = 1;
+		    }
+		    m = m->next;
+		
+		    while (m != NULL) {
+		
+			    if(strcmp(m->name, np_name) == 0) {
+				    b->next = m->next;
+				    temp->np_count--;
+				    printf("\n> %s %d del_np_from_app() : temp->np_count = %d\n",__FILE__, __LINE__, temp->np_count);
+				    flag = 1;
+				    break;
+			    }
+			    b = m;
+			    m = m->next;
+		    }
+	    }
+	    
+	    if(flag == 0) {
+		    errno = ENODEV;	
+		    return -1;
+	    }
+
+        /* Logic for freeing the memory associated with the registration */
+
+	    np_tail = m;
+		
+	    extr_kv = np_tail->key_val_ptr;
+	    
+	    while(extr_kv != NULL) {
+		    np_key_val_arr = (extr_kv)->key_val_arr;
+	     	i = 0;
+	     	
+		    while(np_key_val_arr[i] != NULL) {
+			    free(np_key_val_arr[i]);
+			    np_key_val_arr[i] = NULL;
+			    i++;
+		    }
+		    
+		    extr_kv_temp = extr_kv;
+		    extr_kv = extr_kv->next;
+		    free(extr_kv_temp);
+		    extr_kv_temp = NULL;
+	    }
+	    
+	    free(np_tail->name);
+	    np_tail->name = NULL;
+	    free(np_tail);	
+	    np_tail = NULL;
+	    return 0;
+    
+                    
+    }
+
+}
+
+
+
+
 /*
 void empty_app_list(app_dcll * l) {
 	
@@ -623,3 +801,4 @@ void empty_app_list(app_dcll * l) {
 }
 
 */
+
