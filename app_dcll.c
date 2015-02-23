@@ -733,6 +733,120 @@ int del_app_ref(app_dcll* l, app_node* temp, char* app_name, char* np_name) {
 }
 
 
+    /* ONE list function for app_list which
+    *   a. Searches if the app exists, 
+    *   b. If it doesn't, adds the app to the list
+    *   c. Checks the npname argument,
+    *   d. If not NULL, adds the registration,
+    *   e. If app exists,  traverse its trailing np list and if np exists, return error, otherwise add it */
+
+int add_app_ref(app_dcll* l, char* app_name, char* np_name){
+	app_node *temp, *new; 
+	np_node *np_temp, *m, *b;
+
+	/* if app is to be registered with NP np_name, create a node here and later attach it to appropriate place in trailing list */
+	if(np_name != NULL) {
+		np_temp = (np_node *)malloc(sizeof(np_node));
+		if(np_temp == NULL) {
+			errno = ECANCELED;
+			perror("> APP_DCLL :  ERROR IN MALLOC");
+			return -1;
+		}
+
+		np_temp->name = (char *)malloc((strlen(np_name) + 1) * sizeof(char));
+		if(np_temp->name == NULL) {
+			errno = ECANCELED;
+			perror("> APP_DCLL :  ERROR IN MALLOC");
+			return -1;
+		}
+		strcpy(np_temp->name, np_name);
+		np_temp->key_val_ptr = NULL;
+		np_temp->next = NULL;
+	}
+
+	temp = search_app(l, app_name);
+
+	/* App is registering for the first time, add app_node */
+	if(temp == NULL) {	
+		
+		new = (app_node *) malloc(sizeof(app_node));
+
+		if(new == NULL) {
+			errno = ECANCELED;
+			perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
+			return -1;
+		}
+
+		new->data =(char *)malloc((strlen(app_name) + 1) * sizeof(char));
+
+		if(new->data == NULL) {
+			errno = ECANCELED;
+			perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
+			exit(1);
+		}
+		strcpy(new->data, app_name);
+		new->np_count = 0;
+
+		/* When there is no application in the list */
+		if(l->count == 0) {
+			l->head = new;
+			new->prev = new;
+			new->next = new;
+		}
+
+		/* When there is only one existing application in the list */
+		else if(l->count == 1) {
+			l->head->prev = new;
+			l->head->next = new;
+			new->prev = l->head;
+			new->next = l->head;
+		}
+
+		/* More than two applications in the list */
+		else {
+			l->head->prev->next = new;
+			new->prev = l->head->prev;
+			new->next = l->head;
+			l->head->prev = new;
+		}
+
+		/* NP name is provided */
+		if(np_name != NULL) 				
+			new->np_list_head = np_temp;
+		/* NP name is not provided */
+		else		
+			new->np_list_head = NULL;
+		l->count++;
+		return 0;
+	}
+
+	else {
+		if(temp->np_list_head == NULL) {
+			temp->np_list_head = np_temp;
+		} 
+		else {
+			m = temp->np_list_head;
+			b = m;
+			if(m->name == np_name) {
+				errno = EEXIST;
+				return -1;
+			}
+			b = m;
+			m = m->next;
+			while (m != NULL) {
+				if(m->name == np_name) {
+					errno = EEXIST;
+					return -1;
+				}
+				b = m;
+				m = m->next;
+			}
+			b->next = np_temp;
+		}
+		temp->np_count++;
+		return 0;
+	}
+}
 
 
 /*

@@ -1107,51 +1107,49 @@ int register_app(char *buff)
 
 	strcpy(app_name, strtok(buff, delim));
 	s = strtok(NULL, delim);
+
 	if (s != NULL)
 		strcpy(np_name, s);
-
+	else
+		np_name[0] = '\0';
+	
 	if(pthread_mutex_lock(&app_list_mutex) != 0) {
 		perror("NJ.C: app List mutex Lock failed :");
 	};
 	if(pthread_mutex_lock(&np_list_mutex) != 0) {
 		perror("NJ.C: Np List mutex Lock failed :");
 	};
-	if(np_name != NULL) {
-		/*Check if NP provided is registered or not */
+
+	if(np_name[0] != '\0') {	
 		if (search_np(&npList, np_name) == NULL) {				/* NP is not registerd */
 			perror("Np not registered - ");
 			PRINTF("> %s %d register_app(): Np not registered. Register NP first.\n", __FILE__ , __LINE__);
 			errno = ENODEV;
+			if(pthread_mutex_unlock(&np_list_mutex) != 0) {
+				perror("NJ.C: Np List mutex unLock failed :");
+			}
+			if(pthread_mutex_unlock(&app_list_mutex) != 0) {
+				perror("NJ.C: app List mutex Lock failed :");
+			}
 			return -1;
-		}
-
-		/*Check if app is already registered */
-		if (search_app(&appList, app_name) == NULL) {				/* Registering app for the first time */
-			add_app_node(&appList, app_name);
-			PRINTF("> %s %d register_app(): Added for the first time\n", __FILE__ , __LINE__);
-			add_np_to_app(&appList, app_name, np_name);                               
-			incr_np_app_cnt(&npList, np_name);
-		}
-		else {									/* Adding NP registration to already */
-			/* existing App */
-			retval = search_reg(&appList, app_name, np_name);
-			if (retval == -1) {
-				PRINTF("> %s %d register_app() : EXISTING REGISTRATION\n", __FILE__ , __LINE__);
-				perror("Registration exists, printing from perror - ");
-				errno = EEXIST;
-				return -2;
-			}
-			else {	 
-				add_np_to_app(&appList, app_name, np_name);                               
-				incr_np_app_cnt(&npList, np_name);
-			}
-		}
-
+		}	
 	}
-	else {
-		add_app_node(&appList, app_name);
-		PRINTF("> %s %d register_app() :Only app is added successfully.\n", __FILE__ , __LINE__);
+	
+	printf("Before  add_app_ref()\n\n");
+    	print_app(&appList);
+    	print_np(&npList);
+
+	retval = add_app_ref(&appList, app_name, np_name);
+
+	if(retval == -1) {
+		printf("> %s %d register_app: Error in adding app_node", __FILE__, __LINE__);
+		return -1;
 	}
+	incr_np_app_cnt(&npList, np_name);
+    
+	printf("After successful add_app_ref()\n\n");
+    	print_app(&appList);
+    	print_np(&npList);
 
 
 	if(pthread_mutex_unlock(&np_list_mutex) != 0) {
@@ -1238,7 +1236,7 @@ int register_np(char *buff)
 	char np_name[32], * usage, delimusage[3] = "==";
 	char *s;
 	char **keyVal;
-	main_np_node *new;
+	//main_np_node *new;
 	usage = (char * ) malloc (sizeof(char) * 512);
 	strcpy(np_name, strtok(buff, delimusage));
 	s = strtok(NULL, delimusage);
