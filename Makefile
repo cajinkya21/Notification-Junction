@@ -16,7 +16,7 @@ np_dcll.o: np_dcll.c np_dcll.h
 	$(CC) -g -Wall -c np_dcll.c -o np_dcll.o
 
 rdwr_lock.o : rdwr_lock.c rdwr_lock.h
-	$(CC) -g Wall -c rdwr_lock.c -o rdwr_lock.o 
+	$(CC)  -Wall -g -c rdwr_lock.c -o rdwr_lock.o 
 #Target 2
 
 clean: 
