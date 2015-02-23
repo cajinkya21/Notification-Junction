@@ -1,10 +1,10 @@
 #CC variable contains the compiler that we want to use
 CC=gcc
 
-all: nj libinotify np_register dummyapp stats app_register app_unregister np_unregister app_getnotify dummyapp2
+all: nj libinotify np_register dummyapp stats app_register app_unregister np_unregister app_getnotify dummyapp2 
 
-nj:	nj.o app_dcll.o np_dcll.o 
-	$(CC) -g -Wall nj.o app_dcll.o np_dcll.o -lpthread -o nj -ldl
+nj:	nj.o app_dcll.o np_dcll.o rdwr_lock.o
+	$(CC) -g -Wall nj.o app_dcll.o np_dcll.o rdwr_lock.o -lpthread -o nj -ldl
 
 nj.o: nj.c nj.h
 	$(CC) -g -Wall -c nj.c -o nj.o
@@ -15,6 +15,8 @@ app_dcll.o:	app_dcll.c app_dcll.h
 np_dcll.o: np_dcll.c np_dcll.h
 	$(CC) -g -Wall -c np_dcll.c -o np_dcll.o
 
+rdwr_lock.o : rdwr_lock.c rdwr_lock.h
+	$(CC) -g Wall -c rdwr_lock.c -o rdwr_lock.o 
 #Target 2
 
 clean: 
