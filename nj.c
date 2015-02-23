@@ -1251,27 +1251,17 @@ int register_np(char *buff)
 	strcpy(usage, s);
 	extract_key_val(usage, &keyVal);
 
+    /* if np exists, free and modify arguments.
+    *   if it doesnt, add it to the list */
 
-	if(pthread_mutex_lock(&np_list_mutex) != 0) {
-		perror("NJ.C: Np List mutex Lock failed :");
-	};	
-
-
-	new = search_np(&npList, np_name);					/* Search for already existing registration */
-
-	if(new != NULL) {
-		del_np(&npList, np_name);					/* Delete already existing registration to modify */ 											/* parameters */
-	}
-
+	
 	add_np(&npList, np_name, usage, &keyVal);
 	print_np(&npList);
 
-
-	if(pthread_mutex_unlock(&np_list_mutex) != 0) {
-		perror("NJ.C: Np List mutex unLock failed :");
-	};
 	return 1;
 }
+
+
 
 void extract_key_val(char *usage, char ***keyVal)
 {
@@ -1334,7 +1324,7 @@ int unregister_np(char *buff)
 {
 
 	printf("in unregister\n");
-
+	struct main_np_node * temp;
 	char *np_name = (char *) malloc (sizeof(char) * 32);
 	char delim[3] = "::";
 	int app_cnt;
@@ -1354,7 +1344,8 @@ int unregister_np(char *buff)
 	printf("Looking1\n");
 
 	/* Check if the NP exists */    
-	if(search_np(&npList, np_name) != NULL) {
+	temp = search_np(&npList, np_name);
+	if( temp != NULL) {
 		/* For every application it is registered with */
 		while(app_cnt != 0) {
 			/* Search every application's trailing list for a registration with that NP; remove that registration and reduce that application's count by one */			
@@ -1399,7 +1390,7 @@ int unregister_np(char *buff)
 			app_cnt--;	   	
 		}
 		printf("here\n");
-		del_np(&npList, np_name);
+		del_np_node(&npList, temp);
 
 	}
 	else {
