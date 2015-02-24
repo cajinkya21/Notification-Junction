@@ -1320,7 +1320,6 @@ int count_args(char *myString, char *delim) {
 int unregister_np(char *buff)
 {
 
-	printf("in unregister\n");
 	struct main_np_node * temp;
 	char *np_name = (char *) malloc (sizeof(char) * 32);
 	char delim[3] = "::";
@@ -1336,12 +1335,22 @@ int unregister_np(char *buff)
 	if(pthread_mutex_lock(&np_list_mutex) != 0) {
 		perror("NJ.C: Np List mutex Lock failed :");
 	};
+	
 	app_cnt = appList.count;
-
-	printf("Looking1\n");
-
+	
 	/* Check if the NP exists */    
 	temp = search_np(&npList, np_name);
+	if(app_cnt == 0) {
+		del_np_node(&npList, temp);
+		if(pthread_mutex_unlock(&np_list_mutex) != 0) {
+			perror("NJ.C: Np List mutex unLock failed :");
+		}
+		if(pthread_mutex_lock(&app_list_mutex) != 0) {
+			perror("NJ.C: app List mutex unLock failed :");
+		}
+		return 1;
+	}
+	
 	if( temp != NULL) {
 		/* For every application it is registered with */
 		while(app_cnt != 0) {
@@ -1536,33 +1545,19 @@ void nj_exit(void) {
 	}
 	
 	printf(">%s %d empty_app_list : App List deleted completely  %d \n ",__FILE__ , __LINE__, appList.count);
-	
-	
 	print_app(&appList);
-	
 	print_np(&npList);
 
 	
 	for(; j != 0;j--) {
 		
-		printf("IN NP LOOP, before delete Unregistering %s \n", temp2->data);
 		temp3 = temp2->next;
-		
 		temp2->app_count = 0;
-	
 		del_np_node(&npList,temp2);
-		
-		printf("Deleting\n");
-		
 		temp2 = temp3;
-		
-		printf("next\n");
-	
 	}
 	
-	
 	print_app(&appList);
-	
 	print_np(&npList);
 	
 	if((ret = pthread_mutex_destroy(&app_list_mutex)) != 0) {
