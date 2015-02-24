@@ -1,7 +1,10 @@
 #ifndef _RDWRLOCK_H
 #define _RDWRLOCK_H 1	
-
-#include <pthread.h>	
+#include <errno.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+	
 		
 typedef struct rdwr_var {	
         int readers_reading;	
