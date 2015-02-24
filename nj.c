@@ -1165,71 +1165,70 @@ int register_app(char *buff)
 /*Function To Unregister An App*/
 int unregister_app(char *buff)
 {
-	char app_name[32], np_name[32], delim[3] = "::";
-	char *np_ptr;
-	int val;
+    char app_name[32], np_name[32], delim[3] = "::";
+    char *np_ptr;
+    app_node* temp;
 
-	strcpy(app_name, strtok(buff, delim));
-	np_ptr = strtok(NULL, delim);
+    strcpy(app_name, strtok(buff, delim));
+    np_ptr = strtok(NULL, delim);
 
-	/* If there is an np's name given */
-	if (np_ptr != NULL) {
-		strcpy(np_name, np_ptr);
+    /* If there is an np's name given */
+    if (np_ptr != NULL) {
+        strcpy(np_name, np_ptr);
 
-	}
+    }
 
-	if(pthread_mutex_lock(&app_list_mutex) != 0) {
-		perror("NJ.C: app List mutex Lock failed :");
-	};
-	if(pthread_mutex_lock(&np_list_mutex) != 0) {
-		perror("NJ.C: Np List mutex Lock failed :");
-	};
-	/* Only appname is given */
-	if (np_ptr == NULL) {
-		PRINTF("> %s %d unregister_app() :np_name == NULL case in unregister app\n", __FILE__ , __LINE__);
-		/* Check is the application exists; if it does, delete it */
-		if(search_app(&appList, app_name) != NULL) {
-			del_app(&appList, app_name);		
-			dec_all_np_counts(&appList, &npList, app_name);
-			PRINTF("> %s %d unregister_app():Unregistration done\n", __FILE__, __LINE__);
-		}
-		/* If the application doesn't exist */
-		else {
-			PRINTF("> %s %d unregister_app(): App not found\n", __FILE__, __LINE__);
+    if(pthread_mutex_lock(&app_list_mutex) != 0) {
+        perror("NJ.C: app List mutex Lock failed :");
+    };
+    if(pthread_mutex_lock(&np_list_mutex) != 0) {
+        perror("NJ.C: Np List mutex Lock failed :");
+    };
+   
+    printf("BEFORE\n");
+    print_app(&appList);
+    print_np(&npList);
+   
+    temp = search_app(&appList, app_name);
+   
+    if(temp == NULL) {
+        perror("Application does not exist :");
+        errno = ENODEV;
+        return -1;
+    }
+   
+    /* Only appname is given */
+    if (np_ptr == NULL) {
+        PRINTF("> %s %d unregister_app() :np_name == NULL case in unregister app\n", __FILE__ , __LINE__);
+        dec_all_np_counts(&appList, &npList, app_name);
+        if(del_app_ref(&appList, temp, app_name, NULL) == -1) {
+            perror("Unregister Application Error : ");       
+        }
+        PRINTF("> %s %d unregister_app():Unregistration done\n", __FILE__, __LINE__);
+    }
+    /* Given appname::npname */
+    else {
+        /* If the registration exists, delete it */
+            PRINTF("> %s %d unregister_app(): REGISTRATION FOUND.\n", __FILE__ , __LINE__);
+            decr_np_app_cnt(&npList, np_name);
+            if(del_app_ref(&appList, temp, app_name, np_name) == -1) {
+            perror("Unregister Application Error : ");       
+            }
+    }
+   
+    printf("AFTER\n");
+    print_app(&appList);
+    print_np(&npList);
 
-			perror("App not found, printing from perror - ");
-			errno = ENODEV;
-			return -3;
-		}
+    if(pthread_mutex_unlock(&np_list_mutex) != 0) {
+        perror("NJ.C: Np List mutex unLock failed :");
+    }   
+    if(pthread_mutex_unlock(&app_list_mutex) != 0) {
+	perror("NJ.C: app List mutex unLock failed :");
+    }
 
-	}
-
-	/* Given appname::npname */
-	else {
-		/* If the registration exists, delete it */
-		if ((val = search_reg(&appList, app_name, np_name)) == -1) {
-			PRINTF("> %s %d unregister_app(): REGISTRATION FOUND.\n", __FILE__ , __LINE__);
-			del_np_from_app(&appList, app_name, np_name);
-			decr_np_app_cnt(&npList, np_name);
-		}
-		else if(val == 0) {
-			PRINTF("> %s %d unregister_app(): Invalid argument to app_unregister : Registration not found\n", __FILE__, __LINE__);
-			perror("App not found, printing from perror - ");
-		}
-
-	}
-
-
-	if(pthread_mutex_unlock(&np_list_mutex) != 0) {
-		perror("NJ.C: Np List mutex unLock failed :");
-	}	
-	if(pthread_mutex_unlock(&app_list_mutex) != 0) {
-		perror("NJ.C: app List mutex unLock failed :");
-	}
-
-	return 1;
+    return 1;
 }
-
 /*function to register an np*/
 int register_np(char *buff)
 {
@@ -1551,7 +1550,7 @@ void nj_exit(void) {
 		
 		temp2->app_count = 0;
 	
-		unregister_np(temp2->data);
+		del_np_node(&npList,temp2);
 		
 		printf("Deleting\n");
 		
