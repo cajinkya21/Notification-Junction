@@ -26,6 +26,8 @@
 #include<unistd.h>
 #include <string.h>
 #include<errno.h>
+#include "rdwr_lock.h"
+
 #define ALREXST -1
 #define NOTFND -2
 
@@ -77,6 +79,7 @@ typedef struct app_node {
 typedef struct app_dcll {
 	app_node *head;
 	int count;
+	pthread_rdwr_t app_list_lock;
 	/*
 	* head is the pointer to the first node in App List
 	* count is the number of applications registered with NJ
@@ -93,7 +96,8 @@ int del_app(app_dcll * l, char *val);
 int add_np_to_app(app_dcll * l, char *aval, char *nval);
 int del_np_from_app(app_dcll * l, char *aval, char *nval);
 void print_np_key_val(app_node * temp);
-int del_app_ref(app_dcll* l, struct app_node *, char* app_name, char* np_name);
+int del_app_ref(app_dcll* l, struct app_node *, char* np_name);
 int add_app_ref(app_dcll* l, char* app_name, char* np_name);
+//void add_keyval(app_dcll* l, np_node *nptr, struct extr_key_val *temp);
 //void empty_app_list(app_dcll * l); /*function to destroy  and free complete list*/
 #endif /*app_dcll.h */

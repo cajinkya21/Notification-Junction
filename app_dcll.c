@@ -37,6 +37,7 @@
 
 void init_app(app_dcll * l)
 {
+	pthread_rdwr_init_np(&(l->app_list_lock), NULL);
 	l->head = NULL;
 	l->count = 0;
 }
@@ -47,27 +48,30 @@ int add_app_node(app_dcll * l, char *val)
 {
 	
 	app_node *new, *tmp;
-
-/* Search if the application exists; if it doesn't, return error ALREXST */	
-	tmp = search_app(l, val);	
+	
+	/* Search if the application exists; if it doesn't, return error ALREXST */	
+	tmp = search_app(l, val);
+	
+	pthread_rdwr_wlock_np(&(l->app_list_lock));	
 	if(tmp != NULL)	{
 		errno = EEXIST;
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));	
 		return -1;
 	}
-/* Create and set values for the new node */
+	/* Create and set values for the new node */
 	new = (app_node *) malloc(sizeof(app_node));
-
 	if(new == NULL) {
 		errno = ECANCELED;
 		perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));		
 		exit(1);
 	}
 
 	new->data =(char *)malloc((strlen(val) + 1) * sizeof(char));
-
 	if(new->data == NULL) {
 		errno = ECANCELED;
 		perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));	
 		exit(1);
 	}
 
@@ -78,10 +82,7 @@ int add_app_node(app_dcll * l, char *val)
 		l->head = new;
 		new->prev = new;
 		new->next = new;
-		strcpy(new->data, val);
-		new->np_list_head = NULL;
-		l->count++;
-		return 0;
+
 	}
 
 	/* When there is only one existing application in the list */
@@ -90,10 +91,7 @@ int add_app_node(app_dcll * l, char *val)
 		l->head->next = new;
 		new->prev = l->head;
 		new->next = l->head;
-		strcpy(new->data, val);
-		new->np_list_head = NULL;
-		l->count++;
-		return 0;
+
 	}
 
 	/* More than two applications in the list */
@@ -102,23 +100,31 @@ int add_app_node(app_dcll * l, char *val)
 		new->prev = l->head->prev;
 		new->next = l->head;
 		l->head->prev = new;
-		strcpy(new->data, val);
-		new->np_list_head = NULL;
-		l->count++;
-		return 0;
+
 	}
+	strcpy(new->data, val);
+	new->np_list_head = NULL;
+	l->count++;
+
+	pthread_rdwr_wunlock_np(&(l->app_list_lock));	
+
+	return 0;
+
 }
 
 /* Print the list */
 void print_app(app_dcll * l)
 {
 
-	int i = l->count;
+	int i;
 	app_node *ptr;
 	np_node *np;
 	
-	if(l->count == 0) {
+	pthread_rdwr_rlock_np(&(l->app_list_lock));	
+	i = l->count;	
+	if(i == 0) {
 		printf("> app_dcll.c print_app() : NO APPS TO PRINT\n");
+		pthread_rdwr_runlock_np(&(l->app_list_lock));	
 		return;
 	}
 	
@@ -165,6 +171,7 @@ void print_app(app_dcll * l)
 		ptr = ptr->next;
 		i--;
 	}
+	pthread_rdwr_runlock_np(&(l->app_list_lock));	
 
 }
 
@@ -221,13 +228,16 @@ return;
 app_node *search_app(app_dcll * l, char *val)
 {
 
-	int i = l->count;
+	int i;
 	int found = 0;
 	app_node *ptr;
 
-	if(l->count == 0)
+	pthread_rdwr_rlock_np(&(l->app_list_lock));	
+	i = l->count;
+	if(l->count == 0) {
+		pthread_rdwr_runlock_np(&(l->app_list_lock));	
 		return NULL;
-
+	}
 	ptr = l->head;
 
 	while (i) {
@@ -241,11 +251,13 @@ app_node *search_app(app_dcll * l, char *val)
 
 	if(found == 0) {
 		errno = EEXIST;
+		pthread_rdwr_runlock_np(&(l->app_list_lock));	
 		return NULL;
 	}
 
 	else {
 		errno = ENODEV;
+		pthread_rdwr_runlock_np(&(l->app_list_lock));	
 		return ptr;
 	}
 }
@@ -258,12 +270,15 @@ int search_reg(app_dcll * l, char *appname, char *npname)
 	app_node *ptr;
 	np_node *nptr;
 	
+	pthread_rdwr_rlock_np(&(l->app_list_lock));	
 	ptr = search_app(l, appname);
 
 	printf("\n> %s %d search_reg() : Searching Registration\n", __FILE__, __LINE__);
 
-	if(ptr == NULL)
+	if(ptr == NULL) {
+		pthread_rdwr_runlock_np(&(l->app_list_lock));	
 		return 0;
+	}
 
 	if(ptr != NULL) {
 
@@ -274,6 +289,7 @@ int search_reg(app_dcll * l, char *appname, char *npname)
 			if(!strcmp(npname, nptr->name)) {
 				printf("> %s %d search_reg() : Duplicate Registration Detected", __FILE__, __LINE__);
 				errno = EEXIST;
+				pthread_rdwr_runlock_np(&(l->app_list_lock));	
 				return -1;
 			}
 			nptr = nptr->next;
@@ -282,6 +298,7 @@ int search_reg(app_dcll * l, char *appname, char *npname)
 	}
 
 	errno = ENODEV;
+	pthread_rdwr_runlock_np(&(l->app_list_lock));	
 	return 0;
 }
 
@@ -293,11 +310,14 @@ np_node *get_reg(app_dcll * l, char *appname, char *npname)
 	app_node *ptr;
 	np_node *nptr;
 	
+	pthread_rdwr_rlock_np(&(l->app_list_lock));	
+	
 	ptr = search_app(l, appname);
 
-	if(ptr == NULL)
+	if(ptr == NULL) {
+		pthread_rdwr_runlock_np(&(l->app_list_lock));	
 		return 0;
-
+	}
 	if(ptr != NULL) {
 
 		printf("> %s %d get_reg() : App %s has been found. Checking np %s in app's list\n",__FILE__, __LINE__, appname, npname);
@@ -307,6 +327,7 @@ np_node *get_reg(app_dcll * l, char *appname, char *npname)
 		while (nptr != NULL) {
 			if(!strcmp(npname, nptr->name)) {
 				errno = EEXIST;
+				pthread_rdwr_runlock_np(&(l->app_list_lock));	
 				return nptr;
 			}
 			nptr = nptr->next;
@@ -314,6 +335,7 @@ np_node *get_reg(app_dcll * l, char *appname, char *npname)
 
 	}
 	errno = ENODEV;
+	pthread_rdwr_runlock_np(&(l->app_list_lock));	
 	return NULL;
 
 }
@@ -331,9 +353,12 @@ int del_app(app_dcll * l, char *val)
 /* Check whether the requested application exists */
 
 	temp = search_app(l, val);
-	
+
+	pthread_rdwr_wlock_np(&(l->app_list_lock));	
+		
 	if(temp == NULL) {
 		errno = ENODEV;
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));	
 		return -2;
 	}
 
@@ -394,6 +419,7 @@ int del_app(app_dcll * l, char *val)
 	free(temp);
 	temp = NULL;
 	l->count--;
+	pthread_rdwr_wunlock_np(&(l->app_list_lock));
 	return 0;	
 }
 
@@ -407,10 +433,13 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 
 /* Search if the application even exists */
 
-    temp = search_app(l, aval);
-
+    	temp = search_app(l, aval);
+	
+	pthread_rdwr_wlock_np(&(l->app_list_lock));
+	
 	if(temp == NULL) {
 		errno = ENODEV;
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));
 		return -2;
 	}
 
@@ -419,6 +448,7 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 	if(n == NULL) {
 		errno = ECANCELED;
 		perror("APP_DCLL :  ERROR IN MALLOC");
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));
 		exit(1);
 	}
 
@@ -428,6 +458,7 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 	if(n->name == NULL) {
 		errno = ECANCELED;
 		perror("APP_DCLL :  ERROR IN MALLOC");
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));
 		exit(1);
 	}
 
@@ -435,13 +466,13 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 	strcpy(n->name, nval);
 	if(temp->np_list_head == NULL) {
 		temp->np_list_head = n;
-		temp->np_count++;
-		return 0;
+
 	} else {
 		m = temp->np_list_head;
 		b = m;
 		if(m->name == nval) {
 			errno = EEXIST;
+			pthread_rdwr_wunlock_np(&(l->app_list_lock));
 			return ALREXST;
 		}
 		b = m;
@@ -449,14 +480,16 @@ int add_np_to_app(app_dcll * l, char *aval, char *nval)
 		while (m != NULL) {
 			if(m->name == nval) {
 				errno = EEXIST;
+				pthread_rdwr_wunlock_np(&(l->app_list_lock));
 				return -1;
 			}
 			b = m;
 			m = m->next;
 		}
 		b->next = n;
-		temp->np_count++;
 	}
+	temp->np_count++;
+	pthread_rdwr_wunlock_np(&(l->app_list_lock));	
 	return 0;
 }
 
@@ -472,18 +505,23 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 	int flag = 0;
 	app_node *temp = search_app(l, aval);
 	np_node *n, *m, *b;
+	
+	pthread_rdwr_wlock_np(&(l->app_list_lock));
 
 	if(l->count == 0) {
 		errno = ENODEV;
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));
 		return NOTFND;
 	}
 		
 	if(temp == NULL) {
 		errno = ENODEV;
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));
 		return NOTFND;
 	}
 	
 	if(temp->np_list_head == NULL) {
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));
 		return 0;
 	}
 	
@@ -531,6 +569,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 	}
 	if(flag == 0) {
 		errno = ENODEV;	
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));
 		return -1;
 	}
 
@@ -556,6 +595,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
 	np_tail->name = NULL;
 	free(np_tail);	
 	np_tail = NULL;
+	pthread_rdwr_wunlock_np(&(l->app_list_lock));
 	return 0;
 }
 
@@ -566,7 +606,7 @@ int del_np_from_app(app_dcll * l, char *aval, char *nval)
     *   d. If not NULL, removes the regustration(decr_np_app_cnt(&npList, np_name))
      if NULL, removes the app(dec_all_np_counts(&appList, &npList, app_name))
     */	
-int del_app_ref(app_dcll* l, app_node* temp, char* app_name, char* np_name) {
+int del_app_ref(app_dcll* l, app_node* temp, char* np_name) {
 
     app_node *p, *q; 
     char **np_key_val_arr;
@@ -574,6 +614,8 @@ int del_app_ref(app_dcll* l, app_node* temp, char* app_name, char* np_name) {
 	np_node *np_tail, *np_temp, *n, *m, *b;
 	struct extr_key_val *extr_kv, *extr_kv_temp;
 	
+	pthread_rdwr_wlock_np(&(l->app_list_lock));	
+
     if(np_name == NULL) {
         
         /* If it is at the head of the list and the only application registered */
@@ -636,6 +678,7 @@ int del_app_ref(app_dcll* l, app_node* temp, char* app_name, char* np_name) {
 	    free(temp);
 	    temp = NULL;
 	    l->count--;
+	    pthread_rdwr_wunlock_np(&(l->app_list_lock));
 	    return 0;	
     }
         
@@ -643,11 +686,13 @@ int del_app_ref(app_dcll* l, app_node* temp, char* app_name, char* np_name) {
     
         if(l->count == 0) {
 		    errno = ENODEV;
+		    pthread_rdwr_wunlock_np(&(l->app_list_lock));
 		    return -1;
 	    }
 	    
 	    if(temp->np_list_head == NULL) {
-	        errno = ENODEV;
+	        	errno = ENODEV;
+	        	pthread_rdwr_wunlock_np(&(l->app_list_lock));
 		    return -1;
 	    }
 	
@@ -695,7 +740,8 @@ int del_app_ref(app_dcll* l, app_node* temp, char* app_name, char* np_name) {
 	    }
 	    
 	    if(flag == 0) {
-		    errno = ENODEV;	
+		    errno = ENODEV;
+		    pthread_rdwr_wunlock_np(&(l->app_list_lock));	
 		    return -1;
 	    }
 
@@ -725,6 +771,7 @@ int del_app_ref(app_dcll* l, app_node* temp, char* app_name, char* np_name) {
 	    np_tail->name = NULL;
 	    free(np_tail);	
 	    np_tail = NULL;
+	    pthread_rdwr_wunlock_np(&(l->app_list_lock));
 	    return 0;
     
                     
@@ -744,28 +791,36 @@ int add_app_ref(app_dcll* l, char* app_name, char* np_name){
 	app_node *temp, *new; 
 	np_node *np_temp, *m, *b;
 
+
 	/* if app is to be registered with NP np_name, create a node here and later attach it to appropriate place in trailing list */
 	if(np_name != NULL) {
 		np_temp = (np_node *)malloc(sizeof(np_node));
+
 		if(np_temp == NULL) {
 			errno = ECANCELED;
 			perror("> APP_DCLL :  ERROR IN MALLOC");
+			pthread_rdwr_wunlock_np(&(l->app_list_lock));
 			return -1;
 		}
 
 		np_temp->name = (char *)malloc((strlen(np_name) + 1) * sizeof(char));
+
 		if(np_temp->name == NULL) {
 			errno = ECANCELED;
 			perror("> APP_DCLL :  ERROR IN MALLOC");
+			pthread_rdwr_wunlock_np(&(l->app_list_lock));
 			return -1;
 		}
 		strcpy(np_temp->name, np_name);
 		np_temp->key_val_ptr = NULL;
 		np_temp->next = NULL;
+			printf("%d\n", __LINE__);
+
 	}
 
 	temp = search_app(l, app_name);
 
+	pthread_rdwr_wlock_np(&(l->app_list_lock));	
 	/* App is registering for the first time, add app_node */
 	if(temp == NULL) {	
 		
@@ -774,6 +829,7 @@ int add_app_ref(app_dcll* l, char* app_name, char* np_name){
 		if(new == NULL) {
 			errno = ECANCELED;
 			perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
+			pthread_rdwr_wunlock_np(&(l->app_list_lock));
 			return -1;
 		}
 
@@ -782,6 +838,7 @@ int add_app_ref(app_dcll* l, char* app_name, char* np_name){
 		if(new->data == NULL) {
 			errno = ECANCELED;
 			perror("> app_dcll.c add_app_node() : ERROR IN MALLOC");
+			pthread_rdwr_wunlock_np(&(l->app_list_lock));
 			exit(1);
 		}
 		strcpy(new->data, app_name);
@@ -817,6 +874,7 @@ int add_app_ref(app_dcll* l, char* app_name, char* np_name){
 		else		
 			new->np_list_head = NULL;
 		l->count++;
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));
 		return 0;
 	}
 
@@ -829,6 +887,7 @@ int add_app_ref(app_dcll* l, char* app_name, char* np_name){
 			b = m;
 			if(m->name == np_name) {
 				errno = EEXIST;
+				pthread_rdwr_wunlock_np(&(l->app_list_lock));
 				return -1;
 			}
 			b = m;
@@ -836,6 +895,7 @@ int add_app_ref(app_dcll* l, char* app_name, char* np_name){
 			while (m != NULL) {
 				if(m->name == np_name) {
 					errno = EEXIST;
+					pthread_rdwr_wunlock_np(&(l->app_list_lock));
 					return -1;
 				}
 				b = m;
@@ -844,8 +904,15 @@ int add_app_ref(app_dcll* l, char* app_name, char* np_name){
 			b->next = np_temp;
 		}
 		temp->np_count++;
+		pthread_rdwr_wunlock_np(&(l->app_list_lock));
 		return 0;
 	}
+}
+
+void add_keyval(app_dcll* l, np_node *nptr, struct extr_key_val *temp) {
+
+
+
 }
 
 
@@ -868,8 +935,8 @@ void empty_app_list(app_dcll * l) {
 */
 
 /* Below is the code to test the list */
-
-/*int main() {
+/*
+int main() {
 
 	app_dcll l;
 	char val[25], aval[25], nval[25];
@@ -877,33 +944,33 @@ void empty_app_list(app_dcll * l) {
 	
 	int ch;
 	while(1) {
-		//printf("APP_DCLL : Enter Choice :\n0 - printApp\n1 - Add App\n2 - search_app App\n3 - Delete App\n4 - Add NP to App\n5 - Delete NP from App\n");
+		printf("APP_DCLL : Enter Choice :\n0 - printApp\n1 - Add App\n2 - search_app App\n3 - Delete App\n4 - Add NP to App\n5 - Delete NP from App\n");
 		scanf("%d", &ch);
 		switch(ch) {
 	
 			case 0 :	print_app(&l);
 					break;
-			case 1 :	//printf("APP_DCLL : Enter Val :\n");
+			case 1 :	printf("APP_DCLL : Enter Val :\n");
 					scanf(" %s", val);
-					add_app_node(&l, val);
+					add_app_ref(&l, val, NULL);
 					print_app(&l);
 					break;
-			case 2 : 	//printf("APP_DCLL : Enter Val :\n");
+			case 2 : 	printf("APP_DCLL : Enter Val :\n");
 					scanf(" %s", val);
 					search_app(&l, val);
 					break;
-			case 3 :	//printf("APP_DCLL : Enter Val :\n");
+			case 3 :	printf("APP_DCLL : Enter Val :\n");
 					scanf(" %s", val);
 					del_app(&l, val);
 					print_app(&l);
 					break;
-			case 4 :	//printf("APP_DCLL : Enter Val for App and NP:\n");
+			case 4 :	printf("APP_DCLL : Enter Val for App and NP:\n");
 					scanf(" %s %s", aval, nval);
-					//printf("APP_DCLL : Aval - %s| and nval - %s|\n", aval, nval);
+					printf("APP_DCLL : Aval - %s| and nval - %s|\n", aval, nval);
 					add_np_to_app(&l, aval, nval);
 					print_app(&l);
 					break;
-			case 5 :	//printf("APP_DCLL : Enter Val for App and NP:\n");
+			case 5 :	printf("APP_DCLL : Enter Val for App and NP:\n");
 					scanf(" %s %s", aval, nval);
 					del_np_from_app(&l, aval, nval);
 					print_app(&l);
@@ -913,6 +980,6 @@ void empty_app_list(app_dcll * l) {
 	return 0;
 
 }
-
 */
+
 

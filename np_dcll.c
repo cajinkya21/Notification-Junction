@@ -38,6 +38,7 @@
 
 void init_np(np_dcll * l)
 {
+	pthread_rdwr_init_np(&(l->np_list_lock), NULL);	
 	l->head = NULL;
 	l->count = 0;
 }
@@ -52,6 +53,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 	
 	temp = search_np(l, val);
 	
+	pthread_rdwr_wlock_np(&(l->np_list_lock));	
 
 	if (temp != NULL) { /* case when np already exists */
 		/*action is to del_np and make new entry for that np*/
@@ -95,6 +97,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 	if (new == NULL) {
 		errno = ECANCELED;
 		perror("NP_DCLL : ERROR IN MALLOC");
+		pthread_rdwr_wunlock_np(&(l->np_list_lock));
 		return -1;
 	}
 
@@ -105,6 +108,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 	if (new->data == NULL) {
 		errno = ECANCELED;
 		perror("NP_DCLL : ERROR IN MALLOC");
+		pthread_rdwr_wunlock_np(&(l->np_list_lock));
 		exit(1);
 	}
 
@@ -114,9 +118,6 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 		l->head = new;
 		new->prev = new;
 		new->next = new;
-		strcpy(new->data, val);
-		l->count++;
-		return 0;
 	}
 
 	else if (l->count == 1) {
@@ -124,9 +125,6 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 		l->head->next = new;
 		new->prev = l->head;
 		new->next = l->head;
-		strcpy(new->data, val);
-		l->count++;
-		return 0;
 	}
 
 	else {
@@ -134,11 +132,11 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 		new->prev = l->head->prev;
 		new->next = l->head;
 		l->head->prev = new;
-		strcpy(new->data, val);
-		l->count++;
-		return 0;
 	}
-
+	strcpy(new->data, val);
+	l->count++;
+	pthread_rdwr_wunlock_np(&(l->np_list_lock));
+	return 0;
 }
 
 /* Print the list */
@@ -146,12 +144,16 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 void print_np(np_dcll * l)
 {
 
-	int i = l->count;
+	int i ;
 	main_np_node *ptr;
 	char **kptr;
 
+	pthread_rdwr_rlock_np(&(l->np_list_lock));
+
+	i = l->count;
 	if (l->count == 0) {
 		printf("> %s %d print_np() : NP_DCLL  : Nothing to print_np\n", __FILE__, __LINE__);
+		pthread_rdwr_runlock_np(&(l->np_list_lock));
 		return;
 	}
 
@@ -166,7 +168,7 @@ void print_np(np_dcll * l)
 	while (i) {
 		printf("> %s %d print_np() : %s   ", __FILE__, __LINE__, ptr->data);
 		printf("\t\t\t%d\n", ptr->app_count);
-
+		kptr = ptr->key_val_arr;
 		while (*kptr) {
 			printf("\t\t\t\t%s\n", *kptr);
 			kptr++;
@@ -177,6 +179,7 @@ void print_np(np_dcll * l)
 		i--;
 	}
 	printf("====================================xx======================================\n");
+	pthread_rdwr_runlock_np(&(l->np_list_lock));
 }
 
 /* Search for an np with the given name and return a pointer to that node if found */
@@ -184,12 +187,16 @@ void print_np(np_dcll * l)
 main_np_node *search_np(np_dcll * l, char *val)
 {
 
-	int i = l->count;
+	int i;
 	int found = 0;
 	main_np_node *ptr;
 
+	pthread_rdwr_rlock_np(&(l->np_list_lock));
+
+	i = l->count;
 	if (l->count == 0) {
 		errno = ENODEV;
+		pthread_rdwr_runlock_np(&(l->np_list_lock));
 		return NULL;
 	}
 
@@ -208,11 +215,13 @@ main_np_node *search_np(np_dcll * l, char *val)
 
 	if (found == 0) {
 		errno = ENODEV;
+		pthread_rdwr_runlock_np(&(l->np_list_lock));
 		return NULL;
 	}
 
 	else {
 		errno = EEXIST;
+		pthread_rdwr_runlock_np(&(l->np_list_lock));
 		return ptr;
 	}
 }
@@ -222,8 +231,10 @@ int del_np_node(np_dcll * l, main_np_node * np_to_del) {
 	char **np_key_val_arr;
 	int i = 0;
 	main_np_node *p,*temp, *q;
-	temp = np_to_del;
 	
+	pthread_rdwr_wlock_np(&(l->np_list_lock));
+	
+	temp = np_to_del;
 	if ((temp == (l->head)) && (l->count == 1)) {
 		l->head->prev = NULL;
 		l->head->next = NULL;
@@ -256,9 +267,8 @@ int del_np_node(np_dcll * l, main_np_node * np_to_del) {
 	free(temp);
 	temp = NULL;
 	
-
-
 	l->count = (l->count - 1);
+	pthread_rdwr_wunlock_np(&(l->np_list_lock));
 	return 0;
 
 }
@@ -270,9 +280,13 @@ int del_np(np_dcll * l, char *val)
 	int i = 0;
 	main_np_node *p, *temp, *q;
 	temp = search_np(l, val);
+	
+	pthread_rdwr_wlock_np(&(l->np_list_lock));
+	
 	l->count = ( l->count - 1) ;
 	if (temp == NULL) {
 		errno = ENODEV;
+		pthread_rdwr_wunlock_np(&(l->np_list_lock));
 		return NOTFND;
 	}
 
@@ -307,7 +321,7 @@ int del_np(np_dcll * l, char *val)
 	temp->data = NULL;
 	free(temp);
 	temp = NULL;
-	
+	pthread_rdwr_wunlock_np(&(l->np_list_lock));
 	return 0;
 
 }
@@ -319,10 +333,17 @@ int get_np_app_cnt(np_dcll * l, char *nval)
 	main_np_node *temp;
 
 	temp = search_np(l, nval);
+	
+	pthread_rdwr_rlock_np(&(l->np_list_lock));
+	
 	if (temp == NULL) {
 		errno = ENODEV;	
+		pthread_rdwr_runlock_np(&(l->np_list_lock));
 		return NOTFND;
 	}
+	
+	pthread_rdwr_runlock_np(&(l->np_list_lock));
+	
 	return temp->app_count;
 }
 
@@ -334,13 +355,16 @@ void incr_np_app_cnt(np_dcll * l, char *nval)
 	main_np_node *temp;
 
 	temp = search_np(l, nval);
+	pthread_rdwr_wlock_np(&(l->np_list_lock));
 
 	if (temp == NULL) {
 		errno = ENODEV;	
+		pthread_rdwr_wunlock_np(&(l->np_list_lock));
 		return;
 	}
 
 	temp->app_count++;
+	pthread_rdwr_wunlock_np(&(l->np_list_lock));
 }
 
 void decr_np_app_cnt(np_dcll * l, char *nval)
@@ -348,14 +372,16 @@ void decr_np_app_cnt(np_dcll * l, char *nval)
 
 	main_np_node *temp;
 	temp = search_np(l, nval);
-
+	pthread_rdwr_wlock_np(&(l->np_list_lock));
 	if (temp == NULL) {
 		errno = ENODEV;	
+		pthread_rdwr_wunlock_np(&(l->np_list_lock));
 		return;
 	}
 
 	temp->app_count = (temp->app_count - 1);
 	printf("> %s %d decr_np_app_cnt() :\t%d\n", __FILE__, __LINE__, temp->app_count);
+	pthread_rdwr_wunlock_np(&(l->np_list_lock));
 }
 /*
 void empty_np_list(np_dcll * l) {

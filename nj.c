@@ -41,7 +41,7 @@ FILE* logfd;						/* File pointer of log file */
 app_dcll appList;					/* Head of global APP List */
 int fd_pidnames;					/* FD of file used for storing PID filenames */
 void *handle;						/* Handle of the function in shared library */
-pthread_mutex_t app_list_mutex, np_list_mutex, getnotify_socket_mutex;
+pthread_mutex_t getnotify_socket_mutex;
 /*Mutexes to be used for synchronizing list*/
 
 /* main code */
@@ -72,15 +72,7 @@ int main()
 	fd_pidnames = open(PIDFILE, O_CREAT | O_RDWR, 0777);
 
 	/*Initialization of all mutexes */
-	if (pthread_mutex_init(&app_list_mutex, NULL) != 0) {
-		perror("NJ.C   : \n app_list mutex init failed\n");
-		exit(EXIT_FAILURE);
-	}
-	if (pthread_mutex_init(&np_list_mutex, NULL) != 0) {
-		perror("NJ.C   : \n np_list mutex init failed\n");
-		exit(EXIT_FAILURE);
-	}
-
+	
 	if (pthread_mutex_init(&getnotify_socket_mutex, NULL) != 0) {
 		perror("NJ.C   : \n getnotify socket mutex init failed\n");
 		exit(EXIT_FAILURE);
@@ -88,23 +80,14 @@ int main()
 
 
 	/*Initialize NP List */
-	if(pthread_mutex_lock(&np_list_mutex) != 0) {
-		perror("NJ.C: Np List mutex Lock failed :");
-	};
+	
 	init_np(&npList);
-	if(pthread_mutex_unlock(&np_list_mutex) != 0) {
-		perror("NJ.C : Np list mutex unlock failed:");
-	};	
 
 	/*Initialize APP List */
-	if(pthread_mutex_lock(&app_list_mutex) != 0 ) {
-		perror("Nj.c Applist mutex Lock failed");
-	}
+	
 	init_app(&appList);
 
-	if(pthread_mutex_unlock(&app_list_mutex) != 0) {
-		perror("Nj.c applist mutex unlock failed");
-	}
+	
 
 	/* Create socket for stat*/
 
@@ -580,13 +563,7 @@ void *np_getnotify_method(void *arguments)
 	np_node *nptr;
 	main_np_node *np_node;	
 	int pid;
-	if((pthread_mutex_lock(&app_list_mutex)) != 0) {
-		perror("Error in lock app_list_mutex : ");
-	}
-	if((pthread_mutex_lock(&np_list_mutex)) != 0) {
-		perror("Error in lock np_list_mutex:");
-	}
-
+	
 	bargs = (struct getnotify_thread_args *)arguments;
 	if((args = (struct getnotify_thread_args *)malloc(sizeof(struct getnotify_thread_args))) == NULL) {
 		PRINTF("> %s %d np_getnotify_method() : malloc failed\n", __FILE__, __LINE__);
@@ -626,7 +603,25 @@ void *np_getnotify_method(void *arguments)
 	strtok(one, delimval);	
 	strcpy(np_name, strtok(NULL, delimval));
 
+	/* Compare it with the arguments given during ./np_register to check the consistency */
+
+	extract_key_val(args->argssend, &pointer);
+	np_node = search_np(&npList, np_name);
+	k = compare_array(&(np_node->key_val_arr), &pointer);
+
+	if(k == 0)
+		;
+
+	else {
+		PRINTF(">%s %d np_getnotify_method() :Array not matched..\n",__FILE__ , __LINE__);	
+		errno = EINVAL;
+		return NULL;
+	}
+
+
 	/* Get the reg, malloc space for a getn registration key_val  */
+
+	///////add_keyval(&appList, nptr, &temp);
 
 	nptr = get_reg(&appList, appname, np_name);
 
@@ -667,20 +662,6 @@ void *np_getnotify_method(void *arguments)
 		temp->next = NULL;  
 	}
 
-	/* Compare it with the arguments given during ./np_register to check the consistency */
-
-	extract_key_val(args->argssend, &pointer);
-	np_node = search_np(&npList, np_name);
-	k = compare_array(&(np_node->key_val_arr), &pointer);
-
-	if(k == 0)
-		;
-
-	else {
-		PRINTF(">%s %d np_getnotify_method() :Array not matched..\n",__FILE__ , __LINE__);	
-		errno = EINVAL;
-		return NULL;
-	}
 
 	/* Set the pointers in the trailing list and convert the key-value array into an NP accepted format */
 
@@ -761,13 +742,6 @@ void *np_getnotify_method(void *arguments)
 	free(args);
 	args = NULL;
 
-
-	if((pthread_mutex_unlock(&np_list_mutex)) != 0) {
-		perror("Error in unlock np_list_mutex : ");
-	}
-	if((pthread_mutex_unlock(&app_list_mutex)) != 0) {
-		perror("Error in unlock of app list mutex:");
-	}
 
 	pthread_exit(NULL);
 
@@ -1061,39 +1035,15 @@ void force_logs(void) {
 /* Function To Print Statistics Of Nj */
 void printStat()
 {
-	if((pthread_mutex_lock(&np_list_mutex)) != 0) {
-		perror("Error in lock of np_list_mutex:");
-	}
 	print_np(&npList);
-	if((pthread_mutex_unlock(&np_list_mutex)) != 0) {
-		perror("Errror in unlock of np_list_mutex:");
-	}
-	if((pthread_mutex_lock(&app_list_mutex)) != 0) {
-		perror("Errror in lock of app_list_mutex");
-	}
 	print_app(&appList);
-	if((pthread_mutex_unlock(&app_list_mutex)) != 0) {
-		perror("Error in unlock of app_list_mutex");
-	}
 }
 
 /* Signal Handler Of Nj */
 void sigint_handler(int signum)
 {
-	char buf2[64];
 	PRINTF("> %s %d sigint_handler() : In sigIntHandlere\n", __FILE__, __LINE__);
 	if (signum == SIGINT) {				/* Handling SIGINT signal to remove PID files */
-		close(fd_pidnames);
-		fd_pidnames = open(PIDFILE, O_CREAT | O_RDWR, 0777);
-		FILE *pidnames = fdopen(fd_pidnames, "r");
-		/* While there are PIDs of applications, remove them one by one */
-		while (fgets(buf2, sizeof(buf2), pidnames)) {
-			buf2[strlen(buf2) - 1] = '\0';
-			unlink(buf2);
-			PRINTF("> %s %d sigint_handler() : %s removed\n",__FILE__,__LINE__, buf2);
-		}
-		unlink(PIDFILE);
-		PRINTF("> %s %d sigint_handler() : File_PIDS.txt removed\n", __FILE__, __LINE__);
 		exit(EXIT_SUCCESS);
 	}
 }
@@ -1113,24 +1063,11 @@ int register_app(char *buff)
 	else
 		np_name[0] = '\0';
 	
-	if(pthread_mutex_lock(&app_list_mutex) != 0) {
-		perror("NJ.C: app List mutex Lock failed :");
-	};
-	if(pthread_mutex_lock(&np_list_mutex) != 0) {
-		perror("NJ.C: Np List mutex Lock failed :");
-	};
-
 	if(np_name[0] != '\0') {	
 		if (search_np(&npList, np_name) == NULL) {				/* NP is not registerd */
 			perror("Np not registered - ");
 			PRINTF("> %s %d register_app(): Np not registered. Register NP first.\n", __FILE__ , __LINE__);
 			errno = ENODEV;
-			if(pthread_mutex_unlock(&np_list_mutex) != 0) {
-				perror("NJ.C: Np List mutex unLock failed :");
-			}
-			if(pthread_mutex_unlock(&app_list_mutex) != 0) {
-				perror("NJ.C: app List mutex Lock failed :");
-			}
 			return -1;
 		}	
 	}
@@ -1150,18 +1087,9 @@ int register_app(char *buff)
 	printf("After successful add_app_ref()\n\n");
     	print_app(&appList);
     	print_np(&npList);
-
-
-	if(pthread_mutex_unlock(&np_list_mutex) != 0) {
-		perror("NJ.C: Np List mutex unLock failed :");
-	}
-	if(pthread_mutex_unlock(&app_list_mutex) != 0) {
-		perror("NJ.C: app List mutex Lock failed :");
-	}
-
+	
 	return 1;
 }
-
 /*Function To Unregister An App*/
 int unregister_app(char *buff)
 {
@@ -1178,13 +1106,6 @@ int unregister_app(char *buff)
 
     }
 
-    if(pthread_mutex_lock(&app_list_mutex) != 0) {
-        perror("NJ.C: app List mutex Lock failed :");
-    };
-    if(pthread_mutex_lock(&np_list_mutex) != 0) {
-        perror("NJ.C: Np List mutex Lock failed :");
-    };
-   
     printf("BEFORE\n");
     print_app(&appList);
     print_np(&npList);
@@ -1201,7 +1122,7 @@ int unregister_app(char *buff)
     if (np_ptr == NULL) {
         PRINTF("> %s %d unregister_app() :np_name == NULL case in unregister app\n", __FILE__ , __LINE__);
         dec_all_np_counts(&appList, &npList, app_name);
-        if(del_app_ref(&appList, temp, app_name, NULL) == -1) {
+        if(del_app_ref(&appList, temp, NULL) == -1) {
             perror("Unregister Application Error : ");       
         }
         PRINTF("> %s %d unregister_app():Unregistration done\n", __FILE__, __LINE__);
@@ -1211,7 +1132,7 @@ int unregister_app(char *buff)
         /* If the registration exists, delete it */
             PRINTF("> %s %d unregister_app(): REGISTRATION FOUND.\n", __FILE__ , __LINE__);
             decr_np_app_cnt(&npList, np_name);
-            if(del_app_ref(&appList, temp, app_name, np_name) == -1) {
+            if(del_app_ref(&appList, temp, np_name) == -1) {
             perror("Unregister Application Error : ");       
             }
     }
@@ -1220,15 +1141,9 @@ int unregister_app(char *buff)
     print_app(&appList);
     print_np(&npList);
 
-    if(pthread_mutex_unlock(&np_list_mutex) != 0) {
-        perror("NJ.C: Np List mutex unLock failed :");
-    }   
-    if(pthread_mutex_unlock(&app_list_mutex) != 0) {
-	perror("NJ.C: app List mutex unLock failed :");
-    }
-
     return 1;
 }
+
 /*function to register an np*/
 int register_np(char *buff)
 {
@@ -1320,6 +1235,7 @@ int count_args(char *myString, char *delim) {
 int unregister_np(char *buff)
 {
 
+	printf("in unregister\n");
 	struct main_np_node * temp;
 	char *np_name = (char *) malloc (sizeof(char) * 32);
 	char delim[3] = "::";
@@ -1329,28 +1245,18 @@ int unregister_np(char *buff)
 
 	strcpy(np_name, strtok(buff, delim));
 
-	if(pthread_mutex_lock(&app_list_mutex) != 0) {
-		perror("NJ.C: app List mutex Lock failed :");
-	};
-	if(pthread_mutex_lock(&np_list_mutex) != 0) {
-		perror("NJ.C: Np List mutex Lock failed :");
-	};
-	
 	app_cnt = appList.count;
 	
+	printf("Looking1\n");
+
 	/* Check if the NP exists */    
 	temp = search_np(&npList, np_name);
 	if(app_cnt == 0) {
 		del_np_node(&npList, temp);
-		if(pthread_mutex_unlock(&np_list_mutex) != 0) {
-			perror("NJ.C: Np List mutex unLock failed :");
-		}
-		if(pthread_mutex_lock(&app_list_mutex) != 0) {
-			perror("NJ.C: app List mutex unLock failed :");
-		}
-		return 1;
+		print_np(&npList);
+		print_app(&appList);	
+		return 0;
 	}
-	
 	if( temp != NULL) {
 		/* For every application it is registered with */
 		while(app_cnt != 0) {
@@ -1409,12 +1315,6 @@ int unregister_np(char *buff)
 	print_np(&npList);
 	print_app(&appList);
 
-	if(pthread_mutex_unlock(&np_list_mutex) != 0) {
-		perror("NJ.C: Np List mutex unLock failed :");
-	}
-	if(pthread_mutex_lock(&app_list_mutex) != 0) {
-		perror("NJ.C: app List mutex unLock failed :");
-	}
 	return 1;
 }
 
@@ -1473,57 +1373,19 @@ char *getnotify_app(char *buff)
 void nj_exit(void) {
 	PRINTF(">%s %d nj_exit() : NJ exiting \n",__FILE__, __LINE__);
 	int ret;
-	/*pthread_cancel(tid_stat);
-	  pthread_cancel(tid_app_reg);
-	  pthread_cancel(tid_app_unreg);
-	  pthread_cancel(tid_np_reg); 
-	  pthread_cancel(tid_np_unreg);
-	  pthread_cancel(tid_app_getnotify);
-	 */
-	 
-	 /*
-	if(pthread_mutex_trylock(&app_list_mutex) == EBUSY) {
-		if(pthread_mutex_unlock(&app_list_mutex) != 0) {
-			PRINTF("> %s %d nj_exit(): Error in unlocking app_list_mutex\n", __FILE__, __LINE__);
-		}		
+	
+	char buf2[64];
+	close(fd_pidnames);
+	fd_pidnames = open(PIDFILE, O_CREAT | O_RDWR, 0777);
+	FILE *pidnames = fdopen(fd_pidnames, "r");
+	/* While there are PIDs of applications, remove them one by one */
+	while (fgets(buf2, sizeof(buf2), pidnames)) {
+		buf2[strlen(buf2) - 1] = '\0';
+		unlink(buf2);
+		PRINTF("> %s %d sigint_handler() : %s removed\n",__FILE__,__LINE__, buf2);
 	}
-	if(pthread_mutex_trylock(&np_list_mutex) == EBUSY) {
-		if(pthread_mutex_unlock(&np_list_mutex) != 0) {
-			PRINTF("> %s %d nj_exit(): Error in unlocking Np_list_mutex\n", __FILE__, __LINE__);
-		}		
-	}
-	if((pthread_mutex_lock(&app_list_mutex)) != 0) {
-		perror("Error acquiring lock for app list mutex:");
-	}
-	//empty_app_list(&appList);
-	if((pthread_mutex_unlock(&app_list_mutex)) != 0) {
-		perror("Error unlocking appList mutex:");
-	}
-
-
-	if((pthread_mutex_lock(&np_list_mutex)) != 0) {
-	  perror("Error acquiring npList mutex:");
-	  }
-	  //empty_np_list(&npList);	
-	  if((pthread_mutex_unlock(&np_list_mutex)) != 0) {
-	  perror("Error unlocking npList mutex:");
-	  }
-
-	if((ret = pthread_mutex_destroy(&app_list_mutex)) != 0) {
-		errno = ret;
-		perror("Error in destroying app_list_mutex:");
-	}
-	if((ret = pthread_mutex_destroy(&np_list_mutex)) != 0) {
-		errno = ret;
-		perror("Error in destroying np_list_mutex:");
-	}
-	if((ret = pthread_mutex_destroy(&getnotify_socket_mutex)) != 0) {
-		errno = ret;
-		perror("Error in destroying getnotify_socket_mutex");
-	}
-*/
-
-
+	unlink(PIDFILE);
+	PRINTF("> %s %d sigint_handler() : File_PIDS.txt removed\n", __FILE__, __LINE__);
 
 	/* For every np, delete its registration with the app first */
 	int i = appList.count;
@@ -1535,8 +1397,6 @@ void nj_exit(void) {
 	
 	temp2 = npList.head;
 	
-
-	
 	for(; i != 0;i--) {
 		temp1 = temp->next;
 		unregister_app(temp->data);
@@ -1545,29 +1405,35 @@ void nj_exit(void) {
 	}
 	
 	printf(">%s %d empty_app_list : App List deleted completely  %d \n ",__FILE__ , __LINE__, appList.count);
+	
+	
 	print_app(&appList);
+	
 	print_np(&npList);
 
 	
 	for(; j != 0;j--) {
 		
+		printf("IN NP LOOP, before delete Unregistering %s \n", temp2->data);
 		temp3 = temp2->next;
+		
 		temp2->app_count = 0;
-		del_np_node(&npList,temp2);
+	
+		del_np_node(&npList, temp2);
+		
+		printf("Deleting\n");
+		
 		temp2 = temp3;
+		
+		printf("next\n");
+	
 	}
+	
 	
 	print_app(&appList);
+	
 	print_np(&npList);
 	
-	if((ret = pthread_mutex_destroy(&app_list_mutex)) != 0) {
-		errno = ret;
-		perror("Error in destroying app_list_mutex:");
-	}
-	if((ret = pthread_mutex_destroy(&np_list_mutex)) != 0) {
-		errno = ret;
-		perror("Error in destroying np_list_mutex:");
-	}
 	if((ret = pthread_mutex_destroy(&getnotify_socket_mutex)) != 0) {
 		errno = ret;
 		perror("Error in destroying getnotify_socket_mutex");

@@ -29,6 +29,7 @@
 #include<stdlib.h>
 #include<unistd.h>
 #include <string.h>
+#include "rdwr_lock.h"
 #define ALREXST -1
 #define NOTFND -2
 #include <assert.h>
@@ -57,6 +58,8 @@ typedef struct main_np_node {
 typedef struct np_dcll {
 	main_np_node *head;
 	int count;
+	pthread_rdwr_t np_list_lock;
+	
 	/*
 	* head is the pointer to the first node of NP List
 	* count is the number of NPs registered
