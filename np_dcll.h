@@ -33,9 +33,9 @@
 #define ALREXST -1
 #define NOTFND -2
 #include <assert.h>
+#include "uthash.h"
 
 /* The node for np(s) */
-
 typedef struct main_np_node {
 	char *data;
 	struct main_np_node *prev;
@@ -43,6 +43,7 @@ typedef struct main_np_node {
 	char *usage;
 	int app_count;
 	char **key_val_arr;
+    	UT_hash_handle hh;         /* makes this structure hashable */
 	/* 
 	* data is to store name of NP
 	* prev is a pointer to previous node of same type
@@ -53,13 +54,12 @@ typedef struct main_np_node {
 	*/
 } main_np_node;
 
-/* The node for the dcll */
-
+/*************************************************/
+/* 		List and its functions		 */
 typedef struct np_dcll {
 	main_np_node *head;
 	int count;
 	pthread_rdwr_t np_list_lock;
-	
 	/*
 	* head is the pointer to the first node of NP List
 	* count is the number of NPs registered
@@ -76,5 +76,32 @@ void decr_np_app_cnt(np_dcll * l, char *nval);
 int get_np_app_cnt(np_dcll * l, char *nval);
 int del_np_node(np_dcll *l,main_np_node * np_to_del);
 //void empty_np_list(np_dcll * l);
+
+/*		End of list functions		*/
+/*************************************************/
+
+
+
+
+/*************************************************/
+/* 		hash and Hash functions 	*/
+
+typedef struct hash_struct_np {
+    struct main_np_node *np_hash;
+    pthread_rdwr_t np_hash_lock;
+}hash_struct_np;
+
+
+void add_np_to_hash(hash_struct_np *hstruct, char *val, char *usage, char ***key_val_arr);
+void del_np_from_hash(hash_struct_np *hstruct, char *val);
+void print_hash_np(hash_struct_np *hstruct);
+void incr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name);
+void decr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name);
+int get_np_app_cnt_hash(hash_struct_np *hstruct, char* np_name);
+
+
+/* 		End of Hash functions		*/
+/*************************************************/
+
 
 #endif				/*np_dcll.h */

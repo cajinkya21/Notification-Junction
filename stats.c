@@ -38,38 +38,73 @@
 #include <stdio.h>
 
 #define NAME "./statsock"
+#define StatSocketPrint "./statsockprint"
+#define QLEN 32
 
 int main(int argc, char *argv[])
 {
 
-	int sock;
-	struct sockaddr_un server;
-	char data[4096];
+	int sock, retval = 0, sock_read, msgsock;
+	struct sockaddr_un server, server2;
+	char data[1024];
+	strcpy(data, argv[0]);
 
 	if (argc != 1) {
-		printf("STAT : Usage : %s ", argv[0]);
+		printf("Usage - ./%s\n", argv[0]);
 		exit(1);
 	}
 
+
+	sock_read = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (sock_read < 0) {
+		perror("opening stream socket");
+		exit(EXIT_FAILURE);
+	}
+	server2.sun_family = AF_UNIX;
+	strcpy(server2.sun_path, StatSocketPrint);
+	if (bind(sock_read, (struct sockaddr *)&server2, sizeof(struct sockaddr_un))) {
+		perror("binding stream socket");
+		exit(EXIT_FAILURE);
+	}
+	if(listen(sock_read, QLEN) != 0 ) {
+		perror("Error in listening on stat socket");
+	}
+
+
+
 	sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sock < 0) {
-		perror("STAT : Opening Stream Socket");
+		perror("STATS : Opening Stream Socket");
 		exit(1);
 	}
 	server.sun_family = AF_UNIX;
 	strcpy(server.sun_path, NAME);
 
 	if (connect
-	    (sock, (struct sockaddr *)&server,
-	     sizeof(struct sockaddr_un)) < 0) {
+			(sock, (struct sockaddr *)&server,
+			 sizeof(struct sockaddr_un)) < 0) {
 		close(sock);
-		perror("STAT : Connecting Stream Socket");
+		perror("STATS : Connecting Stream Socket");
 		exit(1);
 	}
-	if (read(sock, data, sizeof(data)) < 0) 
-	   perror("STAT : Reading On Stream Socket"); 
-	 
-	close(sock);
-	return 0;
+	if (write(sock, data, sizeof(data)) < 0)
+		perror("STATS : Writing On Stream Socket");
+		
+		
+	msgsock = accept(sock_read, 0, 0);
+	if (msgsock == -1)
+		perror(" Error accept on stat socket");
+	else
+		do {
+			bzero(data, sizeof(data));
+			if ((retval = read(msgsock, data, 1024)) < 0)
+				perror("NJ.C   : reading stream message");
+			else {	
+				printf("%s", data);
+			}
+		} while (retval > 0);
 
+	close(sock);
+	close(sock_read);
+	return 0;
 }

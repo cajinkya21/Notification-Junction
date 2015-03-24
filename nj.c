@@ -34,6 +34,7 @@
  *
  */
 
+
 #include "nj.h"
 
 np_dcll npList;						/* Head of global NP List */
@@ -42,19 +43,28 @@ app_dcll appList;					/* Head of global APP List */
 int fd_pidnames;					/* FD of file used for storing PID filenames */
 void *handle;						/* Handle of the function in shared library */
 pthread_mutex_t getnotify_socket_mutex;
+struct thread_args stat_read, stat_write, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
+struct hash_struct_np *hstruct_np;
+struct hash_struct_app *hstruct_app;
 /*Mutexes to be used for synchronizing list*/
 
 /* main code */
 int main()
 {	int ret;
 	sigset_t mask;
-	struct thread_args stat, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
 	pthread_t tid_stat, tid_app_reg, tid_app_unreg, tid_np_reg, tid_np_unreg, tid_app_getnotify;
 	atexit(nj_exit);
 	if (!(logfd = fopen(LOGS, "a+"))) {
 		perror("NJ.C   : not able to open  Log file\n");
 		return 1;
 	}
+
+	hstruct_np = (hash_struct_np *)malloc(sizeof(hash_struct_np));
+	hstruct_np->np_hash = NULL;
+
+
+	hstruct_app = (hash_struct_app *)malloc(sizeof(hash_struct_app));
+	hstruct_app->app_hash = NULL;
 
 
 	sigemptyset(&mask);
@@ -68,11 +78,12 @@ int main()
 	unlink(NpRegSocket);
 	unlink(NpUnRegSocket);
 	unlink(AppGetnotifySocket);
+	unlink(StatSocketPrint);
 
 	fd_pidnames = open(PIDFILE, O_CREAT | O_RDWR, 0777);
 
 	/*Initialization of all mutexes */
-	
+
 	if (pthread_mutex_init(&getnotify_socket_mutex, NULL) != 0) {
 		perror("NJ.C   : \n getnotify socket mutex init failed\n");
 		exit(EXIT_FAILURE);
@@ -80,27 +91,27 @@ int main()
 
 
 	/*Initialize NP List */
-	
+
 	init_np(&npList);
 
 	/*Initialize APP List */
-	
+
 	init_app(&appList);
 
-	
+
 
 	/* Create socket for stat*/
 
 	/* stat.sock : ; */
-	stat.sock = socket(AF_UNIX, SOCK_STREAM, 0);
-	PRINTF("> %s %d main() :Socket stat created\n",__FILE__ , __LINE__);
-	if (stat.sock < 0) {
+	stat_read.sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	PRINTF("> %s %d main() :Socket stat_read created\n",__FILE__ , __LINE__);
+	if (stat_read.sock < 0) {
 		perror("opening stream socket");
 		exit(EXIT_FAILURE);
 	}
-	stat.server.sun_family = AF_UNIX;
-	strcpy(stat.server.sun_path, StatSocket);
-	if (bind(stat.sock, (struct sockaddr *)&stat.server, sizeof(struct sockaddr_un))) {
+	stat_read.server.sun_family = AF_UNIX;
+	strcpy(stat_read.server.sun_path, StatSocket);
+	if (bind(stat_read.sock, (struct sockaddr *)&stat_read.server, sizeof(struct sockaddr_un))) {
 		perror("binding stream socket");
 		exit(EXIT_FAILURE);
 	}
@@ -173,7 +184,7 @@ int main()
 	}
 
 	/* fork threads to listen  and accept */
-	if ((ret = pthread_create(&tid_stat, NULL, &print_stat, (void *)&stat)) == 0) {
+	if ((ret = pthread_create(&tid_stat, NULL, &print_stat, (void *)&stat_read)) == 0) {
 		PRINTF("> %s %d main(): Pthread_Creation successful for stat\n",__FILE__ , __LINE__);
 	}
 	else {
@@ -246,6 +257,16 @@ int main()
 
 }
 
+#include "nj.h"
+
+extern np_dcll npList;						/* Head of global NP List */
+extern FILE* logfd;						/* File pointer of log file */
+extern app_dcll appList;					/* Head of global APP List */
+extern int fd_pidnames;					/* FD of file used for storing PID filenames */
+extern void *handle;						/* Handle of the function in shared library */
+extern pthread_mutex_t getnotify_socket_mutex;
+extern struct thread_args stat_read, stat_write, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
+
 /* method to read socket for statistics */
 void *print_stat(void *arguments)
 {
@@ -259,27 +280,27 @@ void *print_stat(void *arguments)
 		args->msgsock = accept(args->sock, 0, 0);
 		if (args->msgsock == -1)
 			perror(" Error accept on stat socket");
-		else {
+		else
+			/* For every argument that might be given */
 			do {
 				bzero(args->buf, sizeof(args->buf));
 				if ((args->rval = read(args->msgsock, args->buf, 1024)) < 0)
-					perror("reading stream message");
-				else if (args->rval == 0) {
-					PRINTF("\n>%s %d print_stat() :Printing Statistics :\n",__FILE__ , __LINE__);
+					perror("NJ.C   : reading stream message");
+				else {	
 					printStat();
+					break;
 				}
 			} while (args->rval > 0);
 
-		}
 		close(args->msgsock);
 	}
-
 	close(args->sock);
 	unlink(StatSocket);
 
 	pthread_exit(NULL);
 	return NULL;
 }
+
 
 /* Read the app_register socket; runs in the thread forked for the purpose and calls the appropriate function */
 void *app_reg_method(void *arguments)
@@ -466,7 +487,8 @@ void *app_getnotify_method(void *arguments)
 	struct proceed_getn_thread_args *sendargs;
 	struct sockaddr_un server;
 	int i = 0;
-	int ret ;
+	char choice;
+	int ret, len;
 
 
 	fprintf(logfd,"> %s %d app_getnotify_method(): In AppGetnotifySocket\n",__FILE__ , __LINE__);
@@ -516,13 +538,26 @@ void *app_getnotify_method(void *arguments)
 				/* code to fork a thread per getnotify() request and send the arguments to the thread's action */
 				else {
 					PRINTF("> %s %d app_getnotify_method(): %d is i in ProcerdGetnotify \n",__FILE__ ,__LINE__,i);
-
-					if ((ret = pthread_create(&threadarr[i++], NULL, &proceed_getnotify_method, (void *)sendargs)) == 0) {
-						PRINTF("> %s %d app_getnotify_method(): Pthread_Creations for proceed_getnotify_method\n",__FILE__, __LINE__);
+					// Get the choice here. 
+					len = strlen(sendargs->buf);
+					choice = sendargs->buf[len - 1];
+					if(choice == NONBLOCKING) {
+						if ((ret = pthread_create(&threadarr[i++], NULL, &proceed_getnotify_method, (void *)sendargs)) == 0) {
+							PRINTF("> %s %d app_getnotify_method(): Pthread_Creations for proceed_getnotify_method\n",__FILE__, __LINE__);
+						}
+						else {
+							errno = ret;
+							perror("Error in pthread_create creating thread for proceed_getnotify_method");
+						}
+					}
+					else if(choice == BLOCKING) {
+						if ((ret = pthread_create(&threadarr[i++], NULL, &block_getnotify_method, (void *)sendargs)) == 0) {
+						PRINTF("> %s %d app_getnotify_method(): Pthread_Creations for block_getnotify_method\n",__FILE__, __LINE__);
 					}
 					else {
 						errno = ret;
-						perror("Error in pthread_create creating thread for proceed_getnotify_method");
+						perror("Error in pthread_create creating thread for block_getnotify_method");
+					}
 					}
 					if((pthread_mutex_unlock(&getnotify_socket_mutex)) != 0) {
 						perror("Error in unlock getnotify_socket_mutex:");
@@ -563,7 +598,7 @@ void *np_getnotify_method(void *arguments)
 	np_node *nptr;
 	main_np_node *np_node;	
 	int pid;
-	
+
 	bargs = (struct getnotify_thread_args *)arguments;
 	if((args = (struct getnotify_thread_args *)malloc(sizeof(struct getnotify_thread_args))) == NULL) {
 		PRINTF("> %s %d np_getnotify_method() : malloc failed\n", __FILE__, __LINE__);
@@ -597,8 +632,13 @@ void *np_getnotify_method(void *arguments)
 
 	/* Extract app_name and np_name from the arguments */
 	strcpy(appname, strtok(rough, delimattr));
+
 	pid = atoi(appname);
+
+	
 	fprintf(logfd, "> %s %d np_getnotify_method():77. pid is %d \n",__FILE__ , __LINE__, pid);
+	
+
 	strcpy(one, strtok(NULL, delimattr));
 	strtok(one, delimval);	
 	strcpy(np_name, strtok(NULL, delimval));
@@ -606,36 +646,75 @@ void *np_getnotify_method(void *arguments)
 	/* Compare it with the arguments given during ./np_register to check the consistency */
 
 	extract_key_val(args->argssend, &pointer);
-	np_node = search_np(&npList, np_name);
-	k = compare_array(&(np_node->key_val_arr), &pointer);
 
-	if(k == 0)
-		;
 
-	else {
-		PRINTF(">%s %d np_getnotify_method() :Array not matched..\n",__FILE__ , __LINE__);	
-		errno = EINVAL;
-		return NULL;
+/**/	if(DATASTRUCT == LIST ) {
+
+		np_node = search_np(&npList, np_name);
+		if(np_node != NULL) {
+			k = compare_array(&(np_node->key_val_arr), &pointer);
+			if(k != 0) {
+				PRINTF(">%s %d np_getnotify_method() :Array not matched..\n",__FILE__ , __LINE__);	
+				errno = EINVAL;
+				return NULL;
+			}
+		}
+		else {
+			PRINTF(">%s %d np_getnotify_method() :NP not found in list..\n",__FILE__ , __LINE__);	
+			errno = EINVAL;
+			return NULL;
+		}
+		nptr = get_reg_list(&appList, appname, np_name);
+
+		if (nptr) {
+			PRINTF("\n> %s %d np_getnotify_method(): RETURNED nptr->name in list = %s\n",__FILE__ , __LINE__, nptr->name);
+		}
+
+		else {
+			PRINTF(">%s %d np_getnotify_method():Regitration not found in list---------\n\n",__FILE__ , __LINE__);
+			perror("Registration doesn't exist - ");
+			//and exit
+			errno = ENODEV;
+		}
+		
+		
+		
 	}
+	//search hash.
+	if(DATASTRUCT == HASH ) {
+		HASH_FIND_STR(hstruct_np->np_hash, np_name, np_node); 
+		if(np_node != NULL) {
+			k = compare_array(&(np_node->key_val_arr), &pointer);
+			if(k != 0) {
+				PRINTF(">%s %d np_getnotify_method() :Array not matched..\n",__FILE__ , __LINE__);	
+				errno = EINVAL;
+				return NULL;
+			}
+		}
+		else {
+			PRINTF(">%s %d np_getnotify_method() :NP not found in hash..\n",__FILE__ , __LINE__);	
+			errno = EINVAL;
+			return NULL;
+		}
+		
+		nptr = get_reg_hash(hstruct_app, appname, np_name);
+		
+		if (nptr) {
+			PRINTF("\n> %s %d np_getnotify_method(): RETURNED in hash nptr->name = %s\n",__FILE__ , __LINE__, nptr->name);
+		}
 
-
-	/* Get the reg, malloc space for a getn registration key_val  */
-
-	///////add_keyval(&appList, nptr, &temp);
-
-	nptr = get_reg(&appList, appname, np_name);
-
-	if (nptr) {
-		PRINTF("\n> %s %d np_getnotify_method(): RETURNED nptr->name = %s\n",__FILE__ , __LINE__, nptr->name);
+		else {
+			PRINTF(">%s %d np_getnotify_method():Regitration not found in hash---------\n\n",__FILE__ , __LINE__);
+			perror("Registration doesn't exist - ");
+			//and exit
+			errno = ENODEV;
+		}
+		
+	
+		
+		
 	}
-
-	else {
-		PRINTF(">%s %d np_getnotify_method():Regitration not found---------\n\n",__FILE__ , __LINE__);
-		perror("Registration doesn't exist - ");
-		//and exit
-		errno = ENODEV;
-	}
-
+	
 	if((temp = (struct extr_key_val *)malloc(sizeof(struct extr_key_val))) == NULL) {
 		PRINTF("> %s %d np_getnotify_method(): malloc failed \n", __FILE__, __LINE__);
 		errno = ECANCELED;
@@ -666,13 +745,18 @@ void *np_getnotify_method(void *arguments)
 	/* Set the pointers in the trailing list and convert the key-value array into an NP accepted format */
 
 	temp->key_val_arr = pointer;
-	forward_convert(&(np_node->key_val_arr),&pointer, args->argssend);
+	forward_convert(&(np_node->key_val_arr), &pointer, args->argssend);
+	if(DATASTRUCT == LIST) {
+		x = get_np_app_cnt(&npList, np_name);
+	}
+	if(DATASTRUCT == HASH) {
+		x = get_np_app_cnt_hash(hstruct_np, np_name);
+	}
+	/* Get the reg, malloc space for a getn registration key_val  */
 
 	countkey = get_val_from_args(args->argssend, "count");
 	count = atoi(extract_val(countkey));
 	fprintf(logfd, ">%s %d np_getnotify_method() : count is %d! for buf %s!\n",__FILE__ , __LINE__, count, args->argssend);
-
-	x = get_np_app_cnt(&npList, np_name);
 
 	/* x = 0 for no registrations and x > 1 for existing registrations. When getnotify() is called for the first time (x = 1), the library needs to be opened. */
 
@@ -743,8 +827,113 @@ void *np_getnotify_method(void *arguments)
 	args = NULL;
 
 
-	pthread_exit(NULL);
+	//pthread_exit(NULL);
+	return NULL;
 
+}
+
+void *block_getnotify_method(void *argu) {
+	
+	int sock_block;
+	struct sockaddr_un server_block;
+	
+	char *buf;
+	struct proceed_getn_thread_args *temparguments, *args;
+	char rough[1024];
+	char sock_name[32];
+
+
+	temparguments = (struct proceed_getn_thread_args *)argu;
+	if((args = (struct proceed_getn_thread_args *)malloc(sizeof(struct proceed_getn_thread_args))) == NULL) {
+		PRINTF("> %s %d block_getnotify_method(): malloc failed\n",__FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+
+	}
+
+	*args = *temparguments;
+	fprintf(logfd, "> %s %d block_getnotify_method():2. buf is %s \n",__FILE__ , __LINE__, args->buf);
+	strcpy(rough, args->buf);
+
+	if(args->buf == NULL)
+		PRINTF("> %s %d block_getnotify_method(): args->buf is NULL\n\n",__FILE__ , __LINE__);
+
+	/* Extract pid */
+	strcpy(sock_name, strtok(rough, "##"));
+
+	strcat(sock_name, "_sock");
+	
+	printf("sock_name in NJ is %s\n", sock_name);
+	
+	
+
+	fprintf(logfd, "> %s %d block_getnotify_method :3. buf is %s \n",__FILE__ , __LINE__, args->buf);  
+	force_logs();
+
+	if((buf = (char *)malloc(sizeof(char) * (strlen(args->buf) + 1 ))) == NULL ) {
+		PRINTF("> %s %d block_getnotify_method(): malloc failed\n", __FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+	}
+	strcpy(buf, args->buf);
+	
+	char *notification;
+	struct getnotify_thread_args *arguments;
+
+	fprintf(logfd, "6. buf is %s \n", buf);
+	force_logs();
+
+	if((notification = (char *)malloc(1024 * sizeof(char))) == NULL) {
+		PRINTF("> %s %d block_getnotify_method(): malloc failed",__FILE__,__LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+
+	}
+	if((arguments = (struct getnotify_thread_args *)malloc(sizeof(struct getnotify_thread_args))) == NULL) {
+		PRINTF("> %s %d block_getnotify_method() : malloc failed ", __FILE__, __LINE__);
+		errno = ECANCELED;
+		perror("Malloc failed");
+
+	}
+	strcpy(arguments->argssend, buf);
+
+
+	/* Fork thread to invoke the NP's code with the arguments given in the structure 'arguments', which contains argssend and argsrecv */	fprintf(logfd, "7. buf is %s \n", arguments->argssend);
+
+	
+	
+	np_getnotify_method(arguments);
+
+	strcpy(notification, arguments->argsrecv);
+
+	printf("NJ will write blocking notification as - %s\n", notification);
+
+	sock_block = socket(AF_UNIX, SOCK_STREAM, 0);
+	server_block.sun_family = AF_UNIX;
+	strcpy(server_block.sun_path, sock_name);
+	if (connect
+	    (sock_block, (struct sockaddr *)&server_block,
+	     sizeof(struct sockaddr_un)) < 0) {
+		close(sock_block);
+		perror("block_getnotify_method(): ERROR CONNECTING STREAM SOCKET :");
+		exit(1);
+	}
+	
+	printf("NJ writing blocking notification as - %s\n", notification);
+	
+	if (write(sock_block, notification, sizeof(notification)) < 0)
+		perror
+		    ("block_getnotify_method() : ERROR WRITING COMMAND ON STREAM SOCKET :");
+	printf("Notification written\n");
+	
+	free(buf);
+	buf = NULL;
+
+	free(arguments);
+	arguments = NULL;
+	
+	return NULL;
+	
 }
 
 /* Find the app in the list. If it is found, for every np in its trailing list; visit the np_dcll and decrement its count. */
@@ -777,6 +966,33 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 
 }
 
+void dec_all_np_counts_hash(hash_struct_app *hstruct_app, hash_struct_np *hstruct_np, char *app_name) {
+
+	app_node *ptrapp;
+	np_node *ptrnp;
+	int cnt;
+
+	PRINTF("> %s %d dec_all_np_counts_hash() :All nps deleted, since np_name was passed NULL\n",__FILE__ , __LINE__);
+
+	HASH_FIND_STR(hstruct_app->app_hash, app_name, ptrapp);	
+	if (ptrapp != NULL) {	/* App found */
+		cnt = ptrapp->np_count;
+		ptrnp = ptrapp->np_list_head;
+		while (cnt) {
+			decr_np_app_cnt_hash(hstruct_np, ptrnp->name);
+			ptrnp = ptrnp->next;
+			cnt--;
+		}
+
+	} else {
+
+		PRINTF("> %s %d dec_all_np_counts():Error Asked to delete non-existent application\n",__FILE__ , __LINE__);
+		perror("App doesn't exist - ");
+
+	}
+
+}
+
 /* Action function of the getnotify() threads */
 void *proceed_getnotify_method(void *arguments)
 {
@@ -784,7 +1000,6 @@ void *proceed_getnotify_method(void *arguments)
 	struct proceed_getn_thread_args *temparguments, *args;
 	char rough[1024];
 	char spid[32];
-	char choice;
 	int j;	
 	int len;
 	char filename[64], filename1[64];
@@ -810,7 +1025,6 @@ void *proceed_getnotify_method(void *arguments)
 		PRINTF("> %s %d proceed_getnotify_method(): args->buf is NULL\n\n",__FILE__ , __LINE__);
 
 	len = strlen(rough);
-	choice = rough[len - 1];
 
 	/* Extract pid */
 	strcpy(spid, strtok(rough, "##"));
@@ -849,19 +1063,9 @@ void *proceed_getnotify_method(void *arguments)
 	fprintf(logfd, "> %s %d proceed_getnotify_method() :4. Notification received from getnotify_app is %s \n",__FILE__ , __LINE__, received); 
 	force_logs();
 
-	if (choice == NONBLOCKING) {
-		force_logs();
 		strcat(received, "\n");
 		write((int)fd_pidnames, filename1, strlen(filename1));
 		PRINTF("> %s %d proceed_getnotify_method(): PID filename is written successfully.....\n",__FILE__ , __LINE__);
-
-	}
-
-	if (choice == BLOCKING) {
-		strcat(received, "\n");
-		write((int)fd_pidnames, filename1, strlen(filename1));
-		PRINTF("> %s %d proceed_getnotify_method(): PID filename is written successfully.....\n",__FILE__ , __LINE__);
-	}
 
 	free(received);
 	received = NULL;
@@ -1032,12 +1236,328 @@ void force_logs(void) {
 	return;
 }
 
+
+
+void print_list_on_sock_np(np_dcll *l) {
+
+	int i = l->count;
+	main_np_node *ptr;
+	char buf[512];
+	char **kptr;
+
+	pthread_rdwr_rlock_np(&(l->np_list_lock));
+	if (l->count == 0) {
+		sprintf(buf, "> %s %d print_np() : NP_DCLL  : Nothing to print_np\n", __FILE__, __LINE__);
+		printf("BUF - %s.\n", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) {
+			perror("STAT : Reading On Stream Socket"); 
+		}
+		pthread_rdwr_runlock_np(&(l->np_list_lock));
+
+		return;
+	}
+
+	sprintf(buf, "\n> %s %d print_np() : Total number of NPs : %d\n", __FILE__, __LINE__, l->count);
+	printf("BUF - %s.\n", buf);
+	if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+		perror("STAT : Reading On Stream Socket"); 
+	ptr = l->head;
+	kptr = ptr->key_val_arr;
+
+	sprintf(buf, "\n> %s %d print_np() : NP\t\t\tApp_Count\t\t\tKeyValue", __FILE__, __LINE__);
+	printf("BUF - %s.\n", buf);
+	if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+		perror("STAT : Reading On Stream Socket"); 
+	sprintf(buf, "\n==================================================\n");
+	printf("BUF - %s.\n", buf);
+	if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+		perror("STAT : Reading On Stream Socket"); 
+
+	while (i) {
+		sprintf(buf, "> %s %d print_np() : %s   ", __FILE__, __LINE__, ptr->data);
+		printf("BUF - %s.\n", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+		sprintf(buf, "\t\t\t%d\n", ptr->app_count);
+		printf("BUF - %s.\n", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+
+		while (*kptr) {
+			sprintf(buf, "\t\t\t\t%s\n", *kptr);
+			printf("BUF - %s.\n", buf);
+			if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+				perror("STAT : Reading On Stream Socket"); 
+			kptr++;
+		}
+
+		sprintf(buf, "\n");
+		printf("BUF - %s.\n", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+		ptr = ptr->next;
+		i--;
+	}
+	sprintf(buf, "====================================xx======================================\n");
+	printf("BUF - %s.\n", buf);
+	if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+		perror("STAT : Reading On Stream Socket"); 
+	pthread_rdwr_runlock_np(&(l->np_list_lock));
+
+}
+void print_list_on_sock_app(app_dcll *l) {
+	int i;
+	char buf[512];
+	app_node *ptr;
+	np_node *np;
+
+	pthread_rdwr_rlock_np(&(l->app_list_lock));	
+	i = l->count;	
+	if(i == 0) {
+		sprintf(buf, "> app_dcll.c print_app() : NO APPS TO PRINT\n");
+		printf("BUF - %s.", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+		pthread_rdwr_runlock_np(&(l->app_list_lock));	
+		return;
+	}
+
+	ptr = l->head;
+
+	sprintf(buf, "\n> %s %d print_app() : Total number of applications : %d\n",__FILE__, __LINE__, l->count);
+	printf("BUF - %s.", buf);
+	if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+		perror("STAT : Reading On Stream Socket"); 
+	sprintf(buf, "\n> %s %d print_app() :App\t\t\tNp_Count", __FILE__, __LINE__);
+	printf("BUF - %s.", buf);
+	if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+		perror("STAT : Reading On Stream Socket"); 
+	sprintf(buf, "\n===================================\n");
+	printf("BUF - %s.", buf);
+	if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+		perror("STAT : Reading On Stream Socket"); 
+	/* While applications in the list are being traversed, print the contents of each application node */
+	while (i) {		
+		sprintf(buf, "%s\t\t\t", ptr->data);
+		printf("BUF - %s.", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+		sprintf(buf, "%d\n", ptr->np_count);
+		printf("BUF - %s.", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+		print_np_key_val_stat(ptr);
+		sprintf(buf, "\n\n\n");
+		printf("BUF - %s.", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+		ptr = ptr->next;
+		i--;
+	}
+
+	/* Print the registrations of each application */
+
+
+	i = l->count;
+	ptr = l->head;
+	if(i != 0) {
+		sprintf(buf, "\n> %s %d print_app() :App\t\t\tRegistered with", __FILE__, __LINE__);
+		printf("BUF - %s.", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+		sprintf(buf, "\n===================================\n");
+		printf("BUF - %s.", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+	}
+
+	/* While each application is being traversed */
+
+	while (i) {
+		np = ptr->np_list_head;
+		sprintf(buf, "\n%s\t\t\t", ptr->data);
+		printf("BUF - %s.", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+
+		/* While it's trailing np list is being traversed */
+
+		while (np != NULL) {
+			sprintf(buf, "%s\n", np->name);
+			printf("BUF - %s.", buf);
+			if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+				perror("STAT : Reading On Stream Socket"); 
+			np = np->next;
+			sprintf(buf, "\t\t\t");
+			printf("BUF - %s.", buf);
+			if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+				perror("STAT : Reading On Stream Socket"); 
+		}
+
+		ptr = ptr->next;
+		i--;
+	}
+	pthread_rdwr_runlock_np(&(l->app_list_lock));	
+
+
+}
+void print_np_key_val_stat(app_node * temp) {
+	np_node *head = temp->np_list_head;
+	extr_key_val *vptr;
+	char **kptr;
+	char buf[512];
+
+	if(!head) {
+		sprintf(buf, "\n> %s %d print_np_key_val() : No head in temp list\n\n", __FILE__, __LINE__);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+		return;
+	}
+
+	sprintf(buf, "> %s %d print_np_key_val() : HEAD DATA = %s\n", __FILE__, __LINE__, head->name);
+	if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+		perror("STAT : Reading On Stream Socket"); 
+
+	while (head) {
+		vptr = head->key_val_ptr;
+
+		if(vptr == NULL) {
+			sprintf(buf, "> %s %d print_np_key_val() : VPTR IS NULL\n", __FILE__, __LINE__);
+			if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+				perror("STAT : Reading On Stream Socket"); 
+			head = head->next;
+			continue;
+		}
+
+		while (vptr) {
+			kptr = vptr->key_val_arr;
+
+			if(kptr == NULL) {
+				sprintf(buf, "> %s %d print_np_key_val() : The key_val_arr is NULL\n\n", __FILE__, __LINE__);
+				if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+					perror("STAT : Reading On Stream Socket"); 
+				return;
+			}
+
+			sprintf(buf, "> %s %d print_np_key_val() : *KPTR is %s\n",__FILE__, __LINE__, *kptr);
+			if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+				perror("STAT : Reading On Stream Socket"); 
+
+			while (*kptr) {
+				sprintf(buf, "\t\t\t\t%s\n", *kptr);
+				if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+					perror("STAT : Reading On Stream Socket"); 
+				kptr++;
+			}
+
+			vptr = vptr->next;
+		}
+		head = head->next;
+	}
+	return;
+}
+
 /* Function To Print Statistics Of Nj */
 void printStat()
 {
-	print_np(&npList);
-	print_app(&appList);
+
+	stat_write.sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (stat_write.sock < 0) {
+		perror("STATS : Opening Stream Socket");
+		exit(1);
+	}
+	stat_write.server.sun_family = AF_UNIX;
+	strcpy(stat_write.server.sun_path, StatSocketPrint);
+
+	if (connect
+			(stat_write.sock, (struct sockaddr *)&(stat_write.server),
+			 sizeof(struct sockaddr_un)) < 0) {
+		close(stat_write.sock);
+		perror("STATS : Connecting Stream Socket");
+		exit(1);
+	}
+
+	//print_np(&npList);
+	//print_app(&appList);
+	if(DATASTRUCT == LIST) {
+		print_list_on_sock_np(&npList);
+		print_list_on_sock_app(&appList);
+	}
+
+	if(DATASTRUCT == HASH) {
+		print_hash_on_sock_np(hstruct_np);
+		print_hash_on_sock_app(hstruct_app);
+	}
+	unlink(StatSocketPrint);
+	close(stat_write.sock);
 }
+
+void print_hash_on_sock_np(hash_struct_np *hstruct_np) {
+
+	printf("PRINTING NP HASH\n\n\n");
+	struct main_np_node *s;
+	char buf[512];
+
+	for(s=hstruct_np->np_hash; s != NULL; s=(struct main_np_node*)(s->hh.next)) {
+		sprintf(buf, "NP Name : %s\n", s->data);
+		printf("%s", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+	}
+	printf("In print\n");
+
+}
+
+void print_hash_on_sock_app(hash_struct_app *hstruct_app) {
+
+	printf("PRINTING APP_HASH\n\n\n");
+
+	struct app_node *s, *ptr;
+	np_node *np;
+	char buf[512];
+	for(s=hstruct_app->app_hash; s != NULL; s=(struct app_node*)(s->hh.next)) {
+		sprintf(buf, "APP Name : %s\n", s->data);
+		printf("%s", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket");
+		sprintf(buf, "\n> %s %d print_app() :App\t\t\tRegistered with", __FILE__, __LINE__);
+		printf("%s", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+		sprintf(buf, "\n===================================\n");
+		printf("%s", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+
+
+		/* While each application is being traversed */
+		ptr = s;
+		np = ptr->np_list_head;
+		sprintf(buf, "\n%s\t\t\t", ptr->data);
+		printf("%s", buf);
+		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+			perror("STAT : Reading On Stream Socket"); 
+
+		/* While it's trailing np list is being traversed */
+
+		while (np != NULL) {
+			sprintf(buf, "%s\n", np->name);
+			printf("%s", buf);
+			if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+				perror("STAT : Reading On Stream Socket"); 
+			np = np->next;
+			sprintf(buf, "\t\t\t");
+			printf("%s", buf);
+			if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
+				perror("STAT : Reading On Stream Socket"); 
+		}	
+
+	}
+	printf("In print\n");
+
+}
+
+
 
 /* Signal Handler Of Nj */
 void sigint_handler(int signum)
@@ -1054,6 +1574,8 @@ int register_app(char *buff)
 	char app_name[32], np_name[32], delim[3] = "::";
 	char *s;
 	int retval;
+	main_np_node *s_np;	
+
 
 	strcpy(app_name, strtok(buff, delim));
 	s = strtok(NULL, delim);
@@ -1062,86 +1584,124 @@ int register_app(char *buff)
 		strcpy(np_name, s);
 	else
 		np_name[0] = '\0';
-	
-	if(np_name[0] != '\0') {	
-		if (search_np(&npList, np_name) == NULL) {				/* NP is not registerd */
-			perror("Np not registered - ");
-			PRINTF("> %s %d register_app(): Np not registered. Register NP first.\n", __FILE__ , __LINE__);
-			errno = ENODEV;
+
+	if(DATASTRUCT == LIST) {
+		if(np_name[0] != '\0') {	
+			if (search_np(&npList, np_name) == NULL) {				/* NP is not registerd */
+				perror("Np not registered - ");
+				PRINTF("> %s %d register_app(): Np not registered. Register NP first.\n", __FILE__ , __LINE__);
+				errno = ENODEV;
+				return -1;
+			}	
+		}
+		retval = add_app_ref(&appList, app_name, np_name);
+		if(retval == -1) {
+			printf("> %s %d register_app: Error in adding app_node", __FILE__, __LINE__);
 			return -1;
-		}	
+		}
+		incr_np_app_cnt(&npList, np_name);
+		printf("After successful add_app_ref()\n\n");
+		print_app(&appList);
 	}
-	
-	printf("Before  add_app_ref()\n\n");
-    	print_app(&appList);
-    	print_np(&npList);
 
-	retval = add_app_ref(&appList, app_name, np_name);
 
-	if(retval == -1) {
-		printf("> %s %d register_app: Error in adding app_node", __FILE__, __LINE__);
-		return -1;
+	if(DATASTRUCT == HASH) {
+		if(np_name[0] != '\0') {
+			HASH_FIND_STR(hstruct_np->np_hash, np_name, s_np);
+			if(s_np == NULL) {	
+				perror("Np not registered - ");
+				PRINTF("> %s %d register_app(): Np not registered. Register NP first.\n", __FILE__ , __LINE__);
+				errno = ENODEV;
+				return -1;
+			}	
+		}
+		retval = add_app_ref_hash(hstruct_app, app_name, np_name);
+		if(retval == -1) {
+			printf("> %s %d register_app: Error in adding app_node", __FILE__, __LINE__);
+			return -1;
+		}
+		incr_np_app_cnt_hash(hstruct_np, np_name);
+		print_hash_app(hstruct_app);
+		print_hash_np(hstruct_np);
 	}
-	incr_np_app_cnt(&npList, np_name);
-    
-	printf("After successful add_app_ref()\n\n");
-    	print_app(&appList);
-    	print_np(&npList);
-	
 	return 1;
 }
 /*Function To Unregister An App*/
 int unregister_app(char *buff)
 {
-    char app_name[32], np_name[32], delim[3] = "::";
-    char *np_ptr;
-    app_node* temp;
+	char app_name[32], np_name[32], delim[3] = "::";
+	char *np_ptr;
+	app_node* temp;
+	int retval;
+	main_np_node *s_np;
 
-    strcpy(app_name, strtok(buff, delim));
-    np_ptr = strtok(NULL, delim);
+	strcpy(app_name, strtok(buff, delim));
+	np_ptr = strtok(NULL, delim);
 
-    /* If there is an np's name given */
-    if (np_ptr != NULL) {
-        strcpy(np_name, np_ptr);
+	/* If there is an np's name given */
+	if (np_ptr != NULL) {
+		strcpy(np_name, np_ptr);
+	}
+	else np_name[0] = '\0';
 
-    }
 
-    printf("BEFORE\n");
-    print_app(&appList);
-    print_np(&npList);
-   
-    temp = search_app(&appList, app_name);
-   
-    if(temp == NULL) {
-        perror("Application does not exist :");
-        errno = ENODEV;
-        return -1;
-    }
-   
-    /* Only appname is given */
-    if (np_ptr == NULL) {
-        PRINTF("> %s %d unregister_app() :np_name == NULL case in unregister app\n", __FILE__ , __LINE__);
-        dec_all_np_counts(&appList, &npList, app_name);
-        if(del_app_ref(&appList, temp, NULL) == -1) {
-            perror("Unregister Application Error : ");       
-        }
-        PRINTF("> %s %d unregister_app():Unregistration done\n", __FILE__, __LINE__);
-    }
-    /* Given appname::npname */
-    else {
-        /* If the registration exists, delete it */
-            PRINTF("> %s %d unregister_app(): REGISTRATION FOUND.\n", __FILE__ , __LINE__);
-            decr_np_app_cnt(&npList, np_name);
-            if(del_app_ref(&appList, temp, np_name) == -1) {
-            perror("Unregister Application Error : ");       
-            }
-    }
-   
-    printf("AFTER\n");
-    print_app(&appList);
-    print_np(&npList);
+	if(DATASTRUCT == LIST) {
+		temp = search_app(&appList, app_name);
 
-    return 1;
+		if(temp == NULL) {
+			perror("Application does not exist :");
+			errno = ENODEV;
+			return -1;
+		}
+
+		/* Only appname is given */
+		if (np_ptr == NULL) {
+			PRINTF("> %s %d unregister_app() :np_name == NULL case in unregister app\n", __FILE__ , __LINE__);
+			dec_all_np_counts(&appList, &npList, app_name);
+			if(del_app_ref(&appList, temp, NULL) == -1) {
+				perror("Unregister Application Error : ");       
+			}
+			PRINTF("> %s %d unregister_app():Unregistration done\n", __FILE__, __LINE__);
+		}
+		/* Given appname::npname */
+		else {
+			/* If the registration exists, delete it */
+			if(search_np(&npList, np_name) == NULL) {
+				errno =EINVAL;
+				return -1;
+			}
+			else {
+				PRINTF("> %s %d unregister_app(): REGISTRATION FOUND.\n", __FILE__ , __LINE__);
+				decr_np_app_cnt(&npList, np_name);
+				if(del_app_ref(&appList, temp, np_name) == -1) {
+					perror("Unregister Application Error : ");       
+				}
+			}
+		}
+
+		printf("AFTER\n");
+		print_app(&appList);
+		print_np(&npList);
+	}
+
+	if(DATASTRUCT == HASH) {
+	
+		HASH_FIND_STR(hstruct_np->np_hash, np_name, s_np);
+		if(s_np == NULL) {
+			errno =EINVAL;
+			return -1;
+		}
+		
+		retval = del_app_ref_hash(hstruct_app, app_name, np_name);
+		if(retval == -1) {
+			printf("> %s %d register_app: Error in adding app_node", __FILE__, __LINE__);
+			return -1;
+		}
+		print_hash_app(hstruct_app);
+		print_hash_np(hstruct_np);
+	}
+
+	return 1;
 }
 
 /*function to register an np*/
@@ -1163,12 +1723,18 @@ int register_np(char *buff)
 	strcpy(usage, s);
 	extract_key_val(usage, &keyVal);
 
-    /* if np exists, free and modify arguments.
-    *   if it doesnt, add it to the list */
+	/* if np exists, free and modify arguments.
+	 *   if it doesnt, add it to the list */
 
-	
-	add_np(&npList, np_name, usage, &keyVal);
-	print_np(&npList);
+	if(DATASTRUCT == LIST) {
+		add_np(&npList, np_name, usage, &keyVal);
+		print_np(&npList);	    
+	}
+	if(DATASTRUCT == HASH) {
+		add_np_to_hash(hstruct_np, np_name, usage,  &keyVal);
+		print_hash_np(hstruct_np);
+	}
+
 
 	return 1;
 }
@@ -1236,85 +1802,138 @@ int unregister_np(char *buff)
 {
 
 	printf("in unregister\n");
+
+	int flag = 0;
 	struct main_np_node * temp;
 	char *np_name = (char *) malloc (sizeof(char) * 32);
 	char delim[3] = "::";
 	int app_cnt;
-	app_node *aptr = appList.head;
+	struct app_node *s, *aptr;
 	np_node *p, *q;
 
 	strcpy(np_name, strtok(buff, delim));
 
-	app_cnt = appList.count;
-	
-	printf("Looking1\n");
+	if(DATASTRUCT == HASH) {
+		// delete np from registered app trailing list
 
-	/* Check if the NP exists */    
-	temp = search_np(&npList, np_name);
-	if(app_cnt == 0) {
-		del_np_node(&npList, temp);
-		print_np(&npList);
-		print_app(&appList);	
-		return 0;
+		for(s = hstruct_app->app_hash; s != NULL; s=(struct app_node*)(s->hh.next)) {
+		
+			p = s->np_list_head;
+			printf("Looking in app %s\n", s->data);
+			
+			while(p != NULL) {
+				
+				printf("Matching ");
+				if(!strcmp(p->name, np_name)) {	
+					PRINTF("> %s %d unregister_np():Np node found : %s\n", __FILE__ , __LINE__, np_name);
+					flag = 1;
+					break;	
+				}
+				q = p;
+				p = p->next;
+			}
+			if(flag == 0) {
+				printf("NP node not found\n");
+				errno = EINVAL;
+				return -1;
+			}
+			if(s->np_count == 1) {
+				s->np_list_head = NULL;
+				free(p);
+				s->np_count--;
+			}
+			else if(p == s->np_list_head) {						/* If node to be deleted is the first node */
+				printf("I AM HERE, DELETING p = %s\n\n", p->name);
+				//q = p->next;
+				s->np_list_head = p->next;
+				free(p);
+				//p = NULL;
+				s->np_count--;
+			} 
+
+			else {
+				q->next = p->next;
+				free(p);
+				s->np_count--;
+			}
+				
+		}
+		
+		del_np_from_hash(hstruct_np, np_name);
+		print_hash_np(hstruct_np);
+		print_hash_app(hstruct_app);
+
 	}
-	if( temp != NULL) {
-		/* For every application it is registered with */
-		while(app_cnt != 0) {
-			/* Search every application's trailing list for a registration with that NP; remove that registration and reduce that application's count by one */			
-			
-			printf("Looking\n");
-			
-			if(search_reg(&appList, aptr->data, np_name) == -1) {
-				p = aptr->np_list_head;
+	if(DATASTRUCT == LIST) {
+		app_cnt = appList.count;
+		printf("Looking1\n");
 
-				while(p != NULL) {
-					q = p;
+		/* Check if the NP exists */    
+		temp = search_np(&npList, np_name);
+		if(app_cnt == 0) {
+			if(temp != NULL)
+				del_np_node(&npList, temp);
+			print_np(&npList);
+			print_app(&appList);	
+			return 0;
+		}
+		if( temp != NULL) {
+			/* For every application it is registered with */
+			while(app_cnt != 0) {
+				/* Search every application's trailing list for a registration with that NP; remove that registration and reduce that application's count by one */			
 
-					if(!strcmp(p->name, np_name)) {	
-						PRINTF("> %s %d unregister_np():Np node found : %s\n", __FILE__ , __LINE__, np_name);
-						break;	
+				printf("Looking\n");
+
+				if(search_reg(&appList, aptr->data, np_name) == -1) {
+					p = aptr->np_list_head;
+
+					while(p != NULL) {
+						q = p;
+
+						if(!strcmp(p->name, np_name)) {	
+							PRINTF("> %s %d unregister_np():Np node found : %s\n", __FILE__ , __LINE__, np_name);
+							break;	
+						}
+
+						p = p->next;
+					}
+					if(aptr->np_count == 1) {
+						aptr->np_list_head = NULL;
+						free(p);
+						p = NULL;
+						aptr->np_count--;
+					}
+					else if(p == q) {						/* If node to be deleted is the first node */
+						q = p->next;
+						aptr->np_list_head = q;
+						free(p);
+						p = NULL;
+						aptr->np_count--;
 					}
 
-					p = p->next;
+					else {
+						q->next = p->next;
+						free(p);
+						p = NULL;
+						aptr->np_count--;
+					}
 				}
-				if(aptr->np_count == 1) {
-					aptr->np_list_head = NULL;
-					free(p);
-					p = NULL;
-					aptr->np_count--;
-				}
-				else if(p == q) {						/* If node to be deleted is the first node */
-					q = p->next;
-					aptr->np_list_head = q;
-					free(p);
-					p = NULL;
-					aptr->np_count--;
-				}
-
-				else {
-					q->next = p->next;
-					free(p);
-					p = NULL;
-					aptr->np_count--;
-				}
+				aptr = aptr->next;
+				app_cnt--;	   	
 			}
-			aptr = aptr->next;
-			app_cnt--;	   	
+			printf("here\n");
+			del_np_node(&npList, temp);
+
 		}
-		printf("here\n");
-		del_np_node(&npList, temp);
+		else {
+			PRINTF(">%s %d unregister_np(): Np not registerd.\n", __FILE__ , __LINE__);
+			perror("Not found NP - ");
+			errno = ENODEV;
+			return -1;
+		}
 
+		print_np(&npList);
 	}
-	else {
-		PRINTF(">%s %d unregister_np(): Np not registerd.\n", __FILE__ , __LINE__);
-		perror("Not found NP - ");
-		errno = ENODEV;
-		return -1;
-	}
-
-	print_np(&npList);
-	print_app(&appList);
-
 	return 1;
 }
 
@@ -1373,7 +1992,7 @@ char *getnotify_app(char *buff)
 void nj_exit(void) {
 	PRINTF(">%s %d nj_exit() : NJ exiting \n",__FILE__, __LINE__);
 	int ret;
-	
+
 	char buf2[64];
 	close(fd_pidnames);
 	fd_pidnames = open(PIDFILE, O_CREAT | O_RDWR, 0777);
@@ -1394,51 +2013,58 @@ void nj_exit(void) {
 	struct main_np_node *temp2,*temp3;
 
 	temp = appList.head;
-	
+
 	temp2 = npList.head;
-	
+
 	for(; i != 0;i--) {
 		temp1 = temp->next;
 		unregister_app(temp->data);
 		PRINTF("> %s %d nj_exit(): %d app_count \n",__FILE__,__LINE__,appList.count);
 		temp = temp1;
 	}
-	
+
 	printf(">%s %d empty_app_list : App List deleted completely  %d \n ",__FILE__ , __LINE__, appList.count);
-	
-	
+
+
 	print_app(&appList);
-	
+
 	print_np(&npList);
 
-	
+
 	for(; j != 0;j--) {
-		
+
 		printf("IN NP LOOP, before delete Unregistering %s \n", temp2->data);
 		temp3 = temp2->next;
-		
+
 		temp2->app_count = 0;
-	
+
 		del_np_node(&npList, temp2);
-		
+
 		printf("Deleting\n");
-		
+
 		temp2 = temp3;
-		
+
 		printf("next\n");
-	
+
 	}
-	
-	
+
+
 	print_app(&appList);
-	
+
 	print_np(&npList);
-	
+
 	if((ret = pthread_mutex_destroy(&getnotify_socket_mutex)) != 0) {
 		errno = ret;
 		perror("Error in destroying getnotify_socket_mutex");
 	}
 
+	main_np_node *s, *tmp;
+	HASH_ITER(hh, hstruct_np->np_hash, s, tmp) {
+		//first we need to free key_val_arr of np then free np
+		HASH_DEL(hstruct_np->np_hash, s);
+		free(s);
+	}	
 
+	//need to free whole app list
 }
 

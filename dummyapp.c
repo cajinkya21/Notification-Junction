@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 	}
 	strcpy(arr, "npname::inotify##dir::");
 	strcat(arr, argv[1]);	// The directory to be watched.
-	strcat(arr, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY##count::2");
+	strcat(arr, "##flags::IN_CREATE*IN_DELETE*IN_MODIFY##count::1");
 	printf("Arr is %s\n", arr);
 	pid = getpid();
 	sprintf(str, "%d", pid );
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 
 	printf("Dummy app getnotify done \n");
 	//sigsuspend(&mask);
-	while (1) ;		/* Loop to make application wait for notification */
+	while (1);		/* Loop to make application wait for notification */
 	printf("dummy app sigsuspend recieved\n");
 
 	

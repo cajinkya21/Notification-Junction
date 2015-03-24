@@ -55,9 +55,12 @@
 #define NpRegSocket "np_reg_sock"
 #define NpUnRegSocket "np_unreg_sock"
 #define StatSocket "statsock"
+#define StatSocketPrint "statsockprint"
 #define APPLIMIT 32
 #define QLEN 32
-
+#define HASH 1
+#define LIST 2
+#define DATASTRUCT HASH
 /*STRUCTURE FOR ARGUMENTS TO BE PASSED TO THREAD*/
 typedef struct thread_args {
 	int sock, msgsock, rval;
@@ -115,25 +118,27 @@ void *np_unreg_method(void *arguments);
 void *app_getnotify_method(void *arguments);
 void *np_getnotify_method(void *arguments);
 void *proceed_getnotify_method(void *arguments);
+void *block_getnotify_method(void *arguments);
 void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name);
 void printStat();
 void sigint_handler(int signum);
-
+void print_list_on_sock_np(np_dcll *l);
+void print_list_on_sock_app(app_dcll *l);
+void print_np_key_val_stat(app_node * temp);
+void print_hash_on_sock_np(hash_struct_np *hstruct_np);
+void print_hash_on_sock_app(hash_struct_app *hstruct_app);
 void extract_key_val(char *usage, char ***keyVal);
-
 char* extract_key(char *key_val);
-
 char* extract_val(char *key_val);
-
 int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr);
-
 void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr, char * fillit);
-
 char *get_val_from_args(char *usage, char* key);
-
 char *get_filename(char *argsbuf);
-
 int count_args(char *usage, char *count_occurence_of);
 void nj_exit(void); /*function called whenever NJ exits*/
+
+void dec_all_np_counts_hash(hash_struct_app *hstruct_app, hash_struct_np *hstruct_np, char *app_name);
+
+
 
 #endif				/*nj.h */

@@ -14,6 +14,7 @@
 #define AppGetnotify "app_getn_sock"
 #define AppReg "app_reg_sock"
 #define AppUnReg "app_unreg_sock"
+#define QLEN 32
 
 int appRegister(char *key_val_string);
 int appUnregister(char *key_val_string);

@@ -33,7 +33,6 @@
  */
 
 #include "np_dcll.h"
-
 /* Initialise */
 
 void init_np(np_dcll * l)
@@ -50,14 +49,14 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 	char **np_key_val_arr;
 	int i = 0;
 	main_np_node *new, *temp, *p, *q;
-	
+
 	temp = search_np(l, val);
-	
+
 	pthread_rdwr_wlock_np(&(l->np_list_lock));	
 
 	if (temp != NULL) { /* case when np already exists */
 		/*action is to del_np and make new entry for that np*/
-		
+
 		if ((temp == (l->head)) && (l->count == 1)) {
 			l->head->prev = NULL;
 			l->head->next = NULL;
@@ -74,7 +73,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 			p = temp->prev;
 			q = temp->next;
 			p->next = q;
-		 	q->prev = p;
+			q->prev = p;
 		}
 		np_key_val_arr = temp->key_val_arr;
 		i = 0;
@@ -91,7 +90,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 		temp = NULL;
 		l->count = l->count - 1;
 	}
-	
+
 	new = (main_np_node *) malloc(sizeof(main_np_node));
 
 	if (new == NULL) {
@@ -114,6 +113,7 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 
 	new->app_count = 0;
 
+
 	if (l->count == 0) {
 		l->head = new;
 		new->prev = new;
@@ -133,10 +133,108 @@ int add_np(np_dcll * l, char *val, char *usage, char ***key_val_arr)
 		new->next = l->head;
 		l->head->prev = new;
 	}
-	strcpy(new->data, val);
+
 	l->count++;
+
+	strcpy(new->data, val);
+
 	pthread_rdwr_wunlock_np(&(l->np_list_lock));
 	return 0;
+}
+
+void add_np_to_hash(hash_struct_np *hstruct, char *val, char *usage, char ***key_val_arr) {
+
+	main_np_node *new, *s;
+	new = (main_np_node *) malloc(sizeof(main_np_node));
+
+	if (new == NULL) {
+		errno = ECANCELED;
+		perror("NP_DCLL : ERROR IN MALLOC");
+		return;
+	}
+
+	new->data = (char *)malloc((strlen(val) + 1) * sizeof(char));
+	if (new->data == NULL) {
+		errno = ECANCELED;
+		perror("NP_DCLL : ERROR IN MALLOC");
+		exit(1);
+	}
+
+
+	new->usage = usage;
+	new->key_val_arr = *key_val_arr;
+	new->app_count = 0;
+	strcpy(new->data, val);	
+	printf("new ch data %s\n", new->data);
+	pthread_rdwr_wlock_np(&(hstruct->np_hash_lock));	
+	HASH_FIND_STR(hstruct->np_hash, new->data, s);  /* id already in the hash? */
+	if (s == NULL) {
+
+		HASH_ADD_KEYPTR( hh, hstruct->np_hash, new->data, strlen(new->data), new);  /* id: name of key field */
+	}
+	else {
+		//HASH_REPLACE(np_hash, &tobeadded->data, tobeadded); 
+	}
+	pthread_rdwr_wunlock_np(&(hstruct->np_hash_lock));
+}
+
+void del_np_from_hash(hash_struct_np *hstruct, char *val) {
+
+	main_np_node *s;
+	char **np_key_val_arr;
+	int i = 0;
+
+	pthread_rdwr_wlock_np(&(hstruct->np_hash_lock));	
+	HASH_FIND_STR(hstruct->np_hash, val, s);  /* id already in the hash? */
+	if (s != NULL) {
+		np_key_val_arr = s->key_val_arr;
+		// free(s->usage);
+		/* Free the key-val ptr */
+		// free(s); /* id: name of key field */
+		i = 0;
+		while(np_key_val_arr[i] != NULL) {
+			free(np_key_val_arr[i]);
+			np_key_val_arr[i] = NULL;
+			i++;
+		}
+		free(s->usage);
+		s->usage = NULL;
+		free(s->data);
+		s->data = NULL;
+		HASH_DEL(hstruct->np_hash, s);
+		free(s);
+		s = NULL;
+	}
+	else {
+		//set error no and return 
+	}
+	pthread_rdwr_wunlock_np(&(hstruct->np_hash_lock));
+	print_hash_np(hstruct);
+	/*Free the usage string and stuff too */
+}
+
+void print_hash_np(hash_struct_np *hstruct) {
+	struct main_np_node *s;
+	printf("\nPrinting NPs in hash :\n");
+	pthread_rdwr_rlock_np(&(hstruct->np_hash_lock));
+	for(s=hstruct->np_hash; s != NULL; s=(struct main_np_node*)(s->hh.next)) {
+		printf("NP Name : %s\n", s->data);
+	}
+	pthread_rdwr_runlock_np(&(hstruct->np_hash_lock));
+}
+
+void incr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name){
+	main_np_node *s;
+	HASH_FIND_STR(hstruct->np_hash, np_name, s);  /* id already in the hash? */
+	if(s != NULL) 
+		(s->app_count)++;
+}
+
+void decr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name) {
+	main_np_node *s;
+	HASH_FIND_STR(hstruct->np_hash, np_name, s);  /* id already in the hash? */
+	if(s != NULL) 
+		(s->app_count)--;
 }
 
 /* Print the list */
@@ -231,9 +329,8 @@ int del_np_node(np_dcll * l, main_np_node * np_to_del) {
 	char **np_key_val_arr;
 	int i = 0;
 	main_np_node *p,*temp, *q;
-	
+
 	pthread_rdwr_wlock_np(&(l->np_list_lock));
-	
 	temp = np_to_del;
 	if ((temp == (l->head)) && (l->count == 1)) {
 		l->head->prev = NULL;
@@ -251,7 +348,7 @@ int del_np_node(np_dcll * l, main_np_node * np_to_del) {
 		p = temp->prev;
 		q = temp->next;
 		p->next = q;
-	 	q->prev = p;
+		q->prev = p;
 	}
 	np_key_val_arr = temp->key_val_arr;
 	i = 0;
@@ -260,15 +357,15 @@ int del_np_node(np_dcll * l, main_np_node * np_to_del) {
 		np_key_val_arr[i] = NULL;
 		i++;
 	}
-	free(temp->usage);
+	//free(temp->usage);
 	temp->usage = NULL;
 	free(temp->data);
 	temp->data = NULL;
 	free(temp);
 	temp = NULL;
-	
 	l->count = (l->count - 1);
 	pthread_rdwr_wunlock_np(&(l->np_list_lock));
+
 	return 0;
 
 }
@@ -280,9 +377,9 @@ int del_np(np_dcll * l, char *val)
 	int i = 0;
 	main_np_node *p, *temp, *q;
 	temp = search_np(l, val);
-	
+
 	pthread_rdwr_wlock_np(&(l->np_list_lock));
-	
+
 	l->count = ( l->count - 1) ;
 	if (temp == NULL) {
 		errno = ENODEV;
@@ -306,7 +403,7 @@ int del_np(np_dcll * l, char *val)
 		p = temp->prev;
 		q = temp->next;
 		p->next = q;
-	 	q->prev = p;
+		q->prev = p;
 	}
 	np_key_val_arr = temp->key_val_arr;
 	i = 0;
@@ -333,19 +430,32 @@ int get_np_app_cnt(np_dcll * l, char *nval)
 	main_np_node *temp;
 
 	temp = search_np(l, nval);
-	
+
 	pthread_rdwr_rlock_np(&(l->np_list_lock));
-	
+
 	if (temp == NULL) {
 		errno = ENODEV;	
 		pthread_rdwr_runlock_np(&(l->np_list_lock));
 		return NOTFND;
 	}
-	
+
 	pthread_rdwr_runlock_np(&(l->np_list_lock));
-	
+
 	return temp->app_count;
 }
+int get_np_app_cnt_hash(hash_struct_np *hstruct, char* np_name) {
+	main_np_node *s;
+	
+	HASH_FIND_STR(hstruct->np_hash, np_name, s);
+	if(s != NULL)
+		return s->app_count;
+	else {
+		errno = EINVAL;
+		return -1;
+	}
+		
+}
+
 
 /* For the np with the given name, if found, increment the count of the applications that have registered with it */
 
@@ -383,25 +493,27 @@ void decr_np_app_cnt(np_dcll * l, char *nval)
 	printf("> %s %d decr_np_app_cnt() :\t%d\n", __FILE__, __LINE__, temp->app_count);
 	pthread_rdwr_wunlock_np(&(l->np_list_lock));
 }
+
+
 /*
-void empty_np_list(np_dcll * l) {
-	printf("> %s %d empty_np_list : starting Np list count is %d ",__FILE__, __LINE__, l->count);
+   void empty_np_list(np_dcll * l) {
+   printf("> %s %d empty_np_list : starting Np list count is %d ",__FILE__, __LINE__, l->count);
 
-	struct main_np_node *temp;
+   struct main_np_node *temp;
 
-	temp = l->head;
+   temp = l->head;
 
-	assert(l);
-	while(temp != NULL) {
-		del_np( l, temp->data);
-		temp = temp->next;
-	}
-	assert(l);
-	printf("> %s %d empty_np_list : Np list count is %d ",__FILE__, __LINE__, l->count);
-	return ;
-}
+   assert(l);
+   while(temp != NULL) {
+   del_np( l, temp->data);
+   temp = temp->next;
+   }
+   assert(l);
+   printf("> %s %d empty_np_list : Np list count is %d ",__FILE__, __LINE__, l->count);
+   return ;
+   }
 
-*/
+ */
 
 /*
  * This is the code for testing the list

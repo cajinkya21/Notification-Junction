@@ -82,10 +82,24 @@ int appUnregister(char *key_val_string)
 
 int appGetnotify(int pid, char *key_val_string, char choice)
 {
-	int sock,  rval;
+	int sock;
 	struct sockaddr_un server;
+	
+	int sock_block,  rval_block, msgsock_block;
+	struct sockaddr_un server_block;
+	
+	
 	char buf[1024];
 	char data[1024];
+	char sock_name[512];
+	sprintf(sock_name, "%d", pid);
+	printf("pid as a string - %s\n", sock_name);
+
+	if(choice == 'B') {
+	// make a socket with pid_sock as the name
+		strcat(sock_name, "_sock");
+		printf("sock_name is %s\n", sock_name);
+	}
 
 	if (key_val_string == NULL) {
 		printf("Provide arg string\n");
@@ -128,13 +142,34 @@ int appGetnotify(int pid, char *key_val_string, char choice)
 		perror
 		    ("APP_GETNOTIFY : ERROR WRITING COMMAND ON STREAM SOCKET :");
 	if (choice == 'B') {
-		if ((rval = read(sock, buf, 1024)) < 0)
+	
+		sock_block = socket(AF_UNIX, SOCK_STREAM, 0);
+		
+		server_block.sun_family = AF_UNIX;
+		strcpy(server_block.sun_path, sock_name);
+	
+		if (bind(sock_block, (struct sockaddr *)&server_block, sizeof(struct sockaddr_un))) {
+		perror("binding stream socket");
+		exit(EXIT_FAILURE);
+		}
+		
+		printf("Socket bound\n");
+		
+		if ((listen(sock_block, QLEN)) != 0) {
+		perror("Error in listening on pid_sock socket:");
+		}
+		
+		msgsock_block = accept(sock_block, 0, 0);
+	do {
+		if ((rval_block = read(msgsock_block, buf, 1024)) < 0)
 			perror
 			    ("APP_GETNOTIFY : ERROR READING STREAM SOCKET IN CLIENT \n");
 		else
 			printf
 			    ("APP_GETNOTIFY : NOTIFICATION RECEIVED BY GETNOTIFY : %s\n",
 			     buf);
+		unlink(sock_name);
+	}while(rval_block > 0);	
 	}
 	close(sock);
 	return 1;
