@@ -18,7 +18,7 @@
 */
 
 /*
-* This file contains code for the dcll of np(s) 
+* This file contains code for the dcll and hash of np(s) 
 */
 
 
@@ -30,40 +30,26 @@
 #include<unistd.h>
 #include <string.h>
 #include "rdwr_lock.h"
-#define ALREXST -1
-#define NOTFND -2
 #include <assert.h>
 #include "uthash.h"
 
 /* The node for np(s) */
 typedef struct main_np_node {
-	char *data;
-	struct main_np_node *prev;
-	struct main_np_node *next;
-	char *usage;
-	int app_count;
-	char **key_val_arr;
-    	UT_hash_handle hh;         /* makes this structure hashable */
-	/* 
-	* data is to store name of NP
-	* prev is a pointer to previous node of same type
-	* next is a pointer to previous node of same type
-	* usage is key_val pair string
-	* app_count is number od APPs registerd with NP
-	* key_val_arr is array of key_value pair ending with NULL
-	*/
+	char *data;                 //  name of NP
+	struct main_np_node *prev;  //  pointer to previous node of same type
+	struct main_np_node *next;  //  pointer to next node of same type
+	char *usage;                //  key_val pair string
+	int app_count;              //  number of APPs registerd with NP
+	char **key_val_arr;         //  array of key_value pair ending with NULL
+    UT_hash_handle hh;          //   makes this structure hashable 
 } main_np_node;
 
-/*************************************************/
-/* 		List and its functions		 */
+
+/* List and its functions */
 typedef struct np_dcll {
-	main_np_node *head;
-	int count;
+	main_np_node *head;         //  pointer to the first node of NP List
+	int count;                  //  number of NPs registered
 	pthread_rdwr_t np_list_lock;
-	/*
-	* head is the pointer to the first node of NP List
-	* count is the number of NPs registered
-	*/
 } np_dcll;
 
 void init_np(np_dcll *l);
@@ -75,33 +61,20 @@ void incr_np_app_cnt(np_dcll * l, char *nval);
 void decr_np_app_cnt(np_dcll * l, char *nval);
 int get_np_app_cnt(np_dcll * l, char *nval);
 int del_np_node(np_dcll *l,main_np_node * np_to_del);
-//void empty_np_list(np_dcll * l);
-
-/*		End of list functions		*/
-/*************************************************/
 
 
-
-
-/*************************************************/
-/* 		hash and Hash functions 	*/
-
+/* Hash and its functions */
 typedef struct hash_struct_np {
     struct main_np_node *np_hash;
     pthread_rdwr_t np_hash_lock;
 }hash_struct_np;
 
-
-void add_np_to_hash(hash_struct_np *hstruct, char *val, char *usage, char ***key_val_arr);
-void del_np_from_hash(hash_struct_np *hstruct, char *val);
+int add_np_to_hash(hash_struct_np *hstruct, char *val, char *usage, char ***key_val_arr);
+int del_np_from_hash(hash_struct_np *hstruct, char *val);
 void print_hash_np(hash_struct_np *hstruct);
 void incr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name);
 void decr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name);
 int get_np_app_cnt_hash(hash_struct_np *hstruct, char* np_name);
-
-
-/* 		End of Hash functions		*/
-/*************************************************/
 
 
 #endif				/*np_dcll.h */
