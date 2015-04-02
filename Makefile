@@ -1,7 +1,7 @@
 #CC variable contains the compiler that we want to use
 CC=gcc
 
-all: nj libinotify np_register dummyapp stats app_register app_unregister np_unregister app_getnotify dummyapp2 
+all: nj libinotify np_register dummyapp stats app_register app_unregister np_unregister app_getnotify dummyapp2 nj_nonblocklib.so
 
 nj:	nj.o app_dcll.o np_dcll.o rdwr_lock.o
 	$(CC) -g -Wall nj.o app_dcll.o np_dcll.o rdwr_lock.o -lpthread -o nj -ldl
@@ -62,14 +62,10 @@ dummyapp.o: dummyapp.c
 	$(CC) -Wall -c -g dummyapp.c -o dummyapp.o
 
 nj_nonblocklib.o: nj_nonblocklib.c lib.h
-	$(CC) -Wall -c -g nj_nonblocklib.c -o nj_nonblocklib.o 
-
-#Target 5
-dummyapp2: dummyapp2.o nj_nonblocklib.o
-	$(CC) -Wall -g  dummyapp2.c nj_nonblocklib.o -o dummyapp2
-
-dummyapp2.o:dummyapp2.c 
-	$(CC) -Wall -g -c dummyapp2.c -o dummyapp2.o
+	$(CC) -Wall -c -g -fPIC nj_nonblocklib.c -o nj_nonblocklib.o 
+nj_nonblocklib.so: nj_nonblocklib.o
+	$(CC) -Wall -g nj_nonblocklib.o -shared -o nj_nonblocklib.so
+	
 
 #Target 5
 stats: stats.o
