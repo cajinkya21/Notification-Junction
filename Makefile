@@ -1,7 +1,7 @@
 #CC variable contains the compiler that we want to use
 CC=gcc
 
-all: nj libinotify np_register dummyapp stats app_register app_unregister np_unregister app_getnotify dummyapp2 nj_nonblocklib.so
+all: nj libinotify np_register dummyapp stats app_register app_unregister np_unregister app_getnotify  nj_nonblocklib.so
 
 nj:	nj.o app_dcll.o np_dcll.o rdwr_lock.o
 	$(CC) -g -Wall nj.o app_dcll.o np_dcll.o rdwr_lock.o -lpthread -o nj -ldl
