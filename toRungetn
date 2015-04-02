@@ -1,1 +1,0 @@
-./app_getn npname::inotify##dir::/home/chitra/Desktop/##flags::IN_CREATE*IN_DELETE*IN_MODIFY 

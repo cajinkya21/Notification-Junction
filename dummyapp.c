@@ -10,6 +10,7 @@ char filebuffer[128];
 /* SIGNAL HANDLER FOR SIGUSR1 SINGAL THAT IS SENT FORM NJ WHEN NOTIFICATION ARRIVES  */
 void sigusrhandler(int signum)
 {
+	char ch;
 	if (signum == SIGUSR1) {
 	
 		times++;
@@ -22,8 +23,8 @@ void sigusrhandler(int signum)
 		printf("received SIGUSR1 %d \n\n\n",times);
 		i = 0;
 		fgets(filebuffer, 128,  pidfd );
-		
 		printf("Signalhandler Notification is %s \n",filebuffer);
+		scanf("%c", &ch);
 		return;
 	    //exit(0);		
     }
@@ -86,7 +87,8 @@ int main(int argc, char *argv[])
 
 	printf("Dummy app getnotify done \n");
 	//sigsuspend(&mask);
-	while (1);		/* Loop to make application wait for notification */
+	while (1)
+		printf("*");	/* Loop to make application wait for notification */
 	printf("dummy app sigsuspend recieved\n");
 
 	
