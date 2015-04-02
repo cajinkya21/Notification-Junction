@@ -24,14 +24,32 @@
  *	app unregistration
  *	np registration
  *	np unregistration 
- *	app_registraion thread routine
- *	app_unregistration thread 	
- *	np_registration thread 	
- *	np_unregistration thread routine
- *	app getnotify 
- *	app getnotify thead routine
- *	np getnotify thread routine
- *
+ *	app_registraion thread method
+ *	app_unregistration thread method
+ *	np_registration thread method
+ *	np_unregistration thread method
+ *	app getnotify thread method
+ *	np getnotify thread method
+ *	proceed getnotify thread method
+ *	block getnotify thread method
+ *	dec_all_np_counts
+ *	print_stat
+ *	sigint_handler
+ *	print_list_on_sock_np
+ *	print_list_on_sock_app
+ *	print_np_key_val_stat
+ *	print_hash_on_sock_np
+ *	print_hash_on_sock_app
+ *	extract_key_val
+ *	extract_key
+ *	extract_val
+ *	compare_array
+ *	forward_convert
+ *	get_val_from_args
+ *	get_filename
+ *	count_args
+ *	nj_exit
+ *	dec_all_np_counts_hash
  */
 
 
@@ -42,19 +60,19 @@ FILE* logfd;						/* File pointer of log file */
 app_dcll appList;					/* Head of global APP List */
 int fd_pidnames;					/* FD of file used for storing PID filenames */
 void *handle;						/* Handle of the function in shared library */
-pthread_mutex_t getnotify_socket_mutex;
+pthread_mutex_t getnotify_socket_mutex;			/* mutex used for locking buffer which app_getnotify thread uses */
 struct thread_args stat_read, stat_write, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
-struct hash_struct_np *hstruct_np;
-struct hash_struct_app *hstruct_app;
-/*Mutexes to be used for synchronizing list*/
+struct hash_struct_np *hstruct_np;			/*global Hash for NP*/
+struct hash_struct_app *hstruct_app;			/*global Hash for App*/
+
 
 /* main code */
 int main()
 {	int ret;
 	sigset_t mask;
 	pthread_t tid_stat, tid_app_reg, tid_app_unreg, tid_np_reg, tid_np_unreg, tid_app_getnotify;
-	atexit(nj_exit);
-	if (!(logfd = fopen(LOGS, "a+"))) {
+	atexit(nj_exit);  		/*setting up the exit handler */
+	if (!(logfd = fopen(LOGS, "a+"))) { /*opening log file*/
 		perror("NJ.C   : not able to open  Log file\n");
 		return 1;
 	}
@@ -69,7 +87,7 @@ int main()
 
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGINT);
-	signal(SIGINT, sigint_handler);
+	signal(SIGINT, sigint_handler);		/*setting up sig_int handler*/
 
 	/* first remove(unlink) the sockets if they already exist */
 	unlink(StatSocket);
@@ -80,6 +98,7 @@ int main()
 	unlink(AppGetnotifySocket);
 	unlink(StatSocketPrint);
 
+	/*open file to which we will write the entry for each file pid.txt that we open so that it can be deleted when its use is done*/
 	fd_pidnames = open(PIDFILE, O_CREAT | O_RDWR, 0777);
 
 	/*Initialization of all mutexes */
@@ -111,6 +130,8 @@ int main()
 	}
 	stat_read.server.sun_family = AF_UNIX;
 	strcpy(stat_read.server.sun_path, StatSocket);
+
+	/*bind socket to StatSocket*/
 	if (bind(stat_read.sock, (struct sockaddr *)&stat_read.server, sizeof(struct sockaddr_un))) {
 		perror("binding stream socket");
 		exit(EXIT_FAILURE);
@@ -125,6 +146,8 @@ int main()
 	}
 	app_reg.server.sun_family = AF_UNIX;
 	strcpy(app_reg.server.sun_path, AppRegSocket);
+
+	/*bind socket to AppRegSocket */
 	if (bind(app_reg.sock, (struct sockaddr *)&app_reg.server, sizeof(struct sockaddr_un))) {
 		perror("NJ.C   : binding stream socket");
 		exit(EXIT_FAILURE);
@@ -138,7 +161,7 @@ int main()
 	}
 	app_unreg.server.sun_family = AF_UNIX;
 	strcpy(app_unreg.server.sun_path, AppUnRegSocket);
-
+	/*bind socket to AppUnRegSocket*/
 	if (bind(app_unreg.sock, (struct sockaddr *)&app_unreg.server, sizeof(struct sockaddr_un))) {
 		perror("NJ.C   : binding stream socket");
 		exit(EXIT_FAILURE);
@@ -152,6 +175,7 @@ int main()
 	}
 	np_reg.server.sun_family = AF_UNIX;
 	strcpy(np_reg.server.sun_path, NpRegSocket);
+	/*bind socket to NpRegSocket*/
 	if (bind(np_reg.sock, (struct sockaddr *)&np_reg.server, sizeof(struct sockaddr_un))) {
 		perror("NJ.C   : binding stream socket");
 		exit(EXIT_FAILURE);
@@ -165,6 +189,7 @@ int main()
 	}
 	np_unreg.server.sun_family = AF_UNIX;
 	strcpy(np_unreg.server.sun_path, NpUnRegSocket);
+	/*Bind socket to NpUnRegSocket*/
 	if (bind(np_unreg.sock, (struct sockaddr *)&np_unreg.server, sizeof(struct sockaddr_un))) {
 		perror("NJ.C   : binding stream socket");
 		exit(EXIT_FAILURE);
@@ -178,13 +203,14 @@ int main()
 	}
 	app_getnotify.server.sun_family = AF_UNIX;
 	strcpy(app_getnotify.server.sun_path, AppGetnotifySocket);
+	/*Bind socket to AppGetnotifySocket*/
 	if (bind(app_getnotify.sock, (struct sockaddr *)&app_getnotify.server, sizeof(struct sockaddr_un))) {
 		perror("NJ.C   : binding stream socket");
 		exit(EXIT_FAILURE);
 	}
 
-	/* fork threads to listen  and accept */
-	if ((ret = pthread_create(&tid_stat, NULL, &print_stat, (void *)&stat_read)) == 0) {
+	/* create threads to listen  and accept */
+	if ((ret = pthread_create(&tid_stat, NULL, &print_stat_method, (void *)&stat_read)) == 0) {
 		PRINTF("> %s %d main(): Pthread_Creation successful for stat\n",__FILE__ , __LINE__);
 	}
 	else {
@@ -268,15 +294,15 @@ extern pthread_mutex_t getnotify_socket_mutex;
 extern struct thread_args stat_read, stat_write, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
 
 /* method to read socket for statistics */
-void *print_stat(void *arguments)
+void *print_stat_method(void *arguments)
 {
 	struct thread_args *args = arguments;
 
-
+	/*Listen to requests on socket */
 	if(listen(args->sock, QLEN) != 0 ) {
 		perror("Error in listening on stat socket");
 	}
-	for (;;) {
+	for (;;) { /*till the program ends*/
 		args->msgsock = accept(args->sock, 0, 0);
 		if (args->msgsock == -1)
 			perror(" Error accept on stat socket");
@@ -287,7 +313,7 @@ void *print_stat(void *arguments)
 				if ((args->rval = read(args->msgsock, args->buf, 1024)) < 0)
 					perror("NJ.C   : reading stream message");
 				else {	
-					printStat();
+					print_stat();
 					break;
 				}
 			} while (args->rval > 0);
@@ -307,7 +333,7 @@ void *app_reg_method(void *arguments)
 {
 	struct thread_args *args = arguments;
 
-
+	/*Listen for requests on socket*/
 	if ((listen(args->sock, QLEN)) != 0) {
 		perror("Error in listening on appreg socket:");
 	}
@@ -351,17 +377,17 @@ void *app_unreg_method(void *arguments)
 {
 	struct thread_args *args = arguments;
 	int i = 0;
-
+	/*Listen for requests on socket*/
 	if((listen(args->sock, QLEN)) != 0) {
 		perror("Error in listening on app_unreg socket");
 	}
 
-	for (;;) {
+	for (;;) {/*Till program ends*/
 		args->msgsock = accept(args->sock, 0, 0);
 		if (args->msgsock == -1)
 			perror("NJ.C   : Error in accept of app_unreg socket");
 		else
-			do {
+			do {	/*for each requestz*/
 				bzero(args->buf, sizeof(args->buf));
 				if ((args->rval =
 							read(args->msgsock, args->buf, 1024)) < 0)
@@ -397,17 +423,17 @@ void *np_reg_method(void *arguments)
 {
 	struct thread_args *args = arguments;
 
-
+	/*Listen for requests on socket*/
 	if((listen(args->sock, QLEN)) != 0) {
 		perror("Error in listening on np_reg socket");
 	}
 	int i = 0;
-	for (;;) {
+	for (;;) {/*Till the program ends*/
 		args->msgsock = accept(args->sock, 0, 0);
 		if (args->msgsock == -1)
 			perror("NJ.C   : Error in accept of np_reg socket");
 		else
-			do {
+			do {/*For each request*/
 				bzero(args->buf, sizeof(args->buf));
 				if ((args->rval =
 							read(args->msgsock, args->buf, 1024)) < 0)
@@ -441,17 +467,18 @@ void *np_reg_method(void *arguments)
 void *np_unreg_method(void *arguments)
 {
 	struct thread_args *args = arguments;
-
+	/*Listen for requests on socket*/
 	if((listen(args->sock, QLEN)) != 0) {
 		perror("Error in listening on np Unreg socket");
 	}
 	int i = 0;
-	for (;;) {
+	for (;;) {/*Till program ends*/
 		args->msgsock = accept(args->sock, 0, 0);
 		if (args->msgsock == -1)
 			perror("NJ.C   : Error in accept of np unreg socket");
 		else
 			do {
+				/*for each request*/
 				bzero(args->buf, sizeof(args->buf));
 				if ((args->rval =
 							read(args->msgsock, args->buf, 1024)) < 0)
@@ -493,7 +520,7 @@ void *app_getnotify_method(void *arguments)
 
 	fprintf(logfd,"> %s %d app_getnotify_method(): In AppGetnotifySocket\n",__FILE__ , __LINE__);
 	fprintf(logfd,"> %s %d AppGetNotifyMehod(): args -> msgsock - %d\n",__FILE__ , __LINE__, args->msgsock);
-
+	/*Listen for requests on socket*/
 	if((listen(args->sock, QLEN)) != 0) {
 		perror("Error in listening on app_getnotify socket");
 	}
@@ -502,12 +529,13 @@ void *app_getnotify_method(void *arguments)
 	strcpy(server.sun_path, AppGetnotifySocket);
 	pthread_t threadarr[APPLIMIT];
 
-	for (;;) {
+	for (;;) {/*Till program ends*/
 		args->msgsock = accept(args->sock, 0, 0);
 		if (args->msgsock == -1)
 			perror("NJ.C   : Error in accept of app_getnotify_socket");
 		else
 			do {
+				/*For each request*/
 				if((pthread_mutex_lock(&getnotify_socket_mutex)) != 0 ) {
 					perror("Error in lock getnotify_socket_mutex:");
 				}
@@ -522,26 +550,26 @@ void *app_getnotify_method(void *arguments)
 				strcpy(sendargs->buf, args->buf);
 				fprintf(logfd, ">%s %d app_getnotify_method() : 1. buf is %s \n",__FILE__ , __LINE__,sendargs->buf);
 
-				if (args->rval < 0) {
+				if (args->rval < 0) { /*Error case*/
 					perror("NJ.C   : reading stream message");
 
 					if((pthread_mutex_unlock(&getnotify_socket_mutex)) != 0) {
 						perror("Error in unlock getnotify_socket_mutex:");
 					}
 				}    
-				else if (args->rval == 0) {
+				else if (args->rval == 0) { /*Nothing read*/
 					PRINTF("> %s %d app_getnotify_method(): Ending connection\n",__FILE__ , __LINE__);
 					if((pthread_mutex_unlock(&getnotify_socket_mutex)) != 0) {
 						perror("Error in unlock getnotify_socket_mutex:");
 					}
 				}
-				/* code to fork a thread per getnotify() request and send the arguments to the thread's action */
+				/* code to create a thread per getnotify() request and send the arguments to the thread's action */
 				else {
 					PRINTF("> %s %d app_getnotify_method(): %d is i in ProcerdGetnotify \n",__FILE__ ,__LINE__,i);
 					// Get the choice here. 
 					len = strlen(sendargs->buf);
 					choice = sendargs->buf[len - 1];
-					if(choice == NONBLOCKING) {
+					if(choice == NONBLOCKING) { /*for Nonblocking app_getnotify calls */
 						if ((ret = pthread_create(&threadarr[i++], NULL, &proceed_getnotify_method, (void *)sendargs)) == 0) {
 							PRINTF("> %s %d app_getnotify_method(): Pthread_Creations for proceed_getnotify_method\n",__FILE__, __LINE__);
 						}
@@ -550,14 +578,14 @@ void *app_getnotify_method(void *arguments)
 							perror("Error in pthread_create creating thread for proceed_getnotify_method");
 						}
 					}
-					else if(choice == BLOCKING) {
+					else if(choice == BLOCKING) {/*for Blocking app_getnotify calls */
 						if ((ret = pthread_create(&threadarr[i++], NULL, &block_getnotify_method, (void *)sendargs)) == 0) {
-						PRINTF("> %s %d app_getnotify_method(): Pthread_Creations for block_getnotify_method\n",__FILE__, __LINE__);
-					}
-					else {
-						errno = ret;
-						perror("Error in pthread_create creating thread for block_getnotify_method");
-					}
+							PRINTF("> %s %d app_getnotify_method(): Pthread_Creations for block_getnotify_method\n",__FILE__, __LINE__);
+						}
+						else {
+							errno = ret;
+							perror("Error in pthread_create creating thread for block_getnotify_method");
+						}
 					}
 					if((pthread_mutex_unlock(&getnotify_socket_mutex)) != 0) {
 						perror("Error in unlock getnotify_socket_mutex:");
@@ -570,7 +598,7 @@ void *app_getnotify_method(void *arguments)
 
 		close(args->msgsock);
 	}
-	while (i >= 0) {
+	while (i >= 0) { /*Join all the threads created in above block */
 
 		if((ret = pthread_join(threadarr[i], NULL)) != 0) {
 			errno = ret;
@@ -609,7 +637,7 @@ void *np_getnotify_method(void *arguments)
 	*args = *bargs;
 
 	fprintf(logfd, "> %s %d np_getnotify_method : 8. buf is %s \n",__FILE__ , __LINE__, args->argssend);
-	void (*getnotify) (struct getnotify_thread_args *);
+	void (*getnotify) (struct getnotify_thread_args *); /*call np specific function here*/
 
 
 	PRINTF("> %s %d np_getnotify_method(): started args->argssend is %s\n",__FILE__ , __LINE__, args->argssend);
@@ -635,9 +663,9 @@ void *np_getnotify_method(void *arguments)
 
 	pid = atoi(appname);
 
-	
+
 	fprintf(logfd, "> %s %d np_getnotify_method():77. pid is %d \n",__FILE__ , __LINE__, pid);
-	
+
 
 	strcpy(one, strtok(NULL, delimattr));
 	strtok(one, delimval);	
@@ -648,10 +676,10 @@ void *np_getnotify_method(void *arguments)
 	extract_key_val(args->argssend, &pointer);
 
 
-/**/	if(DATASTRUCT == LIST ) {
+	if(DATASTRUCT == LIST ) { /*when List datastructure used*/
 
 		np_node = search_np(&npList, np_name);
-		if(np_node != NULL) {
+		if(np_node != NULL) { /*node found case*/
 			k = compare_array(&(np_node->key_val_arr), &pointer);
 			if(k != 0) {
 				PRINTF(">%s %d np_getnotify_method() :Array not matched..\n",__FILE__ , __LINE__);	
@@ -659,7 +687,7 @@ void *np_getnotify_method(void *arguments)
 				return NULL;
 			}
 		}
-		else {
+		else { /*np not registerd with nj case*/
 			PRINTF(">%s %d np_getnotify_method() :NP not found in list..\n",__FILE__ , __LINE__);	
 			errno = EINVAL;
 			return NULL;
@@ -673,15 +701,15 @@ void *np_getnotify_method(void *arguments)
 		else {
 			PRINTF(">%s %d np_getnotify_method():Regitration not found in list---------\n\n",__FILE__ , __LINE__);
 			perror("Registration doesn't exist - ");
-			//and exit
+			/*and exit*/
 			errno = ENODEV;
 		}
-		
-		
-		
+
+
+
 	}
-	//search hash.
-	if(DATASTRUCT == HASH ) {
+	/*search hash.*/
+	if(DATASTRUCT == HASH ) { /*when Hash Datastructure used*/
 		HASH_FIND_STR(hstruct_np->np_hash, np_name, np_node); 
 		if(np_node != NULL) {
 			k = compare_array(&(np_node->key_val_arr), &pointer);
@@ -696,9 +724,9 @@ void *np_getnotify_method(void *arguments)
 			errno = EINVAL;
 			return NULL;
 		}
-		
+
 		nptr = get_reg_hash(hstruct_app, appname, np_name);
-		
+
 		if (nptr) {
 			PRINTF("\n> %s %d np_getnotify_method(): RETURNED in hash nptr->name = %s\n",__FILE__ , __LINE__, nptr->name);
 		}
@@ -709,12 +737,12 @@ void *np_getnotify_method(void *arguments)
 			//and exit
 			errno = ENODEV;
 		}
-		
-	
-		
-		
+
+
+
+
 	}
-	
+
 	if((temp = (struct extr_key_val *)malloc(sizeof(struct extr_key_val))) == NULL) {
 		PRINTF("> %s %d np_getnotify_method(): malloc failed \n", __FILE__, __LINE__);
 		errno = ECANCELED;
@@ -766,7 +794,7 @@ void *np_getnotify_method(void *arguments)
 
 	if (x == 1) {
 		PRINTF(">%s %d np_getnotify_method(): Opening library.\n",__FILE__ , __LINE__);
-		handle = dlopen(library, RTLD_LAZY);
+		handle = dlopen(library, RTLD_LAZY); /*open the library specified*/
 		if (!handle) {
 			perror("NJ.C   : Problem with dlopen :");
 			exit(EXIT_FAILURE);
@@ -808,14 +836,16 @@ void *np_getnotify_method(void *arguments)
 		al = write((int)filefd, args->argsrecv, strlen(args->argsrecv));
 		if (al < 0)
 			perror("NJ.C   : Fwrite failed");
-		else
+		else	{
 			PRINTF(">%s %d np_getnotify_method(): %s written  %d bytes WRITTEN\n",__FILE__ , __LINE__, filename, al);
-
-		strcpy(args->argssend, args_send_copy);
-		if (kill(pid, SIGUSR1) == -1) {
-			perror("Error in kill :\n");
 		}
 		close(filefd);
+
+		strcpy(args->argssend, args_send_copy);
+
+		if (kill(pid, SIGUSR1) == -1) { /*Send signal to pid of application alerting receival of Notification*/
+			perror("Error in kill :\n");
+		} 
 
 	}
 
@@ -827,16 +857,15 @@ void *np_getnotify_method(void *arguments)
 	args = NULL;
 
 
-	//pthread_exit(NULL);
 	return NULL;
 
 }
-
+/*thread method for blocking getnotify calls*/
 void *block_getnotify_method(void *argu) {
-	
+
 	int sock_block;
 	struct sockaddr_un server_block;
-	
+
 	char *buf;
 	struct proceed_getn_thread_args *temparguments, *args;
 	char rough[1024];
@@ -862,10 +891,10 @@ void *block_getnotify_method(void *argu) {
 	strcpy(sock_name, strtok(rough, "##"));
 
 	strcat(sock_name, "_sock");
-	
+
 	printf("sock_name in NJ is %s\n", sock_name);
-	
-	
+
+
 
 	fprintf(logfd, "> %s %d block_getnotify_method :3. buf is %s \n",__FILE__ , __LINE__, args->buf);  
 	force_logs();
@@ -876,7 +905,7 @@ void *block_getnotify_method(void *argu) {
 		perror("Malloc failed");
 	}
 	strcpy(buf, args->buf);
-	
+
 	char *notification;
 	struct getnotify_thread_args *arguments;
 
@@ -898,10 +927,10 @@ void *block_getnotify_method(void *argu) {
 	strcpy(arguments->argssend, buf);
 
 
-	/* Fork thread to invoke the NP's code with the arguments given in the structure 'arguments', which contains argssend and argsrecv */	fprintf(logfd, "7. buf is %s \n", arguments->argssend);
+	fprintf(logfd, "7. buf is %s \n", arguments->argssend);
 
-	
-	
+
+	/*Call function np_getnotify_method instead of creating its separate thread as in non-blocking case*/
 	np_getnotify_method(arguments);
 
 	strcpy(notification, arguments->argsrecv);
@@ -911,29 +940,29 @@ void *block_getnotify_method(void *argu) {
 	sock_block = socket(AF_UNIX, SOCK_STREAM, 0);
 	server_block.sun_family = AF_UNIX;
 	strcpy(server_block.sun_path, sock_name);
+	/*Connect to socket with name pid*/
 	if (connect
-	    (sock_block, (struct sockaddr *)&server_block,
-	     sizeof(struct sockaddr_un)) < 0) {
+			(sock_block, (struct sockaddr *)&server_block,
+			 sizeof(struct sockaddr_un)) < 0) {
 		close(sock_block);
 		perror("block_getnotify_method(): ERROR CONNECTING STREAM SOCKET :");
 		exit(1);
 	}
-	
+
 	printf("NJ writing blocking notification as - %s\n", notification);
-	
+	/*Write received notification to socket with name pid*/
 	if (write(sock_block, notification, sizeof(notification)) < 0)
 		perror
-		    ("block_getnotify_method() : ERROR WRITING COMMAND ON STREAM SOCKET :");
-	printf("Notification written\n");
-	
+			("block_getnotify_method() : ERROR WRITING COMMAND ON STREAM SOCKET :");
+
 	free(buf);
 	buf = NULL;
 
 	free(arguments);
 	arguments = NULL;
-	
+
 	return NULL;
-	
+
 }
 
 /* Find the app in the list. If it is found, for every np in its trailing list; visit the np_dcll and decrement its count. */
@@ -966,6 +995,7 @@ void dec_all_np_counts(app_dcll * appList, np_dcll * npList, char *app_name)
 
 }
 
+/*It decrements all np counts in hash table with which app_name was registered */ 
 void dec_all_np_counts_hash(hash_struct_app *hstruct_app, hash_struct_np *hstruct_np, char *app_name) {
 
 	app_node *ptrapp;
@@ -993,7 +1023,7 @@ void dec_all_np_counts_hash(hash_struct_app *hstruct_app, hash_struct_np *hstruc
 
 }
 
-/* Action function of the getnotify() threads */
+/* Action function of the non-blocking getnotify() threads */
 void *proceed_getnotify_method(void *arguments)
 {
 	char *received, *buf;
@@ -1035,7 +1065,7 @@ void *proceed_getnotify_method(void *arguments)
 	}
 
 	j = strlen(rough);
-
+	/*Create string for filename pid.txt*/
 	strcpy(filename, "./");
 	strcat(filename, spid);
 	strcpy(filename1, spid);
@@ -1063,9 +1093,9 @@ void *proceed_getnotify_method(void *arguments)
 	fprintf(logfd, "> %s %d proceed_getnotify_method() :4. Notification received from getnotify_app is %s \n",__FILE__ , __LINE__, received); 
 	force_logs();
 
-		strcat(received, "\n");
-		write((int)fd_pidnames, filename1, strlen(filename1));
-		PRINTF("> %s %d proceed_getnotify_method(): PID filename is written successfully.....\n",__FILE__ , __LINE__);
+	strcat(received, "\n");
+	write((int)fd_pidnames, filename1, strlen(filename1));
+	PRINTF("> %s %d proceed_getnotify_method(): PID filename is written successfully.....\n",__FILE__ , __LINE__);
 
 	free(received);
 	received = NULL;
@@ -1124,11 +1154,11 @@ int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr) {
 	int found = 0;
 
 	one = *getn_key_val_arr;
-	while(*one != NULL) {
+	while(*one != NULL) { /*Check for each key in getn_key_val_arr*/
 		found = 0;
 		key_one = extract_key(*one);
 		two = *np_key_val_arr;
-		while(*two != NULL) {
+		while(*two != NULL) { /*check whether one is present in np_key_val_arr*/
 			key_two = extract_key(*two);
 			if(!(strcmp(key_one, key_two))) {
 				found = 1;
@@ -1136,7 +1166,7 @@ int compare_array(char *** np_key_val_arr, char *** getn_key_val_arr) {
 			}
 			two++;
 		}
-		if(found == 0) {
+		if(found == 0) { /*if key in getn_key_val_arr not found*/
 			PRINTF("> %s %d compare_array():ERROR NP cannot process key %s\n",__FILE__ , __LINE__, key_one);
 			errno = EINVAL;
 			free(key_one);
@@ -1158,11 +1188,11 @@ void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr , char * fi
 
 	strcpy(ret_string,"\0");
 	two = *np_key_val_arr;
-	while(*two != NULL) {
+	while(*two != NULL) { /*for each key::val string in the np_key_val_arr*/
 		found = 0;
 		key_two = extract_key(*two);
 		one = *getn_key_val_arr;
-		while(*one != NULL) {
+		while(*one != NULL) { /*check if val for above two present in getn_key_val_arr*/
 			key_one = extract_key(*one);
 			if(!(strcmp(key_one, key_two))) {
 				strcat(ret_string, *one);
@@ -1172,7 +1202,7 @@ void forward_convert(char ***np_key_val_arr,char ***getn_key_val_arr , char * fi
 			}
 			one++;
 		}
-		if(found == 0) {
+		if(found == 0) { /*put the default value that was provided during np registration*/
 			strcat(ret_string, *two);
 			strcat(ret_string, "##");
 		}
@@ -1237,7 +1267,7 @@ void force_logs(void) {
 }
 
 
-
+/*prints np_list on socket for stats */
 void print_list_on_sock_np(np_dcll *l) {
 
 	int i = l->count;
@@ -1273,7 +1303,7 @@ void print_list_on_sock_np(np_dcll *l) {
 	if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
 		perror("STAT : Reading On Stream Socket"); 
 
-	while (i) {
+	while (i) { /*for each node in list*/
 		sprintf(buf, "> %s %d print_np() : %s   ", __FILE__, __LINE__, ptr->data);
 		printf("BUF - %s.\n", buf);
 		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
@@ -1305,6 +1335,8 @@ void print_list_on_sock_np(np_dcll *l) {
 	pthread_rdwr_runlock_np(&(l->np_list_lock));
 
 }
+
+/*prints app_list on socket for stats */
 void print_list_on_sock_app(app_dcll *l) {
 	int i;
 	char buf[512];
@@ -1313,7 +1345,7 @@ void print_list_on_sock_app(app_dcll *l) {
 
 	pthread_rdwr_rlock_np(&(l->app_list_lock));	
 	i = l->count;	
-	if(i == 0) {
+	if(i == 0) {/*App list empty case*/
 		sprintf(buf, "> app_dcll.c print_app() : NO APPS TO PRINT\n");
 		printf("BUF - %s.", buf);
 		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
@@ -1336,8 +1368,8 @@ void print_list_on_sock_app(app_dcll *l) {
 	printf("BUF - %s.", buf);
 	if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
 		perror("STAT : Reading On Stream Socket"); 
-	/* While applications in the list are being traversed, print the contents of each application node */
-	while (i) {		
+	while (i) { /* While applications in the list are being traversed, print the contents of each application node */
+
 		sprintf(buf, "%s\t\t\t", ptr->data);
 		printf("BUF - %s.", buf);
 		if (write(stat_write.sock, buf, sizeof(buf)) < 0) 
@@ -1401,6 +1433,8 @@ void print_list_on_sock_app(app_dcll *l) {
 
 
 }
+
+/*prints the np_key_val of all nps with which temp is registered*/
 void print_np_key_val_stat(app_node * temp) {
 	np_node *head = temp->np_list_head;
 	extr_key_val *vptr;
@@ -1458,7 +1492,7 @@ void print_np_key_val_stat(app_node * temp) {
 }
 
 /* Function To Print Statistics Of Nj */
-void printStat()
+void print_stat()
 {
 
 	stat_write.sock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -1492,6 +1526,7 @@ void printStat()
 	close(stat_write.sock);
 }
 
+/*prints np hash table on socket for stats */
 void print_hash_on_sock_np(hash_struct_np *hstruct_np) {
 
 	printf("PRINTING NP HASH\n\n\n");
@@ -1507,7 +1542,7 @@ void print_hash_on_sock_np(hash_struct_np *hstruct_np) {
 	printf("In print\n");
 
 }
-
+/*prints app hash table on socket for stats */
 void print_hash_on_sock_app(hash_struct_app *hstruct_app) {
 
 	printf("PRINTING APP_HASH\n\n\n");
@@ -1685,16 +1720,19 @@ int unregister_app(char *buff)
 	}
 
 	if(DATASTRUCT == HASH) {
-	
-		HASH_FIND_STR(hstruct_np->np_hash, np_name, s_np);
-		if(s_np == NULL) {
-			errno =EINVAL;
-			return -1;
+
+		if(np_name[0] != '\0') {
+			HASH_FIND_STR(hstruct_np->np_hash, np_name, s_np);
+			if(s_np == NULL) {	
+				perror("Np not registered - ");
+				PRINTF("> %s %d register_app(): Np not registered. Register NP first.\n", __FILE__ , __LINE__);
+				errno = ENODEV;
+				return -1;
+			}	
 		}
-		
 		retval = del_app_ref_hash(hstruct_app, app_name, np_name);
 		if(retval == -1) {
-			printf("> %s %d register_app: Error in adding app_node", __FILE__, __LINE__);
+			printf("> %s %d unregister_app: Error in deleting app_node", __FILE__, __LINE__);
 			return -1;
 		}
 		print_hash_app(hstruct_app);
@@ -1710,7 +1748,6 @@ int register_np(char *buff)
 	char np_name[32], * usage, delimusage[3] = "==";
 	char *s;
 	char **keyVal;
-	//main_np_node *new;
 	usage = (char * ) malloc (sizeof(char) * 512);
 	strcpy(np_name, strtok(buff, delimusage));
 	s = strtok(NULL, delimusage);
@@ -1740,7 +1777,7 @@ int register_np(char *buff)
 }
 
 
-
+/*It extracts an array of key::val strings from usage and stores it in array keyVal*/
 void extract_key_val(char *usage, char ***keyVal)
 {
 	int cnt = 0, i = 0;
@@ -1817,12 +1854,12 @@ int unregister_np(char *buff)
 		// delete np from registered app trailing list
 
 		for(s = hstruct_app->app_hash; s != NULL; s=(struct app_node*)(s->hh.next)) {
-		
+
 			p = s->np_list_head;
 			printf("Looking in app %s\n", s->data);
-			
+
 			while(p != NULL) {
-				
+
 				printf("Matching ");
 				if(!strcmp(p->name, np_name)) {	
 					PRINTF("> %s %d unregister_np():Np node found : %s\n", __FILE__ , __LINE__, np_name);
@@ -1856,9 +1893,9 @@ int unregister_np(char *buff)
 				free(p);
 				s->np_count--;
 			}
-				
+
 		}
-		
+
 		del_np_from_hash(hstruct_np, np_name);
 		print_hash_np(hstruct_np);
 		print_hash_app(hstruct_app);
