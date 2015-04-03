@@ -29,36 +29,36 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define NAME "./np_unreg_sock"
+#define NAME "./np_unreg_sock"						/* Socket name for sending parametes */
 
 int main(int argc, char *argv[])
 {
 	int sock;
-	struct sockaddr_un server;
 	char data[1024];
-	strcpy(data, argv[1]);
+	struct sockaddr_un server;
 
 	if (argc < 2) {
 		printf("APP_GETNOTIFY : Usage: %s <np_name>", argv[0]);
 		exit(1);
 	}
 
-	sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	strcpy(data, argv[1]);					
+	sock = socket(AF_UNIX, SOCK_STREAM, 0);				/* Creates endpoint for communication */
 	if (sock < 0) {
 		perror("APP_GETNOTIFY : Opening Stream Socket");
 		exit(1);
 	}
-	server.sun_family = AF_UNIX;
-	strcpy(server.sun_path, NAME);
+	server.sun_family = AF_UNIX;					
+	strcpy(server.sun_path, NAME);					/* Setting name of socket */
 
 	if (connect
 			(sock, (struct sockaddr *)&server,
 			 sizeof(struct sockaddr_un)) < 0) {
-		close(sock);
+		close(sock);						/* Initiate connection on socket */
 		perror("APP_GETNOTIFY : Connecting Stream Socket");
 		exit(1);
 	}
-	if (write(sock, data, sizeof(data)) < 0)
+	if (write(sock, data, sizeof(data)) < 0)			/* Writing data on socket */
 		perror("APP_GETNOTIFY : Writing On Stream Socket");
 	close(sock);
 	return 0;

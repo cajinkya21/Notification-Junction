@@ -29,20 +29,24 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define NAME "./np_reg_sock"
+#define NAME "./np_reg_sock"						/* Socket name for sending parametes */
 
 int main(int argc, char *argv[])
 {
 
 	int sock;
 	struct sockaddr_un server;
+	char *m;
+	char data[1024], trash[1024];
 
-	char data[1024];
-	char trash[1024];
+	if (argc < 2) {
+		printf("NP_REG : Usage:%s <np_name>", argv[0]);
+		exit(1);
+	}
+
 	strcpy(data, argv[1]);
 	strcpy(trash, data);
 
-	char *m;
 	m = strtok(trash, "##");
 	if (m == NULL) {
 		printf("Error : NP_REG : Enter usage\nExiting\n");
@@ -56,27 +60,22 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (argc < 2) {
-		printf("NP_REG : Usage:%s <np_name>", argv[0]);
-		exit(1);
-	}
-
-	sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	sock = socket(AF_UNIX, SOCK_STREAM, 0);				/* Creates endpoint for communication */
 	if (sock < 0) {
 		perror("NP_REG : Opening Stream Socket");
 		exit(1);
 	}
 	server.sun_family = AF_UNIX;
-	strcpy(server.sun_path, NAME);
+	strcpy(server.sun_path, NAME);					/* Setting name of socket */
 
 	if (connect
 			(sock, (struct sockaddr *)&server,
 			 sizeof(struct sockaddr_un)) < 0) {
-		close(sock);
+		close(sock);						/* Initiate connection on socket */
 		perror("NP_REG : Connecting Stream Socket");
 		exit(1);
 	}
-	if (write(sock, data, sizeof(data)) < 0)
+	if (write(sock, data, sizeof(data)) < 0)			/* Writing data on socket */
 		perror("NP_REG : Writing On Stream Socket");
 	close(sock);
 	return 0;

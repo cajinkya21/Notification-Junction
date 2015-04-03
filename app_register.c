@@ -17,6 +17,7 @@
     Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */ 
 
+
 /* 
  *	The file contains code for registering the application with NJ. 
  */ 
@@ -28,69 +29,43 @@
 #include <stdio.h>
 #include <unistd.h>
 
-
-#define NAME "./app_reg_sock"						
+#define NAME "./app_reg_sock"						/* Socket name for sending parametes */				
 
 int main(int argc, char *argv[])
 {
 
-
 	int sock;
-
+	char data[1024];
 	struct sockaddr_un server;
 
-
-	char data[1024];
-
-	strcpy(data, argv[1]);
-
-
 	if (argc < 2) {
-
-		printf("APP_REG : Usage : %s <AppName>==<RegisteredNpName>",
-				argv[0]);
-
+		printf("APP_REG : Usage : %s <AppName>==<RegisteredNpName>\n", argv[0]);
 		exit(1);
-
 	}
 
-
-	sock = socket(AF_UNIX, SOCK_STREAM, 0);
-
+	strcpy(data, argv[1]);
+	
+	sock = socket(AF_UNIX, SOCK_STREAM, 0);				/* Creates endpoint for communication */
 	if (sock < 0) {
-
 		perror("APP_REG : Opening Stream Socket");
-
 		exit(1);
-
 	}
 
 	server.sun_family = AF_UNIX;
-
-	strcpy(server.sun_path, NAME);
-
+	strcpy(server.sun_path, NAME);					/* Setting name of socket */
 
 	if (connect
 			(sock, (struct sockaddr *)&server,
 			 sizeof(struct sockaddr_un)) < 0) {
-
-		close(sock);
-
+		close(sock);						/* Initiate connection on socket */
 		perror("APP_REG : Connecting Stream Socket");
-
 		exit(1);
 
 	}
 
-	if (write(sock, data, sizeof(data)) < 0)
-
+	if (write(sock, data, sizeof(data)) < 0)			/* Writing data on socket */
 		perror("APP_REG : Writing On Stream Socket");
 
 	close(sock);
-
 	return 0;
-
-
 }
-
-
