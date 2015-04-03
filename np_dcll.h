@@ -52,29 +52,56 @@ typedef struct np_dcll {
 	pthread_rdwr_t np_list_lock;
 } np_dcll;
 
+/* Initialise */
 void init_np(np_dcll *l);
+
+/* Add an NP with the given name to the linked list for NPs, return 0 on success */
 int add_np(np_dcll *l, char *np_name, char *usage, char ***key_val_arr);
+
+/* print the NP list */
 void print_np(np_dcll *l);
+
+/* Search for an np with the given name and return a pointer to that node if found */
 main_np_node *search_np(np_dcll *l, char *val);
-int del_np(np_dcll * l, char *val);
-void incr_np_app_cnt(np_dcll * l, char *nval);
-void decr_np_app_cnt(np_dcll * l, char *nval);
-int get_np_app_cnt(np_dcll * l, char *nval);
+
+/*Delete the main_np_node whose pointer is passed as argument*/
 int del_np_node(np_dcll *l,main_np_node * np_to_del);
 
+/* Delete the np with the given name, if found */
+int del_np(np_dcll * l, char *val);
+
+/* For the np with the given name, if found, find the count of the applications that have registered with it */
+int get_np_app_cnt(np_dcll * l, char *nval);
+
+/* For the np with the given name, if found, increment the count of the applications that have registered with it */
+void incr_np_app_cnt(np_dcll * l, char *nval);
+
+/* For the np with the given name, if found, decrement the count of the applications that have registered with it */
+void decr_np_app_cnt(np_dcll * l, char *nval);
 
 /* Hash and its functions */
+
 typedef struct hash_struct_np {
     struct main_np_node *np_hash;
     pthread_rdwr_t np_hash_lock;
 }hash_struct_np;
 
+/* Add the NP to the hash structure */
 int add_np_to_hash(hash_struct_np *hstruct, char *val, char *usage, char ***key_val_arr);
-int del_np_from_hash(hash_struct_np *hstruct, char *val);
-void print_hash_np(hash_struct_np *hstruct);
-void incr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name);
-void decr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name);
-int get_np_app_cnt_hash(hash_struct_np *hstruct, char* np_name);
 
+/* delete the NP from hash */
+int del_np_from_hash(hash_struct_np *hstruct, char *val);
+
+/* print hash */
+void print_hash_np(hash_struct_np *hstruct);
+
+/* increment app_count of NP in the hash */
+void incr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name);
+
+/* decrement app_count of NP in the hash */
+void decr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name);
+
+/* get app_count of NP */
+int get_np_app_cnt_hash(hash_struct_np *hstruct, char* np_name);
 
 #endif				/*np_dcll.h */

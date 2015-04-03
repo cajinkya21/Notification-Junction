@@ -20,18 +20,15 @@
  */
 
 /*
- *	This file contains the code for the dcll implementation of 
+ *	This file contains the code for the dcll and hash implementation of 
  *	Initialising,
  *	Adding an np,
- *	Printing the np list,
- *	Searching an np, 
+ *	Printing the nps,
+ *	Searching an np (in the list), 
  *	Deleting an np,
- *	Getting the count of the applications registered with this particular np, and
- *	Incrementing the count of the applications registered with this particular np
+ *	Getting the count of the applications registered with this particular np, 
+ *	Incrementing the count of the applications registered with this particular np, and
  *	Decrementing the count of the applications registered with this particular np
- *
- *	At the end of this file is the commented code to test the linked list
- *
  */
 
 #include "np_dcll.h"
@@ -492,7 +489,7 @@ void incr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name){
 /* decrement app_count of NP in the hash */
 void decr_np_app_cnt_hash(hash_struct_np *hstruct, char *np_name) {
 	main_np_node *s;
-	HASH_FIND_STR(hstruct->np_hash, np_name, s);  /* id already in the hash? */
+	HASH_FIND_STR(hstruct->np_hash, np_name, s);  
 	if(s != NULL) 
 		(s->app_count)--;
 }
