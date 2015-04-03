@@ -1745,17 +1745,52 @@ int unregister_app(char *buff)
 /*function to register an np*/
 int register_np(char *buff)
 {
-	char np_name[32], * usage, delimusage[3] = "==";
-	char *s;
-	char **keyVal;
+	char np_name[32], * usage;
+	char *s, buffcopy[256], extra[64];
+	char **keyVal, *emptytest;
+	
 	usage = (char * ) malloc (sizeof(char) * 512);
-	strcpy(np_name, strtok(buff, delimusage));
-	s = strtok(NULL, delimusage);
-
-	if (s == NULL) {
-		PRINTF("> %s %d register_np():Enter usage\nExiting\n", __FILE__, __LINE__);
-		return -1;
+	strcpy(buffcopy, buff);
+	
+	emptytest = strtok(buffcopy, "##");
+	
+	if(emptytest == NULL) {
+	    printf("Invalid argument to register_np. Exiting\n");
+	    errno = EINVAL;
+	    return -1;
 	}
+	strcpy(extra, emptytest);
+	
+	printf("extra 1 - %s\n", extra);
+	
+	emptytest = strtok(extra, "::");
+	
+	if(emptytest == NULL) {
+	    printf("Invalid argument to register_np. Exiting\n");
+	    errno = EINVAL;
+	    return -1;
+	}
+	
+	strcpy(extra, emptytest);
+	
+	if(strcmp(extra, "npname")) {
+	    printf("Invalid argument to register_np. Give npname as first argument. Exiting\n");
+	    errno = EINVAL;
+	    return -1;
+	}
+	printf("extra 2 - %s\n", extra);
+	
+	emptytest = strtok(NULL, "::");
+	
+	if(emptytest == NULL) {
+	    printf("Invalid argument to register_np. Exiting\n");
+	    errno = EINVAL;
+	    return -1;
+	}
+	
+	strcpy(np_name, emptytest);
+	
+	s = buff;
 
 	strcpy(usage, s);
 	extract_key_val(usage, &keyVal);
@@ -1771,7 +1806,6 @@ int register_np(char *buff)
 		add_np_to_hash(hstruct_np, np_name, usage,  &keyVal);
 		print_hash_np(hstruct_np);
 	}
-
 
 	return 1;
 }

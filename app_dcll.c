@@ -662,14 +662,7 @@ int del_app_ref_hash(hash_struct_app *hstruct, char* app_name, char* np_name) {
 
 	}
 	else {
-		printf("s->data is %s\n", s->data);
 		temp = s;
-		printf("temp->data is %s and count is %d\n", temp->data, temp->np_count);
-
-		if(copy)
-			printf("np_name is .%s. with length %d\n", copy, strlen(copy));
-		else 
-			printf("np is NULL\n");
 
 		// if np_name is given
 		if(strlen(copy) != 0) {

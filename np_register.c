@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 	char data[1024], trash[1024];
 
 	if (argc < 2) {
-		printf("NP_REG : Usage:%s <np_name>", argv[0]);
+		printf("NP_REG : Usage:%s npname::<npname>##usage\n", argv[0]);
 		exit(1);
 	}
 
