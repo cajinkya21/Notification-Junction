@@ -1761,8 +1761,6 @@ int register_np(char *buff)
 	}
 	strcpy(extra, emptytest);
 	
-	printf("extra 1 - %s\n", extra);
-	
 	emptytest = strtok(extra, "::");
 	
 	if(emptytest == NULL) {
@@ -1778,7 +1776,6 @@ int register_np(char *buff)
 	    errno = EINVAL;
 	    return -1;
 	}
-	printf("extra 2 - %s\n", extra);
 	
 	emptytest = strtok(NULL, "::");
 	
