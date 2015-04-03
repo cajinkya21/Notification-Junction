@@ -17,7 +17,7 @@ $make
 
 Now, to register inotify, do
 
-$./np_register    inotify==npname::inotify##dir::~/Desktop##flags::IN_CREATE*IN_DELETE*IN_MODIFY##TYPE::N##count::2
+$./np_register    npname::inotify##dir::~/Desktop##flags::IN_CREATE*IN_DELETE*IN_MODIFY##TYPE::N##count::2
 
 We have a code file which we call “demo_dummyapp.c”, which uses the nj_nonblocklib.so library, to write arguments to functions app_register, app_unregister and app_getnotify, on the socket for the NJ to read and process. Take a look at the arguments given through the library calls and change them if needed.
 
