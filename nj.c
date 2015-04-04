@@ -1711,7 +1711,7 @@ int register_np(char *buff)
 	char np_name[32], * usage;
 	char *s, buffcopy[256], extra[64];
 	char **keyVal, *emptytest;
-	
+	int r;
 	usage = (char * ) malloc (sizeof(char) * 512);
 	strcpy(buffcopy, buff);
 	
@@ -1737,7 +1737,9 @@ int register_np(char *buff)
 	if(strcmp(extra, "npname")) {
 	    printf("Invalid argument to register_np. Give npname as first argument. Exiting\n");
 	    errno = EINVAL;
-	    return -1;
+	    return -1
+	    
+	    ;
 	}
 	
 	emptytest = strtok(NULL, "::");
@@ -1759,11 +1761,19 @@ int register_np(char *buff)
 	 *   if it doesnt, add it to the list */
 
 	if(DATASTRUCT == LIST) {
-		add_np(&npList, np_name, usage, &keyVal);
+		r = add_np(&npList, np_name, usage, &keyVal);
+		if(r == -1) { /*error in adding np to list */
+			errno = EAGAIN; /*ask to try again */
+			return -1;
+		}
 		print_np(&npList);	    
 	}
 	if(DATASTRUCT == HASH) {
-		add_np_to_hash(hstruct_np, np_name, usage,  &keyVal);
+		r = add_np_to_hash(hstruct_np, np_name, usage,  &keyVal);
+		if(r == -1) { /*error in adding np to hash */
+			errno = EAGAIN; /*ask to try again */
+			return -1;
+		}
 		print_hash_np(hstruct_np);
 	}
 
