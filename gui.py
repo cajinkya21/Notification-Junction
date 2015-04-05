@@ -93,9 +93,9 @@ class CheckButton(object):
 
         # Put the vbox in the main window
         window.add(vbox)
-        fixed.put(vbox, 900, 10)
+        fixed.put(vbox, 700, 10)
         # Create first button
-        button = gtk.CheckButton("IN__CREATE")
+        button = gtk.CheckButton("IN__CREATE             ")
 
         # When the button is toggled, we call the "callback" method
         # with a pointer to "button" as its argument
@@ -109,7 +109,7 @@ class CheckButton(object):
 
         # Create second button
 
-        button = gtk.CheckButton("IN__DELETE")
+        button = gtk.CheckButton("IN__DELETE   ")
 
         # When the button is toggled, we call the "callback" method
         # with a pointer to "button 2" as its argument
@@ -119,7 +119,7 @@ class CheckButton(object):
 
         button.show()
         
-        button = gtk.CheckButton("BOTH")
+        button = gtk.CheckButton("BOTH   ")
 
         # When the button is toggled, we call the "callback" method
         # with a pointer to "button 2" as its argument
@@ -192,14 +192,14 @@ class EntryExample(object):
 
         vbox = gtk.VBox(False, 0)
         window.add(vbox)
-        fixed.put(vbox, 300, 10)
+        fixed.put(vbox, 200, 10)
         vbox.show()
 
         entry = gtk.Entry()
         entry.set_max_length(50)
         entry.connect("activate", self.enter_callback, entry)
         #entry.set_text("hello")
-        entry.insert_text("1", len(entry.get_text()))
+        entry.insert_text("Enter count here", len(entry.get_text()))
         entry.select_region(0, len(entry.get_text()))
         vbox.pack_start(entry, True, True, 0)
         entry.show()
@@ -241,12 +241,12 @@ class RadioButtons(object):
 
         button = gtk.RadioButton(None, "inotify")
         button.connect("toggled", self.callback, "inotify")
+        button.set_active(True)
         box2.pack_start(button, True, True, 0)
         button.show()
 
         button = gtk.RadioButton(button, "NP 2")
         button.connect("toggled", self.callback, "NP 2")
-        button.set_active(True)
         box2.pack_start(button, True, True, 0)
         button.show()
 
@@ -275,7 +275,7 @@ class Buttons(object):
 	global window
 
         # Create a new button
-        button = gtk.Button(label="Browse")
+        button = gtk.Button(label="Select the directory to be monitored")
 
         # Connect the "clicked" signal of the button to our callback
         button.connect("clicked", self.callback, "Browse")
@@ -284,7 +284,7 @@ class Buttons(object):
     
         box1 = gtk.VBox(False, 0)
         window.add(box1)
-        fixed.put(box1, 700, 50)
+        fixed.put(box1, 400, 10)
         box1.show()
         box1.pack_start(button, False, True, 0)
 
@@ -313,7 +313,7 @@ class Submit(object):
     
         box1 = gtk.VBox(False, 0)
         window.add(box1)
-        fixed.put(box1, 700, 0)
+        fixed.put(box1, 500, 100)
         box1.show()
         box1.pack_start(button, False, True, 0)
 

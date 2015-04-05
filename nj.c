@@ -52,26 +52,34 @@
  *	dec_all_np_counts_hash
  */
 
-
 #include "nj.h"
 
-np_dcll npList;						/* Head of global NP List */
-FILE* logfd;						/* File pointer of log file */
-app_dcll appList;					/* Head of global APP List */
-int fd_pidnames;					/* FD of file used for storing PID filenames */
-void *handle;						/* Handle of the function in shared library */
+np_dcll npList;						            /* Head of global NP List */
+FILE* logfd;						            /* File pointer of log file */
+app_dcll appList;					            /* Head of global APP List */
+int fd_pidnames;					            /* FD of file used for storing PID filenames */
+void *handle;						            /* Handle of the function in shared library */
 pthread_mutex_t getnotify_socket_mutex;			/* mutex used for locking buffer which app_getnotify thread uses */
 struct thread_args stat_read, stat_write, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
-struct hash_struct_np *hstruct_np;			/*global Hash for NP*/
+struct hash_struct_np *hstruct_np;			    /*global Hash for NP*/
 struct hash_struct_app *hstruct_app;			/*global Hash for App*/
-
+extern np_dcll npList;						    /* Head of global NP List */
+extern FILE* logfd;						        /* File pointer of log file */
+extern app_dcll appList;					    /* Head of global APP List */
+extern int fd_pidnames;					        /* FD of file used for storing PID filenames */
+extern void *handle;						    /* Handle of the function in shared library */
+extern pthread_mutex_t getnotify_socket_mutex;
+extern struct thread_args stat_read, stat_write, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
 
 /* main code */
 int main()
-{	int ret;
+{	
+    int ret;
 	sigset_t mask;
 	pthread_t tid_stat, tid_app_reg, tid_app_unreg, tid_np_reg, tid_np_unreg, tid_app_getnotify;
+
 	atexit(nj_exit);  		/*setting up the exit handler */
+
 	if (!(logfd = fopen(LOGS, "a+"))) { /*opening log file*/
 		perror("NJ.C   : not able to open  Log file\n");
 		return 1;
@@ -80,10 +88,8 @@ int main()
 	hstruct_np = (hash_struct_np *)malloc(sizeof(hash_struct_np));
 	hstruct_np->np_hash = NULL;
 
-
 	hstruct_app = (hash_struct_app *)malloc(sizeof(hash_struct_app));
 	hstruct_app->app_hash = NULL;
-
 
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGINT);
@@ -100,7 +106,10 @@ int main()
 
 	/*open file to which we will write the entry for each file pid.txt that we open so that it can be deleted when its use is done*/
 	fd_pidnames = open(PIDFILE, O_CREAT | O_RDWR, 0777);
-
+    
+    fprintf(logfd, "%s %d main(): fd_pidnames created.\n",__FILE__ , __LINE__);
+	force_logs();
+	
 	/*Initialization of all mutexes */
 
 	if (pthread_mutex_init(&getnotify_socket_mutex, NULL) != 0) {
@@ -117,7 +126,8 @@ int main()
 
 	init_app(&appList);
 
-
+    fprintf(logfd, "%s %d main(): Lists initialized.\n",__FILE__ , __LINE__);
+	force_logs();
 
 	/* Create socket for stat*/
 
@@ -209,6 +219,9 @@ int main()
 		exit(EXIT_FAILURE);
 	}
 
+    fprintf(logfd, "%s %d main(): Sockets created and bound.\n",__FILE__ , __LINE__);
+	force_logs();
+
 	/* create threads to listen  and accept */
 	if ((ret = pthread_create(&tid_stat, NULL, &print_stat_method, (void *)&stat_read)) == 0) {
 		PRINTF("> %s %d main(): Pthread_Creation successful for stat\n",__FILE__ , __LINE__);
@@ -253,6 +266,9 @@ int main()
 		errno = ret;
 		perror("Error in pthread_create for app_getnotify_method :");
 	}
+	
+	fprintf(logfd, "%s %d main(): Threads created.\n",__FILE__ , __LINE__);
+	force_logs();
 
 	/*Join all the threads */
 	if((ret = pthread_join(tid_np_reg, NULL)) != 0 ) {
@@ -278,20 +294,12 @@ int main()
 		perror("Error in pthread_join joining app_getnotify thread");
 	}
 
+    fprintf(logfd, "%s %d main(): Threads joined.\n",__FILE__ , __LINE__);
+	force_logs();
 
 	exit(EXIT_SUCCESS);
 
 }
-
-#include "nj.h"
-
-extern np_dcll npList;						/* Head of global NP List */
-extern FILE* logfd;						/* File pointer of log file */
-extern app_dcll appList;					/* Head of global APP List */
-extern int fd_pidnames;					/* FD of file used for storing PID filenames */
-extern void *handle;						/* Handle of the function in shared library */
-extern pthread_mutex_t getnotify_socket_mutex;
-extern struct thread_args stat_read, stat_write, app_reg, np_reg, app_unreg,np_unreg, app_getnotify;
 
 /* method to read socket for statistics */
 void *print_stat_method(void *arguments)
@@ -646,10 +654,9 @@ void *np_getnotify_method(void *arguments)
 
 	strcpy(args_send_copy_2, args->argssend);
 
-	fprintf(logfd, "> %s %d np_getnotify_method():9. buf is %s \n",__FILE__ , __LINE__, args->argssend);
 	filename = get_filename(args_send_copy_2);
-	fprintf(logfd, "> %s %d np_getnotify_mehod():10. buf is %s \n",__FILE__ , __LINE__, args->argssend);
-
+	
+	fprintf(logfd, "%s %d np_getnotify_mehod(): Buffer received - %s \n",__FILE__ , __LINE__, args->argssend);
 	force_logs();
 
 	strtok(r, delimattr);
@@ -827,9 +834,9 @@ void *np_getnotify_method(void *arguments)
 			return NULL;
 		}
 
-		fprintf(logfd, ">%s %d np_getnotify_method(): 11 %d. buf is %s \n",__FILE__ , __LINE__, count, args->argssend);
-
+		fprintf(logfd, "%s %d np_getnotify_method(): count - %d and buffer - %s \n",__FILE__ , __LINE__, count, args->argssend);
 		force_logs();
+		
 		(*getnotify) (args);
 		PRINTF(">%s %d np_getnotify_method(): Recd = %s\n",__FILE__ , __LINE__, args->argsrecv);
 
@@ -896,7 +903,7 @@ void *block_getnotify_method(void *argu) {
 
 
 
-	fprintf(logfd, "> %s %d block_getnotify_method :3. buf is %s \n",__FILE__ , __LINE__, args->buf);  
+	fprintf(logfd, "%s %d block_getnotify_method : Buffer : %s \n",__FILE__ , __LINE__, args->buf);  
 	force_logs();
 
 	if((buf = (char *)malloc(sizeof(char) * (strlen(args->buf) + 1 ))) == NULL ) {
@@ -908,9 +915,6 @@ void *block_getnotify_method(void *argu) {
 
 	char *notification;
 	struct getnotify_thread_args *arguments;
-
-	fprintf(logfd, "6. buf is %s \n", buf);
-	force_logs();
 
 	if((notification = (char *)malloc(1024 * sizeof(char))) == NULL) {
 		PRINTF("> %s %d block_getnotify_method(): malloc failed",__FILE__,__LINE__);
@@ -1044,9 +1048,8 @@ void *proceed_getnotify_method(void *arguments)
 	}
 
 	*args = *temparguments;
-	fprintf(logfd, "> %s %d proceed_getnotify_method():2. buf is %s \n",__FILE__ , __LINE__, args->buf);
-
-
+	
+	fprintf(logfd, "%s %d proceed_getnotify_method(): Buffer : %s \n",__FILE__ , __LINE__, args->buf);
 	force_logs();
 
 	strcpy(rough, args->buf);
@@ -1073,7 +1076,7 @@ void *proceed_getnotify_method(void *arguments)
 	strcat(filename1, ".txt");
 	strcat(filename1, "\n");
 
-	fprintf(logfd, "> %s %d proceed_getnotify_method :3. buf is %s \n",__FILE__ , __LINE__, args->buf);  
+	fprintf(logfd, "%s %d proceed_getnotify_method : Buffer - %s \n",__FILE__ , __LINE__, args->buf);  
 	force_logs();
 
 	if((buf = (char *)malloc(sizeof(char) * (strlen(args->buf) + 1 ))) == NULL ) {
@@ -1090,12 +1093,12 @@ void *proceed_getnotify_method(void *arguments)
 		pthread_exit(NULL);
 	}
 
-	fprintf(logfd, "> %s %d proceed_getnotify_method() :4. Notification received from getnotify_app is %s \n",__FILE__ , __LINE__, received); 
+	fprintf(logfd, "%s %d proceed_getnotify_method() : Notification received from getnotify_app - %s \n",__FILE__ , __LINE__, received); 
 	force_logs();
 
 	strcat(received, "\n");
 	write((int)fd_pidnames, filename1, strlen(filename1));
-	PRINTF("> %s %d proceed_getnotify_method(): PID filename is written successfully.....\n",__FILE__ , __LINE__);
+	PRINTF("> %s %d proceed_getnotify_method(): PID filename is written successfully.\n",__FILE__ , __LINE__);
 
 	free(received);
 	received = NULL;
@@ -1261,7 +1264,7 @@ char *get_filename(char *argsbuf) {
 void force_logs(void) {
 	fclose(logfd);
 	if (!(logfd = fopen(LOGS, "a+"))) {
-		perror("NJ.C   : not able to open  Log file\n");
+		perror("NJ.C : Unable to open Log file\n");
 	}
 	return;
 }
@@ -1975,7 +1978,7 @@ char *getnotify_app(char *buff)
 	struct getnotify_thread_args *arguments;
 	pthread_t tid_app_np_gn;
 
-	fprintf(logfd, "6. buf is %s \n", buff);
+	fprintf(logfd, "%s %d getnotify_app() : Buffer - %s \n", __FILE__, __LINE__, buff);
 	force_logs();
 
 	if((notification = (char *)malloc(1024 * sizeof(char))) == NULL) {
@@ -1992,8 +1995,7 @@ char *getnotify_app(char *buff)
 	}
 	strcpy(arguments->argssend, buff);
 
-	fprintf(logfd, "7. buf is %s \n", arguments->argssend);
-
+	fprintf(logfd, "%s %d getnotify_app() : Buffer - %s \n", __FILE__, __LINE__, arguments->argssend);
 	force_logs();
 	
 	
