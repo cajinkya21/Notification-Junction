@@ -160,17 +160,18 @@ int appGetnotify(int pid, char *key_val_string, char choice)
 		}
 		
 		msgsock_block = accept(sock_block, 0, 0);
-	do {
-		if ((rval_block = read(msgsock_block, buf, 1024)) < 0)
-			perror
-			    ("APP_GETNOTIFY : ERROR READING STREAM SOCKET IN CLIENT \n");
-		else
-			printf
-			    ("APP_GETNOTIFY : NOTIFICATION RECEIVED BY GETNOTIFY : %s\n",
-			     buf);
-		unlink(sock_name);
-	}while(rval_block > 0);	
+	    do {
+		    if ((rval_block = read(msgsock_block, buf, 1024)) < 0)
+			    perror
+			        ("APP_GETNOTIFY : ERROR READING STREAM SOCKET IN CLIENT \n");
+		    else
+			    printf
+			        ("APP_GETNOTIFY : NOTIFICATION RECEIVED BY GETNOTIFY.\n");
+		    
+	    }while(rval_block >= 0);	
+	    
 	}
+	unlink(sock_name);
 	close(sock);
 	return 1;
 }

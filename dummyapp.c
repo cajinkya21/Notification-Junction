@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 	appRegister(str);	/* Application registers with inotify */
 	printf("Dummy app app register done\n");
 	printf("DUMMYAPP : Sending pid = %d\n", pid);
-	appGetnotify(pid, arr, 'N');
+	appGetnotify(pid, arr, 'B');
 	/* Application request for notification from inotify */
 
 	printf("Dummy app getnotify done \n");
