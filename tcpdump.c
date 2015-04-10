@@ -128,15 +128,12 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 	static int count = 1;                   /* packet counter */
 	
 	/* declare pointers to packet headers */
-	const struct sniff_ethernet *ethernet;  /* The ethernet header [1] */
 	const struct sniff_ip *ip;              /* The IP header */
 	const struct sniff_tcp *tcp;            /* The TCP header */
-	const char *payload;                    /* Packet payload */
 
     char string[64];
 	int size_ip;
 	int size_tcp;
-	int size_payload;
 	
 	//retstring[0] = ":";
 	
@@ -148,7 +145,6 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 	count++;
 	
 	/* define ethernet header */
-	ethernet = (struct sniff_ethernet*)(packet);
 	
 	/* define/compute ip header offset */
 	ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
@@ -215,10 +211,8 @@ got_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 	printf("   Dst port: %d\n", ntohs(tcp->th_dport));
 	
 	/* define/compute tcp payload (segment) offset */
-	payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
 	
 	/* compute tcp payload (segment) size */
-	size_payload = ntohs(ip->ip_len) - (size_ip + size_tcp);
 	
 	/*
 	 * Print payload data; it might be binary, so don't just

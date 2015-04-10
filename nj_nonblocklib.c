@@ -82,7 +82,7 @@ int appUnregister(char *key_val_string)
 
 int appGetnotify(int pid, char *key_val_string, char choice)
 {
-	int sock;
+	int sock, x = 0;
 	struct sockaddr_un server;
 	
 	int sock_block,  rval_block, msgsock_block;
@@ -164,10 +164,12 @@ int appGetnotify(int pid, char *key_val_string, char choice)
 		    if ((rval_block = read(msgsock_block, buf, 1024)) < 0)
 			    perror
 			        ("APP_GETNOTIFY : ERROR READING STREAM SOCKET IN CLIENT \n");
-		    else
-			    printf
-			        ("APP_GETNOTIFY : NOTIFICATION RECEIVED BY GETNOTIFY.\n");
-		    
+		    else   {
+		        x++;
+		        if(x == 1) {
+    			    printf("APP_GETNOTIFY : NOTIFICATION RECEIVED BY GETNOTIFY.\n");
+	            }
+		    }
 	    }while(rval_block >= 0);	
 	    
 	}

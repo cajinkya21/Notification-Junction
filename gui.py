@@ -9,21 +9,25 @@ import time
 from ctypes.util import find_library
 pygtk.require('2.0')
 
-window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 
-app_reg_arg = ""
-get_notify_arg = "npname::inotify##"
+window_inotify = gtk.Window(gtk.WINDOW_TOPLEVEL)
+window_tcpdump = gtk.Window(gtk.WINDOW_TOPLEVEL)
+
+app_reg_arg_inotify = ""
+get_notify_arg_inotify = "npname::inotify##"
 flags = "flags::"
 flag_check = 0
 pid = os.getpid()
 pidstr = str(pid)
-app_reg_arg = app_reg_arg + pidstr + "::inotify"
+app_reg_arg_inotify = app_reg_arg_inotify + pidstr + "::inotify"
 i = 0
 pidfilename = ""
 arglist = []
 times = 0
 pidfd = 0
 
+app_reg_arg_tcpdump = ""
+get_notify_arg_tcpdump = "npname::tcpdump##"
 
 def sigusrhandler(signum, stack):
     print 'Received:', signum
@@ -64,15 +68,15 @@ class CheckButton(object):
     
     
     def callback(self, widget, data=None):
-    	global window
+    	global window_inotify
 
         global flags
-        global get_notify_arg
+        global get_notify_arg_inotify
         print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
         flags = flags + data + "##"
-        get_notify_arg = get_notify_arg + flags
+        get_notify_arg_inotify = get_notify_arg_inotify + flags
         print "flags - " + flags
-        print "get notify - " + get_notify_arg
+        print "get notify - " + get_notify_arg_inotify
        
 	#gtk_widget_set_sensitive(self,FALSE);
 	#gtk_widget_set_sensitive(self, FALSE);
@@ -86,13 +90,13 @@ class CheckButton(object):
 
     def __init__(self):
         global flag_check
-        global window
+        global window_inotify
 
         # Create a vertical box
         vbox = gtk.VBox(True, 2)
 
-        # Put the vbox in the main window
-        window.add(vbox)
+        # Put the vbox in the main window_inotify
+        window_inotify.add(vbox)
         fixed.put(vbox, 700, 10)
         # Create first button
         button = gtk.CheckButton("IN__CREATE             ")
@@ -139,11 +143,11 @@ class FileSelectionExample:
     # Get the selected filename and print it to the console
     def file_ok_sel(self, w):
         print "%s" % self.filew.get_filename()
-        global get_notify_arg
-        global window
+        global get_notify_arg_inotify
+        global window_inotify
 
-        get_notify_arg = get_notify_arg + "dir::" + self.filew.get_filename() + "##"
-        print "get notify - " + get_notify_arg
+        get_notify_arg_inotify = get_notify_arg_inotify + "dir::" + self.filew.get_filename() + "##"
+        print "get notify - " + get_notify_arg_inotify
         self.filew.destroy()
         return 0
         
@@ -171,13 +175,13 @@ class FileSelectionExample:
 class EntryExample(object):
 
     def enter_callback(self, widget, entry):
-        global get_notify_arg
-        global window
+        global get_notify_arg_inotify
+        global window_inotify
 
         entry_text = entry.get_text()
         print "Entry contents: %s\n" % entry_text
-        get_notify_arg = get_notify_arg + "count::" + entry_text + "##"
-        print "get notify - " + get_notify_arg
+        get_notify_arg_inotify = get_notify_arg_inotify + "count::" + entry_text + "##"
+        print "get notify - " + get_notify_arg_inotify
         return 0
 
     def entry_toggle_editable(self, checkbutton, entry):
@@ -187,11 +191,11 @@ class EntryExample(object):
         entry.set_visibility(checkbutton.get_active())
 
     def __init__(self):
-        # create a new window
-        global window
+        # create a new window_inotify
+        global window_inotify
 
         vbox = gtk.VBox(False, 0)
-        window.add(vbox)
+        window_inotify.add(vbox)
         fixed.put(vbox, 200, 10)
         vbox.show()
 
@@ -227,10 +231,10 @@ class RadioButtons(object):
         return 0
     
     def __init__(self):
-	global window
+	global window_inotify
 
         box1 = gtk.VBox(False, 0)
-        window.add(box1)
+        window_inotify.add(box1)
         fixed.put(box1, 10, 10)
         box1.show()
 
@@ -264,7 +268,7 @@ class RadioButtons(object):
         box1.pack_start(box2, False, True, 0)
         box2.show()
 
-        #self.window.show()
+        #self.window_inotify.show()
 
 class Buttons(object):
     # Our usual callback method
@@ -272,7 +276,7 @@ class Buttons(object):
         FileSelectionExample()
 
     def __init__(self):
-	global window
+	global window_inotify
 
         # Create a new button
         button = gtk.Button(label="Select the directory to be monitored")
@@ -283,7 +287,7 @@ class Buttons(object):
         # Pack and show all our widgets
     
         box1 = gtk.VBox(False, 0)
-        window.add(box1)
+        window_inotify.add(box1)
         fixed.put(box1, 400, 10)
         box1.show()
         box1.pack_start(button, False, True, 0)
@@ -294,14 +298,14 @@ class Buttons(object):
 class Submit(object):
     # Our usual callback method
     def callback(self, widget, data=None):
-        print "app reg arg - " + app_reg_arg
-        print "Getnotify arg in main - end - " + get_notify_arg
+        print "app reg arg - " + app_reg_arg_inotify
+        print "Getnotify arg in main - end - " + get_notify_arg_inotify
         global flag_check
         flag_check = 99
         main()
 
     def __init__(self):
-	global window
+	global window_inotify
 
         # Create a new button
         button = gtk.Button(label="Submit")
@@ -312,7 +316,7 @@ class Submit(object):
         # Pack and show all our widgets
     
         box1 = gtk.VBox(False, 0)
-        window.add(box1)
+        window_inotify.add(box1)
         fixed.put(box1, 500, 100)
         box1.show()
         box1.pack_start(button, False, True, 0)
@@ -331,14 +335,14 @@ def main():
    
     if flag_check == 99 :
         #write function calls
-            print "app reg arg - " + app_reg_arg
-            print "Getnotify arg in main - end - " + get_notify_arg
-	    libra.appRegister(app_reg_arg)
+            print "app reg arg - " + app_reg_arg_inotify
+            print "Getnotify arg in main - end - " + get_notify_arg_inotify
+	    libra.appRegister(app_reg_arg_inotify)
 	    print "Called app register"
-	    get_notify_arg_new = get_notify_arg[0:-2]
-	    print "Getnotify arg after -2  " + get_notify_arg_new  
+	    get_notify_arg_inotify_new = get_notify_arg_inotify[0:-2]
+	    print "Getnotify arg after -2  " + get_notify_arg_inotify_new  
 	    pid = os.getpid()
-	    libra.appGetnotify(int(pid), get_notify_arg_new,ord('N'))
+	    libra.appGetnotify(int(pid), get_notify_arg_inotify_new,ord('N'))
 	    print "Called getnotify"
 	    while 1:
 	        time.sleep(3)
@@ -357,22 +361,22 @@ if __name__ == "__main__":
     print "1"
     signal.signal(signal.SIGUSR1, sigusrhandler)
     libra = ctypes.CDLL("./nj_nonblocklib.so")
-    global window
+    global window_inotify
     print "*********************************************************************"
     pid = os.getpid()
     print 'My PID is:', pid
    
-    window.connect("delete_event", gtk.main_quit)
-    window.set_title("App with pid = " + str(pid))
-    window.set_border_width(0)
+    window_inotify.connect("delete_event", gtk.main_quit)
+    window_inotify.set_title("App with pid = " + str(pid))
+    window_inotify.set_border_width(0)
     fixed = gtk.Fixed()
-    window.add(fixed)
+    window_inotify.add(fixed)
     RadioButtons()
     EntryExample()
     Buttons()
     Submit()
     CheckButton()
-    window.show_all()
+    window_inotify.show_all()
     
   
     
@@ -383,8 +387,8 @@ if __name__ == "__main__":
 	
 
     
-#    hbox.pack_start(RadioButtons(window))
-#    hbox.pack_start(EntryExample(window))
+#    hbox.pack_start(RadioButtons(window_inotify))
+#    hbox.pack_start(EntryExample(window_inotify))
     
 
     main()
