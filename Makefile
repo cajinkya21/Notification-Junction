@@ -1,5 +1,10 @@
 #CC variable contains the compiler that we want to use
 CC=gcc
+NJDESTDIR=/usr/bin
+NJCOMMANDDIR=/usr/local/bin
+NJLIBDIR=/usr/lib
+NJAPPDIR=/usr/local/nj
+
 
 all: nj libinotify np_register dummyapp stats app_register app_unregister np_unregister app_getnotify  nj_nonblocklib.so libtcpdump dummyappnonblock libnj_nonblocklib.so
 
@@ -106,3 +111,34 @@ np_unregister: np_unregister.c
 #Target 9
 app_getnotify: app_getnotify.c
 	$(CC) -Wall -g app_getnotify.c -o app_getnotify
+	
+#Target 10 for installation 
+install: all
+	mkdir /usr/local/nj
+	install nj $(NJDESTDIR)
+	install np_register $(NJCOMMANDDIR)
+	install np_unregister $(NJCOMMANDDIR)
+	install app_register $(NJCOMMANDDIR)
+	install app_unregister $(NJCOMMANDDIR)
+	install stats $(NJCOMMANDDIR)
+	install libnpinotify.so $(NJLIBDIR)
+	install libnptcpdump.so $(NJLIBDIR)
+	install libnj_nonblocklib.so $(NJLIBDIR)
+	install dummyapp $(NJAPPDIR)
+
+
+uninstall: 
+	rm -rf /usr/local/nj
+	rm $(NJDESTDIR)/nj
+	rm $(NJCOMMANDDIR)/np_register
+	rm $(NJCOMMANDDIR)/np_unregister
+	rm $(NJCOMMANDDIR)/app_register
+	rm $(NJCOMMANDDIR)/app_unregister
+	rm $(NJCOMMANDDIR)/stats
+	rm $(NJLIBDIR)/libnpinotify.so
+	rm $(NJLIBDIR)/libnptcpdump.so
+	rm $(NJLIBDIR)/libnj_nonblocklib.so
+	rm $(NJAPPDIR)/dummyapp
+	
+
+
