@@ -546,7 +546,7 @@ def main():
 	    get_notify_arg_tcpdump_new = get_notify_arg_tcpdump[0:-2]
 	    print "Getnotify arg after -2  " + get_notify_arg_tcpdump_new  
 	    pid = os.getpid()
-	    libra.appGetnotify(int(pid), get_notify_arg_tcpdump_new,ord('B'))
+	    libra.appGetnotify(int(pid), get_notify_arg_tcpdump_new,ord('N'))
 	    print "Called getnotify"
 	    while 1:
 	        time.sleep(3)
